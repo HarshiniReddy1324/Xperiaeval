@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { scoreApplication } from './scoring.js';
 import { DEFAULT_RUBRIC_QUESTIONS, rubricRowFromQuestion } from './defaultRubric.js';
-import { runMigrations, DEFAULT_NOTICE, DEFAULT_RETENTION } from './migrate.js';
+import { runSchemaMigrations, runDataMigrations, DEFAULT_NOTICE, DEFAULT_RETENTION } from './migrate.js';
 import { join } from 'path';
 import { dataDir } from './paths.js';
 
@@ -327,7 +327,8 @@ function seedDemoApplications(orgId, rubricId) {
   ).run(uuid(), orgId, 'XP-1042 scored with rubric v1 and policy v1.0');
 }
 
+runSchemaMigrations();
 seedIfEmpty();
-runMigrations();
+runDataMigrations();
 
 export { db, slugify, DEFAULT_NOTICE, DEFAULT_RETENTION };

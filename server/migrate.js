@@ -17,18 +17,21 @@ const DEFAULT_NOTICE =
 const DEFAULT_RETENTION =
   'Application data is retained for 24 months for audit and compliance purposes, then securely deleted. Candidates may request export or deletion per applicable privacy laws.';
 
+function tableExists(table) {
+  return !!db.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?`).get(table);
+}
+
 function columnExists(table, column) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all();
   return cols.some((c) => c.name === column);
 }
 
 function addColumn(table, column, definition) {
-  if (!columnExists(table, column)) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  }
+  if (!tableExists(table) || columnExists(table, column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
-export function runMigrations() {
+export function runSchemaMigrations() {
   addColumn('organizations', 'candidate_notice', 'TEXT');
   addColumn('organizations', 'retention_policy', 'TEXT');
   addColumn('organizations', 'scheduling_enabled', 'INTEGER DEFAULT 0');
@@ -50,12 +53,6 @@ export function runMigrations() {
   addColumn('applications', 'hidden_gem', 'INTEGER DEFAULT 0');
   addColumn('applications', 'follow_up_json', 'TEXT');
   addColumn('applications', 'experience_mismatch', 'INTEGER DEFAULT 0');
-  addColumn('ats_integrations', 'writeback_url', 'TEXT');
-  addColumn('ats_integrations', 'writeback_api_key', 'TEXT');
-  addColumn('ats_writeback_queue', 'attempts', 'INTEGER DEFAULT 0');
-  addColumn('ats_writeback_queue', 'last_error', 'TEXT');
-  addColumn('ats_writeback_queue', 'sent_at', 'TEXT');
-  addColumn('ats_writeback_queue', 'response_code', 'INTEGER');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS question_pool (
@@ -270,6 +267,13 @@ export function runMigrations() {
     );
   `);
 
+  addColumn('ats_integrations', 'writeback_url', 'TEXT');
+  addColumn('ats_integrations', 'writeback_api_key', 'TEXT');
+  addColumn('ats_writeback_queue', 'attempts', 'INTEGER DEFAULT 0');
+  addColumn('ats_writeback_queue', 'last_error', 'TEXT');
+  addColumn('ats_writeback_queue', 'sent_at', 'TEXT');
+  addColumn('ats_writeback_queue', 'response_code', 'INTEGER');
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS interview_responses (
       id TEXT PRIMARY KEY,
@@ -280,7 +284,9 @@ export function runMigrations() {
       sort_order INTEGER DEFAULT 0
     );
   `);
+}
 
+export function runDataMigrations() {
   db.prepare(
     `UPDATE organizations SET candidate_notice = COALESCE(candidate_notice, ?),
      retention_policy = COALESCE(retention_policy, ?),
@@ -322,6 +328,11 @@ export function runMigrations() {
       .then((m) => m.seedScenarioDemos())
       .catch((e) => console.error('[seed] scenario demos failed:', e.message));
   }
+}
+
+export function runMigrations() {
+  runSchemaMigrations();
+  runDataMigrations();
 }
 
 function backfillJobPostings() {
