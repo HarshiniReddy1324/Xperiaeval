@@ -12,7 +12,7 @@
     "dev:server": "node server/index.js",
     "seed:reset-demo": "node server/resetDemoPortfolio.js",
     "seed:candidates": "node server/seedPortfolioCandidates.js",
-    "build": "vite build",
+    "build": "node scripts/build-vercel.mjs",
     "preview": "vite preview",
     "start": "node server/index.js"
   },
