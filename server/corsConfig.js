@@ -13,7 +13,7 @@ function parseOriginList() {
 }
 
 function originAllowed(origin, allowed) {
-  if (!origin) return true;
+  if (!origin) return false;
   if (allowed.some((o) => origin === o)) return true;
   // Vercel production + preview deployments
   if (allowed.some((o) => o.includes('vercel.app')) && origin.endsWith('.vercel.app')) return true;
@@ -29,7 +29,7 @@ export function buildCorsMiddleware() {
 
     if (process.env.NODE_ENV !== 'production' || !allowed.length) {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    } else if (originAllowed(origin, allowed)) {
+    } else if (origin && originAllowed(origin, allowed)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
     }
