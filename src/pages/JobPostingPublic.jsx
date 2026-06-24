@@ -46,7 +46,7 @@ export function JobPostingPublic() {
       <div className="jp-page jp-error publicPortal">
         <AlertCircle size={40} style={{ color: '#ef4444' }} />
         <p>{error}</p>
-        <Link to="/login">Recruiter login</Link>
+        <Link to="/">Recruiter portal</Link>
       </div>
     );
   }

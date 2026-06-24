@@ -66,7 +66,8 @@ export function Layout() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    if (import.meta.env.VITE_REQUIRE_LOGIN === '1') navigate('/login');
+    else navigate('/');
   };
 
   const visibleNav = PORTAL_NAV.filter((item) => canAccess(role, item.path.split('?')[0]));

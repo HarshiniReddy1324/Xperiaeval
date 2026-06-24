@@ -3,8 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
-import { Login } from './pages/Login';
-import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Jobs } from './pages/Jobs';
 import { JobDetail } from './pages/JobDetail';
@@ -26,9 +24,18 @@ import { CandidateCompare } from './pages/CandidateCompare';
 import { CandidateScorecard } from './pages/CandidateScorecard';
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, authError } = useAuth();
   if (loading) return <div className="authPage">Loading…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return (
+      <div className="authPage">
+        <div className="authCard card">
+          <h1>Demo unavailable</h1>
+          <p className="error">{authError || 'Could not connect to the API.'}</p>
+        </div>
+      </div>
+    );
+  }
   return children;
 }
 
@@ -38,8 +45,8 @@ export function App() {
       <AuthProvider>
         <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/register" element={<Navigate to="/" replace />} />
           <Route path="/apply/:slug" element={<Apply />} />
           <Route path="/careers/:slug" element={<JobPostingPublic />} />
           <Route path="/schedule/:token" element={<CandidateSchedule />} />
