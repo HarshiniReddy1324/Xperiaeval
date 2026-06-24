@@ -37,11 +37,11 @@ export function AuthProvider({ children }) {
     restoreSession()
       .then((u) => {
         setUser(u);
-        setAuthError(u ? '' : 'Could not start demo session. Check that the API is running.');
+        setAuthError(u ? '' : 'Check that the API is running and reachable.');
       })
       .catch((err) => {
         setUser(null);
-        setAuthError(err.message || 'Could not start demo session.');
+        setAuthError(err.message || 'Check that the API is running and reachable.');
       })
       .finally(() => setLoading(false));
   }, []);

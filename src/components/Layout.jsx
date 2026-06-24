@@ -5,7 +5,6 @@ import {
   Briefcase,
   ClipboardList,
   LayoutDashboard,
-  LogOut,
   Moon,
   Settings,
   ShieldCheck,
@@ -58,17 +57,11 @@ function navActive(match, pathname, search) {
 }
 
 export function Layout() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const role = user?.role || 'Hiring Manager';
-
-  const handleLogout = () => {
-    logout();
-    if (import.meta.env.VITE_REQUIRE_LOGIN === '1') navigate('/login');
-    else navigate('/');
-  };
 
   const visibleNav = PORTAL_NAV.filter((item) => canAccess(role, item.path.split('?')[0]));
 
@@ -125,15 +118,6 @@ export function Layout() {
           <button type="button" className="portalThemeBtn" onClick={toggleTheme}>
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
-
-          <button
-            type="button"
-            className="portalThemeBtn"
-            onClick={handleLogout}
-            style={{ marginTop: 6 }}
-          >
-            <LogOut size={15} /> Sign out
           </button>
         </div>
       </aside>

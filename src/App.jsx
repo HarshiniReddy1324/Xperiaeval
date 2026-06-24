@@ -25,13 +25,13 @@ import { CandidateScorecard } from './pages/CandidateScorecard';
 
 function PrivateRoute({ children }) {
   const { user, loading, authError } = useAuth();
-  if (loading) return <div className="authPage">Loading…</div>;
+  if (loading) return <div className="authPage">Loading workspace…</div>;
   if (!user) {
     return (
       <div className="authPage">
         <div className="authCard card">
-          <h1>Demo unavailable</h1>
-          <p className="error">{authError || 'Could not connect to the API.'}</p>
+          <h1>Unable to load workspace</h1>
+          <p className="error">{authError || 'Check that the API is running and reachable.'}</p>
         </div>
       </div>
     );
