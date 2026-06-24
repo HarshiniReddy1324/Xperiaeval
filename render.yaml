@@ -1,0 +1,29 @@
+# Render Blueprint — API backend for Vercel frontend
+# Dashboard: New → Blueprint → connect repo (uses this file)
+services:
+  - type: web
+    name: xperieval-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.api
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data/data
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+        optional: true
+    disk:
+      name: xperieval-data
+      mountPath: /var/data
+      sizeGB: 1

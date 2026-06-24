@@ -1,0 +1,317 @@
+/**
+ * Public apply + careers pages — aligned to portal dashboard color tokens.
+ */
+
+.publicPortal {
+  min-height: 100vh;
+  background: var(--portal-bg);
+  color: var(--portal-text);
+}
+
+.publicPortal .applyShell {
+  min-height: 100vh;
+  background: var(--portal-bg);
+  color: var(--portal-text);
+}
+
+.publicPortal .applyShellInner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.publicPortal .applyTopBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.publicPortal .applyBrand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  color: var(--portal-text);
+}
+
+.publicPortal .applyBack {
+  color: var(--portal-accent);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.publicPortal .applyHeroCard,
+.publicPortal .applyFormCard {
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px #00000018;
+  color: var(--portal-text);
+}
+
+.publicPortal .applyHeroCard h1 {
+  margin: 8px 0;
+  color: var(--portal-text);
+}
+
+.publicPortal .applyHeroCard .muted,
+.publicPortal .applyFormCard .muted {
+  color: var(--portal-muted);
+}
+
+.publicPortal .applyProgress {
+  display: flex;
+  gap: 0;
+  margin: 20px 0 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--portal-surface-2);
+  border: 1px solid var(--portal-border);
+}
+
+.publicPortal .applyProgress span {
+  flex: 1;
+  text-align: center;
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--portal-muted);
+}
+
+.publicPortal .applyProgress span.active {
+  background: var(--portal-accent);
+  color: #fff;
+}
+
+.publicPortal .applyProgress span.done {
+  background: #14532d55;
+  color: #86efac;
+}
+
+.publicPortal .applyField,
+.publicPortal .formInput {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  background: var(--portal-surface-2);
+  color: var(--portal-text);
+  font-size: 14px;
+}
+
+.publicPortal .applyField:focus,
+.publicPortal .formInput:focus {
+  outline: none;
+  border-color: var(--portal-accent);
+}
+
+.publicPortal .screeningQuestion h3 {
+  color: var(--portal-text);
+}
+
+.publicPortal .questionTimerMeta {
+  color: var(--portal-muted);
+  font-size: 13px;
+}
+
+.publicPortal .questionTimerMeta strong {
+  color: var(--portal-accent);
+}
+
+.publicPortal .answerModeLabel {
+  color: var(--portal-muted);
+}
+
+.publicPortal .applySuccessCard {
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: var(--portal-text);
+}
+
+.publicPortal.jp-page {
+  min-height: 100vh;
+  background: var(--portal-bg);
+  color: var(--portal-text);
+}
+
+.publicPortal .jp-nav {
+  border-bottom: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+}
+
+.publicPortal .jp-card,
+.publicPortal .jp-sidebar {
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text);
+  box-shadow: 0 8px 24px #00000014;
+}
+
+.publicPortal .jp-card h2,
+.publicPortal .jp-header h1 {
+  color: var(--portal-text);
+}
+
+.publicPortal .jp-card p,
+.publicPortal .jp-list li,
+.publicPortal .jp-steps li {
+  color: var(--portal-muted);
+}
+
+.publicPortal .jp-tag,
+.publicPortal .jp-chip {
+  background: var(--portal-surface-2);
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text);
+}
+
+.publicPortal .jp-tag.green {
+  background: #14532d44;
+  color: #86efac;
+  border-color: #22c55e55;
+}
+
+.publicPortal .jp-tag.blue {
+  background: #1e3a5f44;
+  color: #93c5fd;
+  border-color: #3b82f655;
+}
+
+.publicPortal .jp-logo,
+.publicPortal .jp-stepNum,
+.publicPortal .jp-btnPrimary,
+.publicPortal .jp-mobileApply {
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: #fff;
+}
+
+.publicPortal .jp-btnSecondary {
+  background: var(--portal-surface-2);
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text);
+}
+
+.publicPortal .jp-btnSecondary:hover {
+  background: var(--portal-surface);
+}
+
+.publicPortal .jp-eoe {
+  background: var(--portal-surface-2);
+  border-style: dashed;
+}
+
+.publicPortal .jp-contactRow a {
+  color: var(--portal-accent);
+}
+
+[data-theme='light'] .publicPortal .applyProgress span.done {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+[data-theme='light'] .publicPortal .jp-tag.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.publicPortal .followUpBlock {
+  margin-bottom: 16px;
+}
+
+.publicPortal .followUpBlock label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--portal-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.publicPortal .followUpBlock textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+  color: var(--portal-text);
+  padding: 12px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.publicPortal textarea.applyField {
+  width: 100%;
+  min-height: 140px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+  color: var(--portal-text);
+  padding: 14px 16px;
+  font-size: 15px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.publicPortal textarea.applyField::placeholder {
+  color: var(--portal-muted);
+  opacity: 0.85;
+}
+
+.publicPortal textarea.applyField:focus {
+  outline: none;
+  border-color: var(--portal-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--portal-accent) 25%, transparent);
+}
+
+.publicPortal .answerModeBlock--recording textarea.applyField {
+  background: var(--portal-surface-2);
+  border-color: #ef444466;
+  color: var(--portal-text);
+}
+
+.publicPortal .recordingLive {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, #ef4444 12%, var(--portal-surface));
+  border: 1px solid #ef444455;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  color: var(--portal-text);
+}
+
+.publicPortal .recordingLive span {
+  color: var(--portal-text);
+}
+
+.publicPortal .recDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: recPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes recPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.publicPortal .answerModeDivider {
+  text-align: center;
+  color: var(--portal-muted);
+  font-size: 13px;
+  margin: 8px 0 12px;
+}

@@ -1,0 +1,172 @@
+import { v4 as uuid } from 'uuid';
+
+/**
+ * Curated screening question library by department & experience level.
+ * org_id NULL = system library available to all tenants.
+ */
+
+export const POOL_DEPARTMENTS = ['HR', 'Engineering', 'Product', 'Design', 'Sales', 'Operations', 'General'];
+export const POOL_LEVELS = ['Entry', 'Mid', 'Senior', 'Lead', 'All'];
+
+export const SYSTEM_QUESTION_POOL = [
+  // —— HR / Behavioral ——
+  { department: 'HR', experience_level: 'All', category_type: 'Behavioral', name: 'Conflict resolution', priority: 'mandatory', question: 'Describe a time you resolved a conflict between teammates. What was your role and the outcome?', expected_evidence: 'Specific situation, actions taken, measurable result.', keywords: 'conflict,mediate,resolve,team,outcome' },
+  { department: 'HR', experience_level: 'All', category_type: 'Behavioral', name: 'Feedback delivery', priority: 'mandatory', question: 'How do you give difficult feedback while maintaining trust?', expected_evidence: 'Framework, example, empathy, follow-up.', keywords: 'feedback,trust,communication,coach' },
+  { department: 'HR', experience_level: 'Mid', category_type: 'Behavioral', name: 'Culture contribution', priority: 'optional', question: 'How have you shaped team culture or morale in a past role?', expected_evidence: 'Initiatives, behaviors, impact on retention or engagement.', keywords: 'culture,morale,team,engagement' },
+  { department: 'HR', experience_level: 'Senior', category_type: 'Leadership', name: 'Performance management', priority: 'mandatory', question: 'Walk us through how you manage underperformance on your team.', expected_evidence: 'Process, documentation, support plan, results.', keywords: 'performance,PIP,coach,manage' },
+  { department: 'HR', experience_level: 'All', category_type: 'Motivation', name: 'Why this company', priority: 'optional', question: 'What attracts you to our organization and this role specifically?', expected_evidence: 'Research-backed, role-aligned, not generic.', keywords: 'motivation,mission,role,company' },
+
+  // —— Engineering ——
+  { department: 'Engineering', experience_level: 'Entry', category_type: 'Technical', name: 'Fundamentals', priority: 'mandatory', question: 'Explain a technical concept you learned recently and how you applied it.', expected_evidence: 'Clear explanation, learning path, small project or exercise.', keywords: 'learn,apply,concept,code' },
+  { department: 'Engineering', experience_level: 'Entry', category_type: 'Problem Solving', name: 'Debugging approach', priority: 'mandatory', question: 'Describe how you debugged a bug end-to-end. What tools and steps did you use?', expected_evidence: 'Reproduce, isolate, fix, test, prevent recurrence.', keywords: 'debug,log,test,fix' },
+  { department: 'Engineering', experience_level: 'Mid', category_type: 'Technical', name: 'API design', priority: 'mandatory', question: 'How do you design REST or GraphQL APIs for reliability and versioning?', expected_evidence: 'Contracts, errors, idempotency, observability.', keywords: 'API,REST,GraphQL,versioning,design' },
+  { department: 'Engineering', experience_level: 'Mid', category_type: 'Technical', name: 'System design basics', priority: 'mandatory', question: 'Design a simplified version of a system you have worked on (API, data store, scaling).', expected_evidence: 'Components, trade-offs, bottlenecks, monitoring.', keywords: 'design,API,scale,trade-off' },
+  { department: 'Engineering', experience_level: 'Mid', category_type: 'Problem Solving', name: 'Production bug', priority: 'mandatory', question: 'Describe a production bug you diagnosed and fixed. What was your debugging process?', expected_evidence: 'Reproduce, logs, root cause, fix, prevention.', keywords: 'debug,production,RCA,fix' },
+  { department: 'Engineering', experience_level: 'Mid', category_type: 'Communication', name: 'Technical explanation', priority: 'optional', question: 'Explain a technical concept to a non-technical stakeholder. What approach did you use?', expected_evidence: 'Analogies, outcomes, no jargon overload.', keywords: 'communicate,stakeholder,explain' },
+  { department: 'Engineering', experience_level: 'Mid', category_type: 'Project Experience', name: 'Owned feature', priority: 'mandatory', question: 'Tell us about a feature you owned from design through production.', expected_evidence: 'Requirements, implementation, rollout, metrics.', keywords: 'owned,shipped,feature,production' },
+  { department: 'Engineering', experience_level: 'Senior', category_type: 'Technical', name: 'Architecture decisions', priority: 'mandatory', question: 'Describe a significant architecture decision you drove. What alternatives did you consider?', expected_evidence: 'Context, options, decision criteria, long-term impact.', keywords: 'architecture,decision,trade-off,scale' },
+  { department: 'Engineering', experience_level: 'Senior', category_type: 'Problem Solving', name: 'Incident response', priority: 'mandatory', question: 'Walk through a production incident you led or heavily contributed to resolving.', expected_evidence: 'Timeline, comms, mitigation, postmortem, prevention.', keywords: 'incident,on-call,postmortem,RCA' },
+  { department: 'Engineering', experience_level: 'Senior', category_type: 'Technical', name: 'Kubernetes / cloud', priority: 'optional', question: 'Describe your hands-on experience running workloads in Kubernetes or similar orchestration.', expected_evidence: 'Clusters, deployments, observability, failures handled.', keywords: 'kubernetes,k8s,docker,deploy,cloud' },
+  { department: 'Engineering', experience_level: 'Lead', category_type: 'Leadership', name: 'Tech leadership', priority: 'mandatory', question: 'How do you set technical direction for a team while staying hands-on?', expected_evidence: 'Standards, reviews, mentoring, delivery balance.', keywords: 'lead,mentor,direction,standards' },
+  { department: 'Engineering', experience_level: 'Lead', category_type: 'Project Experience', name: 'Cross-team delivery', priority: 'mandatory', question: 'Describe delivering a large initiative across multiple teams.', expected_evidence: 'Planning, dependencies, alignment, outcomes.', keywords: 'cross-team,delivery,program,align' },
+
+  // —— Product ——
+  { department: 'Product', experience_level: 'Mid', category_type: 'Problem Solving', name: 'Prioritization', priority: 'mandatory', question: 'How do you prioritize a backlog when everything seems urgent?', expected_evidence: 'Framework, stakeholders, data, trade-offs.', keywords: 'prioritize,backlog,roadmap,stakeholder' },
+  { department: 'Product', experience_level: 'Senior', category_type: 'Project Experience', name: 'Product launch', priority: 'mandatory', question: 'Describe a product launch you led and how you measured success.', expected_evidence: 'Discovery, GTM, metrics, iteration.', keywords: 'launch,metrics,GTM,iteration' },
+  { department: 'Product', experience_level: 'All', category_type: 'Communication', name: 'Stakeholder alignment', priority: 'mandatory', question: 'Tell us about aligning engineering and business on a contentious decision.', expected_evidence: 'Facilitation, data, compromise, outcome.', keywords: 'stakeholder,align,trade-off' },
+
+  // —— Design ——
+  { department: 'Design', experience_level: 'Mid', category_type: 'Project Experience', name: 'Design process', priority: 'mandatory', question: 'Walk through your design process for a recent project from research to handoff.', expected_evidence: 'Research, iterations, validation, dev collaboration.', keywords: 'research,prototype,handoff,usability' },
+  { department: 'Design', experience_level: 'Senior', category_type: 'Communication', name: 'Design critique', priority: 'optional', question: 'How do you handle pushback on design decisions from product or engineering?', expected_evidence: 'Evidence, principles, collaboration, outcomes.', keywords: 'critique,feedback,collaborate' },
+
+  // —— Sales ——
+  { department: 'Sales', experience_level: 'Entry', category_type: 'Communication', name: 'Discovery call', priority: 'mandatory', question: 'How do you structure a first discovery call with a new prospect?', expected_evidence: 'Questions, listening, qualification, next steps.', keywords: 'discovery,prospect,qualify,pipeline' },
+  { department: 'Sales', experience_level: 'Senior', category_type: 'Behavioral', name: 'Deal recovery', priority: 'mandatory', question: 'Describe turning around a deal that was at risk of being lost.', expected_evidence: 'Diagnosis, actions, close, lessons.', keywords: 'deal,close,recover,revenue' },
+
+  // —— Operations ——
+  { department: 'Operations', experience_level: 'Mid', category_type: 'Problem Solving', name: 'Process improvement', priority: 'mandatory', question: 'Describe a process you improved and the measurable impact.', expected_evidence: 'Before/after, metrics, tooling, adoption.', keywords: 'process,efficiency,metrics,improve' },
+
+  // —— General (default 10-style) ——
+  { department: 'General', experience_level: 'All', category_type: 'Project Experience', name: 'Role-relevant experience', priority: 'mandatory', question: 'Summarize your professional experience most relevant to this role.', expected_evidence: 'Concrete roles, tenure, domain fit, and scope.', keywords: 'experience,role,responsibilities,scope' },
+  { department: 'General', experience_level: 'All', category_type: 'Project Experience', name: 'Ownership example', priority: 'mandatory', question: 'Describe a project or initiative you personally owned from start to finish.', expected_evidence: 'Clear ownership, actions, constraints, outcome.', keywords: 'owned,led,delivered,shipped' },
+  { department: 'General', experience_level: 'All', category_type: 'Behavioral', name: 'Measurable impact', priority: 'mandatory', question: 'What measurable results did you achieve in your most recent role?', expected_evidence: 'Metrics, percentages, revenue, users, time saved.', keywords: 'metrics,impact,results,growth' },
+  { department: 'General', experience_level: 'All', category_type: 'Communication', name: 'Stakeholder management', priority: 'mandatory', question: 'How do you handle conflicting priorities from multiple stakeholders?', expected_evidence: 'Prioritization framework, communication, trade-offs.', keywords: 'stakeholder,prioritize,align' },
+  { department: 'General', experience_level: 'All', category_type: 'Problem Solving', name: 'Difficult decision', priority: 'mandatory', question: 'Tell us about a difficult decision you made and how you reached it.', expected_evidence: 'Context, options, reasoning, result.', keywords: 'decision,trade-off,analysis' },
+  { department: 'General', experience_level: 'All', category_type: 'Technical', name: 'Skills & tools', priority: 'mandatory', question: 'Describe the skills, tools, or methods you use daily that apply to this role.', expected_evidence: 'Specific tools, depth, seniority fit.', keywords: 'tools,technical,skills,methods' },
+  { department: 'General', experience_level: 'All', category_type: 'Motivation', name: 'Career motivation', priority: 'mandatory', question: 'Why are you interested in this type of role at this point in your career?', expected_evidence: 'Thoughtful, role-specific motivation.', keywords: 'motivation,career,growth' },
+  { department: 'General', experience_level: 'All', category_type: 'Project Experience', name: 'Extra achievement', priority: 'optional', question: 'Share a professional achievement you are proud of that we have not asked about.', expected_evidence: 'Specificity and impact if answered.', keywords: 'achievement,impact,proud' },
+  { department: 'General', experience_level: 'All', category_type: 'Communication', name: 'Collaboration', priority: 'optional', question: 'How do you prefer to work with teammates across different functions?', expected_evidence: 'Cross-functional examples.', keywords: 'collaborate,cross-functional,team' },
+  { department: 'General', experience_level: 'All', category_type: 'General', name: 'Anything else', priority: 'optional', question: 'Is there anything else you would like the hiring team to know?', expected_evidence: 'Relevance and authenticity if provided.', keywords: 'additional,context' },
+];
+
+export function ensureQuestionPool(db, orgId = null) {
+  const count =
+    orgId == null
+      ? db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id IS NULL').get().c
+      : db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id = ?').get(orgId).c;
+  if (count > 0) return count;
+  seedQuestionPool(db, orgId);
+  const after =
+    orgId == null
+      ? db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id IS NULL').get().c
+      : db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id = ?').get(orgId).c;
+  return after;
+}
+
+/** Re-seed system library if empty (e.g. after a bad migration). */
+export function repairQuestionPoolIfEmpty(db) {
+  const systemCount = db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id IS NULL').get().c;
+  if (systemCount === 0) {
+    seedQuestionPool(db, null);
+    return true;
+  }
+  return false;
+}
+
+export function seedQuestionPool(db, orgId = null) {
+  const exists =
+    orgId == null
+      ? db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id IS NULL').get().c
+      : db.prepare('SELECT COUNT(*) as c FROM question_pool WHERE org_id = ?').get(orgId).c;
+  if (exists > 0) return;
+
+  const insert = db.prepare(
+    `INSERT INTO question_pool (id, org_id, department, experience_level, category_type, name, question,
+     expected_evidence, keywords, default_priority, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+
+  SYSTEM_QUESTION_POOL.forEach((q, i) => {
+    insert.run(
+      uuid(),
+      orgId,
+      q.department,
+      q.experience_level,
+      q.category_type,
+      q.name,
+      q.question,
+      q.expected_evidence,
+      q.keywords,
+      q.priority,
+      i
+    );
+  });
+}
+
+export function listQuestionPool(db, { orgId, department, level, search }) {
+  ensureQuestionPool(db, null);
+  const oid = orgId || 'org-demo';
+  let sql = `SELECT * FROM question_pool WHERE (org_id IS NULL OR org_id = ?)`;
+  const params = [oid];
+  if (department && department !== 'All') {
+    sql += ' AND department = ?';
+    params.push(department);
+  }
+  if (level && level !== 'All') {
+    sql += ' AND (experience_level = ? OR experience_level = ?)';
+    params.push(level, 'All');
+  }
+  if (search?.trim()) {
+    sql += ' AND (name LIKE ? OR question LIKE ? OR keywords LIKE ?)';
+    const q = `%${search.trim()}%`;
+    params.push(q, q, q);
+  }
+  sql += ' ORDER BY department, experience_level, sort_order';
+  return db.prepare(sql).all(...params);
+}
+
+/** Build 7 mandatory + 3 optional rubric rows from pool selections (≥10 items). */
+export function poolItemsToRubricCategories(items) {
+  const mandatory = [];
+  const optional = [];
+  for (const i of items) {
+    if (mandatory.length < 7 && i.default_priority !== 'optional') mandatory.push(i);
+  }
+  for (const i of items) {
+    if (mandatory.length < 7 && !mandatory.includes(i)) mandatory.push(i);
+  }
+  for (const i of items) {
+    if (optional.length < 3 && i.default_priority === 'optional' && !mandatory.includes(i)) optional.push(i);
+  }
+  for (const i of items) {
+    if (optional.length < 3 && !mandatory.includes(i) && !optional.includes(i)) optional.push(i);
+  }
+  const ordered = [...mandatory.slice(0, 7), ...optional.slice(0, 3)];
+
+  return ordered.map((q, i) => {
+    const sample = q.ideal_answer || q.expected_evidence || '';
+    return {
+      name: q.name,
+      weight: 10,
+      question: q.question,
+      expected_evidence: sample.slice(0, 280),
+      ideal_answer: sample,
+      category_type: q.category_type || 'General',
+      response_type: 'text',
+      priority: i < 7 ? 'mandatory' : 'optional',
+      max_response_seconds: 300,
+      keywords: q.keywords || '',
+      pool_id: q.id,
+    };
+  });
+}
