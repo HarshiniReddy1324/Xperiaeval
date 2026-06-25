@@ -17,8 +17,15 @@ export function Jobs() {
   const stageFilter = searchParams.get('stage') || '';
   const [jobs, setJobs] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
-  const load = () => api('/jobs').then(setJobs).catch(console.error);
+  const load = () =>
+    api('/jobs')
+      .then((rows) => {
+        setJobs(rows);
+        setLoadError('');
+      })
+      .catch((e) => setLoadError(e.message));
 
   useEffect(() => {
     load();
@@ -62,6 +69,14 @@ export function Jobs() {
           </Button>
         </Link>
       </div>
+      {loadError && (
+        <p className="error" role="alert">
+          {loadError}{' '}
+          <button type="button" className="linkBtn" onClick={load}>
+            Retry
+          </button>
+        </p>
+      )}
       {!filtered.length ? (
         <Card>
           <p className="muted">{stageFilter ? `No positions in "${stageFilter}" stage.` : 'No jobs yet.'}</p>

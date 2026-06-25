@@ -504,13 +504,20 @@ body.sidebarResizing *{cursor:col-resize!important}.brand{display:flex;gap:12px;
 .sectionHead{align-items:center}
 .card>h2{display:flex;align-items:center;gap:8px;line-height:1.25}
 .filters .btn{flex-shrink:0;height:40px}
-.card>h2{display:flex;align-items:center;gap:8px;line-height:1.25}
+.linkBtn{background:none;border:none;padding:0;color:#4f46e5;font-weight:700;cursor:pointer;text-decoration:underline}
+.linkBtn:focus-visible{outline:2px solid #6366f1;outline-offset:2px}
 @media print{
-  .sidebar,.noPrint,.tabs,.pipelineBar,.candidateHero .backLink,.toast{display:none!important}
+  .sidebar,.portalSidebar,.portalTopBar,.portalMenuBtn,.portalNavBackdrop,.noPrint,.tabs,.pipelineBar,.candidateHero .backLink,.toast{display:none!important}
+  .portalMain{margin-left:0!important;width:100%!important;padding:0!important}
   main{padding:0!important}
   .scorecardPrintPage{max-width:100%}
   body{background:#fff}
 }
+@media (prefers-reduced-motion: reduce){
+  .scheduleBadge.awaiting_interviewer,.candidateBadges .scheduleBadge.awaiting_interviewer{animation:none}
+  *{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
+}
+.btn:focus-visible,.portalNav a:focus-visible,.portalThemeBtn:focus-visible,.portalAccountBtn:focus-visible,.portalMenuBtn:focus-visible,.tabs button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #6366f1;outline-offset:2px}
 @media(max-width:900px){.intelRecGrid{grid-template-columns:1fr 1fr}.intelTwoCol{grid-template-columns:1fr}}
 
 /* —— Apply proctoring —— */

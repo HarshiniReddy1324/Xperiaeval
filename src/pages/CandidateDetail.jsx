@@ -157,14 +157,11 @@ export function CandidateDetail() {
       });
       applyPayload(res);
       const url = res.scheduling?.booking_url;
-      showToast(
-        url
-          ? 'Invite created — copy the booking link and send it to the candidate'
-          : res.message || 'Scheduling invite sent'
-      );
       if (url && navigator.clipboard) {
         await navigator.clipboard.writeText(url);
-        showToast('Booking link copied to clipboard — email it to the candidate');
+        showToast('Invite created — booking link copied to clipboard');
+      } else {
+        showToast(url ? 'Invite created — copy the booking link below' : res.message || 'Scheduling invite sent');
       }
     } catch (e) {
       showToast(e.message, 'error');
@@ -486,11 +483,15 @@ export function CandidateDetail() {
         </div>
       </div>
 
-      <div className="tabs">
+      <div className="tabs" role="tablist" aria-label="Candidate profile sections">
         {TABS.map(({ id: tid, label, icon: Icon }) => (
           <button
             key={tid}
             type="button"
+            role="tab"
+            id={`tab-${tid}`}
+            aria-selected={tab === tid}
+            aria-controls={`panel-${tid}`}
             className={tab === tid ? 'active' : ''}
             onClick={() => setTab(tid)}
           >
@@ -502,6 +503,7 @@ export function CandidateDetail() {
       </div>
 
       {tab === 'overview' && (
+        <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
         <>
           <div className={`dashWidget candidateScorecardWidget candidateScorecardWidget--${scoreTone || 'neutral'}`}>
             <div className="widgetHead intelReportHead">
@@ -645,13 +647,23 @@ export function CandidateDetail() {
                 </p>
               )}
               {scheduling.status === 'awaiting_interviewer' && (
-                <div className="row">
-                  <Button onClick={confirmSchedule} disabled={interviewLoading}>
-                    Accept &amp; confirm interview
-                  </Button>
-                  <Button variant="outline" onClick={declineSchedule} disabled={interviewLoading}>
-                    Decline / reschedule
-                  </Button>
+                <div className="scheduleDeclineBlock">
+                  <label htmlFor="decline-reason">Reason for declining (optional)</label>
+                  <textarea
+                    id="decline-reason"
+                    rows={3}
+                    placeholder="e.g. Panel conflict — please pick another slot"
+                    value={declineReason}
+                    onChange={(e) => setDeclineReason(e.target.value)}
+                  />
+                  <div className="row">
+                    <Button onClick={confirmSchedule} disabled={interviewLoading}>
+                      Accept &amp; confirm interview
+                    </Button>
+                    <Button variant="outline" onClick={declineSchedule} disabled={interviewLoading}>
+                      Decline / reschedule
+                    </Button>
+                  </div>
                 </div>
               )}
               {scheduling.status === 'confirmed' && (
@@ -691,9 +703,11 @@ export function CandidateDetail() {
 
           </section>
         </>
+        </div>
       )}
 
       {tab === 'materials' && (
+        <div role="tabpanel" id="panel-materials" aria-labelledby="tab-materials">
         <section className="grid two">
           <Card>
             <h2>
@@ -856,9 +870,11 @@ export function CandidateDetail() {
             </Card>
           )}
         </section>
+        </div>
       )}
 
       {tab === 'review' && (
+        <div role="tabpanel" id="panel-review" aria-labelledby="tab-review">
         <section className="grid two">
           <Card>
             <h2>
@@ -933,9 +949,11 @@ export function CandidateDetail() {
             )}
           </Card>
         </section>
+        </div>
       )}
 
       {tab === 'background' && (
+        <div role="tabpanel" id="panel-background" aria-labelledby="tab-background">
         <Card className="bgCard">
           <h2>
             <ShieldCheck size={22} /> Pre-employment verification
@@ -993,6 +1011,7 @@ export function CandidateDetail() {
             </div>
           )}
         </Card>
+        </div>
       )}
     </div>
   );

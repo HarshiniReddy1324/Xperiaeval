@@ -328,6 +328,13 @@ export function runDataMigrations() {
       .then((m) => m.seedScenarioDemos())
       .catch((e) => console.error('[seed] scenario demos failed:', e.message));
   }
+
+  Promise.resolve()
+    .then(() => import('./ensureDemoPortfolio.js'))
+    .then((m) => m.ensureDemoPortfolio())
+    .then(() => import('./seedPortfolioCandidates.js'))
+    .then((m) => m.enrichPortfolioCandidates({ onlyMissing: true }))
+    .catch((e) => console.error('[seed] demo portfolio failed:', e.message));
 }
 
 export function runMigrations() {

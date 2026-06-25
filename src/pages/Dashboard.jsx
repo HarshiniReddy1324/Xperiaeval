@@ -52,9 +52,17 @@ export function Dashboard() {
     totals: {},
     recommendations: [],
   });
+  const [loadError, setLoadError] = useState('');
+
+  const loadDashboard = () => {
+    setLoadError('');
+    return api(`/dashboard?range=${dateRange}`)
+      .then(setData)
+      .catch((e) => setLoadError(e.message));
+  };
 
   useEffect(() => {
-    api(`/dashboard?range=${dateRange}`).then(setData).catch(console.error);
+    loadDashboard();
   }, [dateRange]);
 
   const { analytics = {}, jobTable = [], kpiCards = [], screening = {}, recommendations = [] } = data;
@@ -122,8 +130,18 @@ export function Dashboard() {
         </div>
       </header>
 
+      {loadError && (
+        <p className="error dashLoadError" role="alert">
+          {loadError}{' '}
+          <button type="button" className="linkBtn" onClick={loadDashboard}>
+            Retry
+          </button>
+        </p>
+      )}
+
       <section className="kpiGrid">
-        {kpiCards.map((kpi) => {
+        {kpiCards.length > 0 ? (
+          kpiCards.map((kpi) => {
           const Icon = KPI_ICONS[kpi.tone] || Target;
           return (
             <button
@@ -134,7 +152,7 @@ export function Dashboard() {
               title={`Open ${kpi.label}`}
             >
               <div>
-                <label>{kpi.label}</label>
+                <span className="kpiLabel">{kpi.label}</span>
                 <strong>{kpi.value}</strong>
                 <small>{kpi.sub}</small>
               </div>
@@ -143,7 +161,17 @@ export function Dashboard() {
               </div>
             </button>
           );
-        })}
+        })
+        ) : (
+          !loadError && (
+            <div className="kpiEmpty card">
+              <p className="muted">No hiring activity in this date range yet.</p>
+              <Link to="/jobs/new" className="btn">
+                <Plus size={14} /> Create a position
+              </Link>
+            </div>
+          )
+        )}
       </section>
 
       <section className="dashRow3">

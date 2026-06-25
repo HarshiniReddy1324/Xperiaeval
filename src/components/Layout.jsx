@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Briefcase,
   ClipboardList,
+  HelpCircle,
   LayoutDashboard,
+  Menu,
   Moon,
   Settings,
   ShieldCheck,
   Sun,
+  Trash2,
   UserCheck,
   Users,
   Video,
@@ -38,6 +41,8 @@ const PORTAL_NAV = [
   },
   { path: '/reports', label: 'Analytics', icon: BarChart3, match: (p) => p.startsWith('/reports') },
   { path: '/integrations', label: 'Integrations', icon: ShieldCheck, match: (p) => p.startsWith('/integrations') },
+  { path: '/trash', label: 'Trash', icon: Trash2, match: (p) => p.startsWith('/trash') },
+  { path: '/help', label: 'Help', icon: HelpCircle, match: (p) => p.startsWith('/help') },
   { path: '/settings', label: 'Settings', icon: Settings, match: (p) => p.startsWith('/settings') },
 ];
 
@@ -62,12 +67,29 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const role = user?.role || 'Hiring Manager';
+  const [navOpen, setNavOpen] = useState(false);
 
-  const visibleNav = PORTAL_NAV.filter((item) => canAccess(role, item.path.split('?')[0]));
+  const filterNav = (items) => items.filter((item) => canAccess(role, item.path.split('?')[0]));
+  const visibleNav = filterNav(PORTAL_NAV);
+
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.pathname, location.search]);
 
   return (
     <div className="portalApp">
-      <aside className="portalSidebar">
+      <a href="#main-content" className="skipLink">
+        Skip to main content
+      </a>
+      {navOpen && (
+        <button
+          type="button"
+          className="portalNavBackdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setNavOpen(false)}
+        />
+      )}
+      <aside className={`portalSidebar${navOpen ? ' open' : ''}`} aria-label="Sidebar">
         <div className="portalBrand">
           <div className="portalBrandLogo">
             <X size={18} />
@@ -76,6 +98,14 @@ export function Layout() {
             <b>XPERIEVAL</b>
             <span>Experience Evaluation</span>
           </div>
+          <button
+            type="button"
+            className="portalNavClose"
+            aria-label="Close navigation menu"
+            onClick={() => setNavOpen(false)}
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <div className="portalNavWrap">
@@ -101,9 +131,9 @@ export function Layout() {
           <div className="portalPlan">
             <label>Plan</label>
             <strong>Enterprise</strong>
-            <small>Valid until Dec 31, 2025</small>
+            <small>Full platform access</small>
             <NavLink to="/settings" className="portalPlanLink">
-              Upgrade Plan
+              Account settings
             </NavLink>
           </div>
 
@@ -115,7 +145,7 @@ export function Layout() {
             </div>
           </div>
 
-          <button type="button" className="portalThemeBtn" onClick={toggleTheme}>
+          <button type="button" className="portalThemeBtn" onClick={toggleTheme} aria-label="Toggle color theme">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
@@ -124,12 +154,28 @@ export function Layout() {
 
       <div className="portalMain">
         <div className="portalTopBar">
-          <button type="button" className="portalAccountBtn" onClick={() => navigate('/settings')}>
+          <button
+            type="button"
+            className="portalMenuBtn"
+            aria-label="Open navigation menu"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((v) => !v)}
+          >
+            <Menu size={20} />
+          </button>
+          <button
+            type="button"
+            className="portalAccountBtn"
+            aria-label="Open account settings"
+            onClick={() => navigate('/settings')}
+          >
             {initials(user?.name)}
           </button>
           <NotificationBell />
         </div>
-        <Outlet />
+        <main id="main-content">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

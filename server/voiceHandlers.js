@@ -1,12 +1,9 @@
 import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import { v4 as uuid } from 'uuid';
 import { db } from './db.js';
+import { uploadsDir } from './paths.js';
 import { fingerprintAudio, fingerprintFromStored, compareFingerprints } from './voiceVerification.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const uploadsDir = join(__dirname, '..', 'uploads');
 
 function resolveUploadPath(mediaPath) {
   if (!mediaPath) return null;

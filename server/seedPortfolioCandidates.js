@@ -4,10 +4,12 @@
  */
 
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { v4 as uuid } from 'uuid';
 import { db } from './db.js';
+import { uploadsDir } from './paths.js';
+import { DEMO_PORTFOLIO_CANDIDATES } from './demoPortfolioData.js';
 import { PORTFOLIO_RESUMES } from './demoPortfolioResumes.js';
 import {
   getPortfolioAnswers,
@@ -22,35 +24,24 @@ import { scoreApplication } from './scoring.js';
 import { parsePostingJson } from './jobPosting.js';
 import { thresholdsFromJob } from './scoringThresholds.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const uploadsDir = join(__dirname, '..', 'uploads', 'resumes');
-if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+const resumeUploadsDir = join(uploadsDir, 'resumes');
+if (!existsSync(resumeUploadsDir)) mkdirSync(resumeUploadsDir, { recursive: true });
 
-const CANDIDATES = [
-  { id: 'APP-INT-1001', jobId: 'JOB-INTERN-001', name: 'Aarav Mehta', email: 'aarav.mehta@example.com', phone: '512-555-0101', source: 'Campus Referral', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-INT-1002', jobId: 'JOB-INTERN-001', name: 'Nora Fields', email: 'nora.fields@example.com', phone: '512-555-0102', source: 'Direct Apply', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-INT-1003', jobId: 'JOB-INTERN-001', name: 'Ethan Cole', email: 'ethan.cole@example.com', phone: '512-555-0103', source: 'Job Board', pipeline: 'application_review', quality: 'weak' },
-  { id: 'APP-ASC-2001', jobId: 'JOB-ASSOC-001', name: 'Elena Vasquez', email: 'elena.vasquez@example.com', phone: '773-555-0201', source: 'Direct Apply', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-ASC-2002', jobId: 'JOB-ASSOC-001', name: 'Jordan Rivera', email: 'jordan.rivera@example.com', phone: '773-555-0202', source: 'University Career Fair', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-ASC-2003', jobId: 'JOB-ASSOC-001', name: 'Mina Patel', email: 'mina.patel@example.com', phone: '773-555-0203', source: 'External Recruiter', pipeline: 'application_review', quality: 'weak' },
-  { id: 'APP-MID-3001', jobId: 'JOB-MID-001', name: 'Sofia Nguyen', email: 'sofia.nguyen@example.com', phone: '646-555-0301', source: 'LinkedIn', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-MID-3002', jobId: 'JOB-MID-001', name: 'Caleb Morris', email: 'caleb.morris@example.com', phone: '646-555-0302', source: 'Direct Apply', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-MID-3003', jobId: 'JOB-MID-001', name: 'Liam Torres', email: 'liam.torres@example.com', phone: '646-555-0303', source: 'Job Board', pipeline: 'application_review', quality: 'weak' },
-  { id: 'APP-SNR-4001', jobId: 'JOB-SENIOR-001', name: 'Priya Sharma', email: 'priya.sharma@example.com', phone: '212-555-0401', source: 'LinkedIn', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-SNR-4002', jobId: 'JOB-SENIOR-001', name: 'Marcus Chen', email: 'marcus.chen@example.com', phone: '212-555-0402', source: 'Employee Referral', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-SNR-4003', jobId: 'JOB-SENIOR-001', name: 'Olivia Grant', email: 'olivia.grant@example.com', phone: '212-555-0403', source: 'Agency', pipeline: 'application_review', quality: 'weak' },
-  { id: 'APP-STF-5001', jobId: 'JOB-STAFF-001', name: 'Daniel Okafor', email: 'daniel.okafor@example.com', phone: '206-555-0501', source: 'LinkedIn', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-STF-5002', jobId: 'JOB-STAFF-001', name: 'Grace Kim', email: 'grace.kim@example.com', phone: '206-555-0502', source: 'Direct Apply', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-STF-5003', jobId: 'JOB-STAFF-001', name: 'Noah Bennett', email: 'noah.bennett@example.com', phone: '206-555-0503', source: 'Job Board', pipeline: 'application_review', quality: 'weak' },
-  { id: 'APP-DIR-6001', jobId: 'JOB-DIRECTOR-001', name: 'Vanessa Brooks', email: 'vanessa.brooks@example.com', phone: '415-555-0601', source: 'Executive Search', pipeline: 'application_review', quality: 'strong' },
-  { id: 'APP-DIR-6002', jobId: 'JOB-DIRECTOR-001', name: 'Henry Walsh', email: 'henry.walsh@example.com', phone: '415-555-0602', source: 'Referral', pipeline: 'application_review', quality: 'average' },
-  { id: 'APP-DIR-6003', jobId: 'JOB-DIRECTOR-001', name: 'Chloe Diaz', email: 'chloe.diaz@example.com', phone: '415-555-0603', source: 'Job Board', pipeline: 'application_review', quality: 'weak' },
-];
+const CANDIDATES = DEMO_PORTFOLIO_CANDIDATES.map((c) => ({
+  id: c.id,
+  jobId: c.jobId,
+  name: c.name,
+  email: c.email,
+  phone: c.phone,
+  source: c.source,
+  pipeline: c.pipeline || 'application_review',
+  quality: c.quality,
+}));
 
 function writeResumeFile(candidateId, name, resumeText) {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const filename = `${slug}-${candidateId.toLowerCase()}-resume.md`;
-  const diskPath = join(uploadsDir, filename);
+  const diskPath = join(resumeUploadsDir, filename);
   writeFileSync(diskPath, resumeText, 'utf8');
   return `/uploads/resumes/${filename}`;
 }
@@ -258,8 +249,8 @@ function clearPortfolioCandidates() {
   }
 }
 
-async function seedPortfolioCandidates() {
-  clearPortfolioCandidates();
+async function seedPortfolioCandidates({ clearFirst = true } = {}) {
+  if (clearFirst) clearPortfolioCandidates();
 
   const results = [];
   for (const candidate of CANDIDATES) {
@@ -308,7 +299,60 @@ async function seedPortfolioCandidates() {
   return results;
 }
 
-seedPortfolioCandidates().catch((e) => {
-  console.error('[seed] Failed:', e);
-  process.exit(1);
-});
+/** Add resume files + intelligence reports for portfolio candidates (idempotent). */
+export async function enrichPortfolioCandidates({ onlyMissing = true } = {}) {
+  const results = [];
+  for (const candidate of CANDIDATES) {
+    const app = db.prepare('SELECT id, resume_path FROM applications WHERE id = ? AND deleted_at IS NULL').get(candidate.id);
+    if (!app) continue;
+
+    const scoreRow = db
+      .prepare('SELECT intelligence_json FROM scores WHERE application_id = ?')
+      .get(candidate.id);
+    if (onlyMissing && app.resume_path && scoreRow?.intelligence_json) continue;
+
+    const job = db.prepare('SELECT * FROM jobs WHERE id = ? AND deleted_at IS NULL').get(candidate.jobId);
+    if (!job) continue;
+
+    const rubric = db
+      .prepare(
+        `SELECT id FROM rubric_versions WHERE job_id = ? AND status = 'approved' ORDER BY version DESC LIMIT 1`
+      )
+      .get(candidate.jobId);
+    const rubricId =
+      rubric?.id ||
+      db.prepare(`SELECT id FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1`).get(candidate.jobId)?.id;
+    if (!rubricId) continue;
+
+    const categories = db
+      .prepare('SELECT * FROM rubric_categories WHERE rubric_version_id = ? ORDER BY sort_order')
+      .all(rubricId);
+
+    db.prepare('DELETE FROM scores WHERE application_id = ?').run(candidate.id);
+    db.prepare('DELETE FROM answers WHERE application_id = ?').run(candidate.id);
+    db.prepare('DELETE FROM applications WHERE id = ?').run(candidate.id);
+
+    insertCandidate(candidate, job, rubricId, categories);
+    const scored = await scoreApplicationFull(candidate.id);
+    results.push({
+      id: candidate.id,
+      name: candidate.name,
+      job: job.title,
+      bucket: scored.bucket,
+      overall: scored.overall,
+    });
+  }
+
+  if (results.length) {
+    console.log(`[seed] Portfolio enriched: ${results.length} candidate(s)`);
+  }
+  return results;
+}
+
+const isCli = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (isCli) {
+  seedPortfolioCandidates().catch((e) => {
+    console.error('[seed] Failed:', e);
+    process.exit(1);
+  });
+}

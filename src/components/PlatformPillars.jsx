@@ -37,7 +37,7 @@ const PILLARS = [
       { name: 'AI-generated response detection', status: 'live' },
       { name: 'Voice verification', status: 'live' },
       { name: 'Full-screen & browser lockdown', status: 'live' },
-      { name: 'Camera-based proctoring', status: 'planned' },
+      { name: 'Camera-based presence monitoring', status: 'live' },
     ],
   },
   {

@@ -366,7 +366,7 @@ export function Help() {
       <Card id="trash">
         <h2>Trash &amp; recovery</h2>
         <p>
-          Deleting a job or candidate moves it to <strong>Trash</strong> (sidebar, below Help). Restore from Trash or
+          Deleting a job or candidate moves it to <strong>Trash</strong> in the sidebar. Restore from Trash or
           permanently delete from there.
         </p>
       </Card>

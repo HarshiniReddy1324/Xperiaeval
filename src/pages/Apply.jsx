@@ -61,8 +61,7 @@ export function Apply() {
       if (data.requiresFollowUp) setStep('followup');
       else goToScreening();
     } catch (e) {
-      setError(e.message);
-      goToScreening();
+      setError(e.message || 'Fit preview failed. You can still continue without resume analysis.');
     } finally {
       setFitLoading(false);
     }
@@ -281,7 +280,18 @@ export function Apply() {
   }
 
   const stepIndex =
-    step === 'profile' ? 0 : step === 'camera' ? 1 : step === 'screening' ? (needsCamera ? 2 : 1) : needsCamera ? 3 : 2;
+    step === 'profile'
+      ? 0
+      : step === 'followup'
+        ? 1
+        : step === 'camera'
+          ? (followUpQuestions.length > 0 ? 2 : 1)
+          : step === 'screening'
+            ? (followUpQuestions.length > 0 ? (needsCamera ? 3 : 2) : needsCamera ? 2 : 1)
+            : step === 'review'
+              ? (followUpQuestions.length > 0 ? (needsCamera ? 4 : 3) : needsCamera ? 3 : 2)
+              : 0;
+  const showFollowUpStep = followUpQuestions.length > 0 || step === 'followup';
   const proctoredActive = (step === 'screening' || step === 'camera') && proctoringPolicy.enabled;
 
   return (
@@ -305,18 +315,27 @@ export function Apply() {
           <h1>{job.title}</h1>
           <p className="muted">{candidateNotice}</p>
           <div className="applyProgress">
-            <span className={stepIndex === 0 ? 'active' : stepIndex > 0 ? 'done' : ''}>Your info</span>
+            <span className={step === 'profile' ? 'active' : stepIndex > 0 ? 'done' : ''}>Your info</span>
+            {showFollowUpStep && (
+              <span className={step === 'followup' ? 'active' : stepIndex > 1 ? 'done' : ''}>Follow-up</span>
+            )}
             {needsCamera && (
-              <span className={step === 'camera' ? 'active' : stepIndex > 1 ? 'done' : ''}>Camera consent</span>
+              <span className={step === 'camera' ? 'active' : stepIndex > (showFollowUpStep ? 2 : 1) ? 'done' : ''}>
+                Camera consent
+              </span>
             )}
             <span
               className={
-                step === 'screening' ? 'active' : (needsCamera ? stepIndex > 2 : stepIndex > 1) ? 'done' : ''
+                step === 'screening'
+                  ? 'active'
+                  : step === 'review' || step === 'done'
+                    ? 'done'
+                    : ''
               }
             >
               Questions ({mandatoryCount} required)
             </span>
-            <span className={step === 'review' ? 'active' : ''}>Submit</span>
+            <span className={step === 'review' ? 'active' : step === 'done' ? 'done' : ''}>Submit</span>
           </div>
         </div>
 
@@ -340,11 +359,21 @@ export function Apply() {
               <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               <label>Resume (PDF, DOCX, or TXT)</label>
               <input type="file" accept=".pdf,.doc,.docx,.txt,.md" onChange={(e) => setResume(e.target.files[0])} />
+              {error && (
+                <p className="error" role="alert" style={{ marginTop: 12 }}>
+                  {error}
+                </p>
+              )}
               <div className="row" style={{ marginTop: 24 }}>
                 <Button type="submit" disabled={fitLoading}>
                   {fitLoading ? 'Checking fit…' : 'Continue'}
                   {!fitLoading && <ChevronRight size={16} />}
                 </Button>
+                {error && (
+                  <Button type="button" variant="outline" onClick={goToScreening}>
+                    Skip and continue
+                  </Button>
+                )}
               </div>
             </form>
           </div>

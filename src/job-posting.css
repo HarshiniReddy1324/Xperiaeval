@@ -49,3 +49,11 @@
 @media (max-width: 768px) { .jp-mobileApply { display: inline-block; } }
 .jp-loading .spin { animation: jpSpin 1s linear infinite; color: #94a3b8; }
 @keyframes jpSpin { to { transform: rotate(360deg); } }
+
+[data-theme='dark'] .jp-page { background: #0b1120; color: #f1f5f9; }
+[data-theme='dark'] .jp-nav { background: #111827; border-bottom-color: #1e293b; }
+[data-theme='dark'] .jp-card { background: #111827; border-color: #1e293b; color: #e2e8f0; }
+[data-theme='dark'] .jp-card p { color: #94a3b8; }
+[data-theme='dark'] .jp-tag,
+[data-theme='dark'] .jp-chip { background: #1e293b; color: #cbd5e1; }
+[data-theme='dark'] .jp-error a { color: #93c5fd; }

@@ -199,7 +199,9 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
                 <div className="intelQHead">
                   <span className="intelQNum">Q{i + 1}</span>
                   <span className="intelQType">{q.category_type}</span>
-                  <strong className="intelQScore">{q.questionScore}/100</strong>
+                  <strong className="intelQScore" title="Composite intelligence score (0–100)">
+                    {q.questionScore ?? '—'}
+                  </strong>
                 </div>
                 <p className="intelQText">{q.question}</p>
                 <div className="intelQDims">

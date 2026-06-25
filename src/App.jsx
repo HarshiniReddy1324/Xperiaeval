@@ -22,6 +22,7 @@ import { Integrations } from './pages/Integrations';
 import { Trash } from './pages/Trash';
 import { CandidateCompare } from './pages/CandidateCompare';
 import { CandidateScorecard } from './pages/CandidateScorecard';
+import { NotFound } from './pages/NotFound';
 
 function PrivateRoute({ children }) {
   const { user, loading, authError } = useAuth();
@@ -76,7 +77,7 @@ export function App() {
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
         </BrowserRouter>
       </AuthProvider>

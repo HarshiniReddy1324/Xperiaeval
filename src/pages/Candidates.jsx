@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams, useLocation } from 'react-router-dom';
-import { Eye, UserCheck, Trash2, GitCompare } from 'lucide-react';
+import { Eye, Trash2, GitCompare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { Button, Card, BucketBadge } from '../components/ui';
@@ -33,8 +33,9 @@ const SCHEDULE_LABELS = {
 export function Candidates() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [compareIds, setCompareIds] = useState([]);
+  const [compareError, setCompareError] = useState('');
   const jobId = searchParams.get('jobId');
   const screeningFilter = searchParams.get('screening');
   const bucketFilter = searchParams.get('bucket');
@@ -43,26 +44,28 @@ export function Candidates() {
   const hiddenGemFilter = searchParams.get('hiddenGem');
   const [candidates, setCandidates] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [filterJob, setFilterJob] = useState(jobId || '');
-  const [filterBucket, setFilterBucket] = useState(bucketFilter || '');
-  const [filterPipeline, setFilterPipeline] = useState(pipelineFilter || '');
-  const [filterScreening, setFilterScreening] = useState(screeningFilter || '');
-  const [filterIntegrity, setFilterIntegrity] = useState(integrityFilter || '');
-  const [filterHiddenGem, setFilterHiddenGem] = useState(hiddenGemFilter || '');
+  const [loadError, setLoadError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
 
-  useEffect(() => {
-    api('/jobs').then(setJobs).catch(console.error);
-  }, []);
+  const filterJob = jobId || '';
+  const filterBucket = bucketFilter || '';
+  const filterPipeline = pipelineFilter || '';
+  const filterScreening = screeningFilter || '';
+  const filterIntegrity = integrityFilter || '';
+  const filterHiddenGem = hiddenGemFilter || '';
+
+  const updateFilters = (patch) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(patch).forEach(([key, value]) => {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    });
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
-    setFilterJob(searchParams.get('jobId') || '');
-    setFilterBucket(searchParams.get('bucket') || '');
-    setFilterPipeline(searchParams.get('pipeline') || '');
-    setFilterScreening(searchParams.get('screening') || '');
-    setFilterIntegrity(searchParams.get('integrity') || '');
-    setFilterHiddenGem(searchParams.get('hiddenGem') || '');
-  }, [searchParams]);
+    api('/jobs').then(setJobs).catch((e) => setLoadError(e.message));
+  }, []);
 
   const loadCandidates = useCallback(() => {
     const q = new URLSearchParams();
@@ -72,23 +75,39 @@ export function Candidates() {
     if (filterScreening) q.set('screening', filterScreening);
     if (filterIntegrity) q.set('integrity', filterIntegrity);
     if (filterHiddenGem) q.set('hiddenGem', filterHiddenGem);
-    return api(`/applications?${q}`).then(setCandidates).catch(console.error);
+    return api(`/applications?${q}`).then(setCandidates).catch((e) => setLoadError(e.message));
   }, [filterJob, filterBucket, filterPipeline, filterScreening, filterIntegrity, filterHiddenGem]);
 
   useEffect(() => {
+    setLoadError('');
     loadCandidates();
   }, [loadCandidates, location.pathname, location.key]);
 
   const toggleCompare = (id) => {
+    setCompareError('');
+    const candidate = candidates.find((c) => c.id === id);
     setCompareIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 2) return [prev[1], id];
+      if (prev.length === 1 && candidate?.job_id) {
+        const first = candidates.find((c) => c.id === prev[0]);
+        if (first?.job_id && first.job_id !== candidate.job_id) {
+          setCompareError('Select candidates from the same job to compare.');
+          return prev;
+        }
+      }
       return [...prev, id];
     });
   };
 
   const startCompare = () => {
     if (compareIds.length < 2) return;
+    const selected = candidates.filter((c) => compareIds.includes(c.id));
+    const jobIds = new Set(selected.map((c) => c.job_id).filter(Boolean));
+    if (jobIds.size > 1) {
+      setCompareError('Select candidates from the same job to compare.');
+      return;
+    }
     navigate(`/candidates/compare?ids=${compareIds.join(',')}`);
   };
 
@@ -112,6 +131,14 @@ export function Candidates() {
         <p>Applications ranked by score (0–100) and bucket — Green, Amber, or Red. Open a candidate for full answers and integrity signals.</p>
       </div>
       <Card>
+        {loadError && (
+          <p className="error" role="alert">
+            {loadError}{' '}
+            <button type="button" className="linkBtn" onClick={loadCandidates}>
+              Retry
+            </button>
+          </p>
+        )}
         <div className="screeningChipRow">
           {SCREENING_CHIPS.map((chip) => {
             const active = filterScreening === chip.key;
@@ -155,7 +182,11 @@ export function Candidates() {
           })}
         </div>
         <div className="filters">
-          <select value={filterJob} onChange={(e) => setFilterJob(e.target.value)}>
+          <select
+            value={filterJob}
+            aria-label="Filter by job"
+            onChange={(e) => updateFilters({ jobId: e.target.value })}
+          >
             <option value="">All jobs</option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>
@@ -163,13 +194,21 @@ export function Candidates() {
               </option>
             ))}
           </select>
-          <select value={filterBucket} onChange={(e) => setFilterBucket(e.target.value)}>
-            <option value="">All app buckets</option>
-            <option value="Green">Green (app)</option>
-            <option value="Amber">Amber (app)</option>
-            <option value="Red">Red (app)</option>
+          <select
+            value={filterBucket}
+            aria-label="Filter by application bucket"
+            onChange={(e) => updateFilters({ bucket: e.target.value })}
+          >
+            <option value="">All buckets</option>
+            <option value="Green">Green</option>
+            <option value="Amber">Amber</option>
+            <option value="Red">Red</option>
           </select>
-          <select value={filterPipeline} onChange={(e) => setFilterPipeline(e.target.value)}>
+          <select
+            value={filterPipeline}
+            aria-label="Filter by pipeline stage"
+            onChange={(e) => updateFilters({ pipeline: e.target.value })}
+          >
             <option value="">All pipeline stages</option>
             {Object.entries(PIPELINE_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
@@ -177,45 +216,55 @@ export function Candidates() {
               </option>
             ))}
           </select>
-          <select value={filterScreening} onChange={(e) => setFilterScreening(e.target.value)}>
+          <select
+            value={filterScreening}
+            aria-label="Filter by screening status"
+            onChange={(e) => updateFilters({ screening: e.target.value })}
+          >
             <option value="">All screening status</option>
             <option value="complete">Complete</option>
             <option value="incomplete">Incomplete Applications</option>
             <option value="ai_used">AI Used</option>
           </select>
-          <select value={filterIntegrity} onChange={(e) => setFilterIntegrity(e.target.value)}>
+          <select
+            value={filterIntegrity}
+            aria-label="Filter by integrity"
+            onChange={(e) => updateFilters({ integrity: e.target.value })}
+          >
             <option value="">All integrity</option>
             <option value="flagged">Integrity flagged</option>
           </select>
-          <Button>
-            <UserCheck size={16} /> Assign review
-          </Button>
           <Button variant="outline" disabled={compareIds.length < 2} onClick={startCompare}>
             <GitCompare size={16} /> Compare ({compareIds.length}/2)
           </Button>
         </div>
-        {compareIds.length > 0 && (
-          <p className="muted compareHint">
-            Select two candidates for the same job, then Compare. {compareIds.length < 2 ? 'Pick one more.' : 'Ready.'}
+        {(compareIds.length > 0 || compareError) && (
+          <p className={`muted compareHint${compareError ? ' error' : ''}`}>
+            {compareError || (
+              <>
+                Select two candidates for the same job, then Compare.{' '}
+                {compareIds.length < 2 ? 'Pick one more.' : 'Ready.'}
+              </>
+            )}
           </p>
         )}
         <div className="tableScrollWrap">
         <table>
           <thead>
             <tr>
-              <th></th>
-              <th>Candidate</th>
-              <th>Score /100</th>
-              <th>Recommendation</th>
-              <th>Bucket</th>
-              <th>Schedule</th>
-              <th>Screening</th>
-              <th>Completion</th>
-              <th>Pipeline</th>
-              <th>Source</th>
-              <th>Authenticity</th>
-              <th>Job</th>
-              <th></th>
+              <th scope="col" aria-label="Compare" />
+              <th scope="col">Candidate</th>
+              <th scope="col">Score /100</th>
+              <th scope="col">Recommendation</th>
+              <th scope="col">Bucket</th>
+              <th scope="col">Schedule</th>
+              <th scope="col">Screening</th>
+              <th scope="col">Completion</th>
+              <th scope="col">Pipeline</th>
+              <th scope="col">Source</th>
+              <th scope="col">Authenticity</th>
+              <th scope="col">Job</th>
+              <th scope="col" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -226,7 +275,7 @@ export function Candidates() {
                     type="checkbox"
                     checked={compareIds.includes(c.id)}
                     onChange={() => toggleCompare(c.id)}
-                    title="Add to comparison"
+                    aria-label={`Add ${c.name} to comparison`}
                   />
                 </td>
                 <td>
@@ -284,7 +333,7 @@ export function Candidates() {
                       className="small danger"
                       disabled={deletingId === c.id}
                       onClick={() => removeCandidate(c)}
-                      title="Move to trash"
+                      aria-label={`Move ${c.name} to trash`}
                     >
                       <Trash2 size={14} />
                     </Button>

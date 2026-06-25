@@ -39,6 +39,7 @@ import { buildHiddenGemAssessment } from './hiddenGem.js';
 import { buildIntegritySignals } from './integritySignals.js';
 import { buildBehavioralSignals } from './behavioralSignals.js';
 import { buildExperienceFit } from './experienceFit.js';
+import { buildFollowUpQuestions } from './followUpQuestions.js';
 import { enrichAnswersWithTiming } from './responseTiming.js';
 import { analyzeEnvironmentSignals } from './environmentSignals.js';
 import { analyzeMultiVoice } from './multiVoiceDetection.js';
@@ -1546,6 +1547,7 @@ app.get('/api/applications', authMiddleware, (req, res) => {
   let sql = `SELECT a.id, a.name, a.email, a.source, a.status, a.pipeline_stage, a.created_at,
       a.authenticity_score, a.authenticity_verdict, a.screening_status, a.screening_category,
       a.completion_pct, a.anonymized_code, a.identity_revealed, a.recommendation, a.hidden_gem,
+      a.job_id,
       s.overall as application_score, s.bucket as application_bucket,
       s.recommendation, s.confidence_level, s.tier,
       i.overall as interview_score, i.bucket as interview_bucket, i.status as interview_status,
@@ -1635,9 +1637,13 @@ app.get('/api/applications/compare', authMiddleware, (req, res) => {
     });
   }
   if (candidates.length < 2) return res.status(404).json({ error: 'Could not load enough candidates' });
-  const jobId = db
-    .prepare(`SELECT job_id FROM applications WHERE id = ?`)
-    .get(candidates[0].id)?.job_id;
+  const jobIds = new Set(
+    candidates.map((c) => db.prepare('SELECT job_id FROM applications WHERE id = ?').get(c.id)?.job_id).filter(Boolean)
+  );
+  if (jobIds.size > 1) {
+    return res.status(400).json({ error: 'Compare candidates from the same job only.' });
+  }
+  const jobId = [...jobIds][0];
   res.json({ candidates, job_id: jobId, org_dei_mode: isDeiBlindMode(orgRow) });
 });
 

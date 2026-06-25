@@ -8,7 +8,8 @@
   color: #f1f5f9;
 }
 
-[data-theme='dark'] .sidebar {
+[data-theme='dark'] .sidebar,
+[data-theme='dark'] .portalSidebar {
   background: #1e293b;
   border-right-color: #334155;
 }
@@ -22,12 +23,15 @@
   background: #334155;
 }
 
-[data-theme='dark'] .sidebar nav a {
+[data-theme='dark'] .sidebar nav a,
+[data-theme='dark'] .portalNav a {
   color: #94a3b8;
 }
 
 [data-theme='dark'] .sidebar nav a.active,
-[data-theme='dark'] .sidebar nav a:hover {
+[data-theme='dark'] .sidebar nav a:hover,
+[data-theme='dark'] .portalNav a.active,
+[data-theme='dark'] .portalNav a:hover {
   background: #0f172a;
   color: #f1f5f9;
 }

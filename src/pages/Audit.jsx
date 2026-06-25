@@ -5,9 +5,18 @@ import { Card } from '../components/ui';
 
 export function Audit() {
   const [events, setEvents] = useState([]);
+  const [loadError, setLoadError] = useState('');
+
+  const load = () =>
+    api('/audit')
+      .then((rows) => {
+        setEvents(rows);
+        setLoadError('');
+      })
+      .catch((e) => setLoadError(e.message));
 
   useEffect(() => {
-    api('/audit').then(setEvents).catch(console.error);
+    load();
   }, []);
 
   return (
@@ -17,6 +26,14 @@ export function Audit() {
         <p>Every score, view, override, export, and policy version is logged.</p>
       </div>
       <Card>
+        {loadError && (
+          <p className="error" role="alert">
+            {loadError}{' '}
+            <button type="button" className="linkBtn" onClick={load}>
+              Retry
+            </button>
+          </p>
+        )}
         {events.map((e) => (
           <div className="audit" key={e.id}>
             <ShieldCheck size={20} />

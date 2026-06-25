@@ -74,7 +74,7 @@ export function NotificationBell() {
         </div>
       )}
       <div className="notifBell">
-        <button type="button" className="notifBtn" onClick={() => setOpen(!open)} title="Notifications">
+        <button type="button" className="notifBtn" onClick={() => setOpen(!open)} aria-label="Notifications" aria-expanded={open}>
           <Bell size={18} />
           {data.unread > 0 && <span className="notifBadge">{data.unread}</span>}
         </button>

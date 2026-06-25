@@ -58,4 +58,6 @@ See **Help** in the app or `docs/METHODOLOGY.md` for full methodology.
 
 ## Deploy to production
 
-Vercel (UI) + Render (API): see [docs/DEPLOY_VERCEL_RENDER.md](docs/DEPLOY_VERCEL_RENDER.md)
+**$0 long-term:** [Vercel](https://vercel.com) (UI) + [Oracle Always Free](https://www.oracle.com/cloud/free/) (API) — [docs/DEPLOY_VERCEL_ORACLE.md](docs/DEPLOY_VERCEL_ORACLE.md)
+
+**Paid / easier:** Vercel + Render — [docs/DEPLOY_VERCEL_RENDER.md](docs/DEPLOY_VERCEL_RENDER.md)
