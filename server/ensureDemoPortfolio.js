@@ -141,9 +141,9 @@ function buildAnswers(candidate, categories, title) {
 function insertPortfolioData() {
   const insertJob = db.prepare(
     `INSERT OR IGNORE INTO jobs (
-      id, org_id, title, team, location, stage, owner_id, slug, description,
+      id, org_id, title, team, location, stage, position_level, owner_id, slug, description,
       green_threshold, amber_threshold, posting_json, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 80, 60, ?, datetime('now'))`
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 80, 60, ?, datetime('now'))`
   );
   const insertApp = db.prepare(
     `INSERT OR IGNORE INTO applications (
@@ -183,6 +183,7 @@ function insertPortfolioData() {
       job.team,
       job.location,
       job.stage,
+      job.position_level || 'entry',
       ADMIN_ID,
       slug,
       `Join Xperieval as a ${job.title} and help improve quality and speed of talent decisions.`,

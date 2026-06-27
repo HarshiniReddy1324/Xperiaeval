@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
@@ -21,12 +21,12 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { canAccess } from '../lib/roles';
 import { NotificationBell } from './NotificationBell';
+import { DashboardDatePicker } from './DashboardDatePicker';
+import { PageBack } from './PageBack';
 
 const PORTAL_NAV = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/' },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/' || p === '' },
   { path: '/jobs', label: 'Positions', icon: Briefcase, match: (p) => p.startsWith('/jobs') },
-  { path: '/candidates', label: 'Candidates', icon: Users, match: (p) => p.startsWith('/candidates') && !p.includes('integrity') },
-  { path: '/rubrics', label: 'Screening', icon: ClipboardList, match: (p) => p.startsWith('/rubrics') },
   {
     path: '/candidates?pipeline=shortlisted_interview',
     label: 'Interviews',
@@ -39,12 +39,37 @@ const PORTAL_NAV = [
     icon: UserCheck,
     match: (p) => p.includes('integrity=flagged'),
   },
+  {
+    path: '/candidates',
+    label: 'Candidates',
+    icon: Users,
+    match: (p) => {
+      if (!p.startsWith('/candidates')) return false;
+      if (p.includes('integrity=flagged')) return false;
+      if (p.includes('pipeline=shortlisted')) return false;
+      return true;
+    },
+  },
+  { path: '/rubrics', label: 'Screening', icon: ClipboardList, match: (p) => p.startsWith('/rubrics') },
   { path: '/reports', label: 'Analytics', icon: BarChart3, match: (p) => p.startsWith('/reports') },
   { path: '/integrations', label: 'Integrations', icon: ShieldCheck, match: (p) => p.startsWith('/integrations') },
   { path: '/trash', label: 'Trash', icon: Trash2, match: (p) => p.startsWith('/trash') },
   { path: '/help', label: 'Help', icon: HelpCircle, match: (p) => p.startsWith('/help') },
   { path: '/settings', label: 'Settings', icon: Settings, match: (p) => p.startsWith('/settings') },
 ];
+
+function resolveActiveNav(pathname, search, items) {
+  const full = pathname + search;
+  const matched = items.filter((item) => item.match(full));
+  if (matched.length <= 1) return matched[0]?.path ?? null;
+  const sorted = [...matched].sort((a, b) => {
+    const aHasQuery = a.path.includes('?') ? 1 : 0;
+    const bHasQuery = b.path.includes('?') ? 1 : 0;
+    if (bHasQuery !== aHasQuery) return bHasQuery - aHasQuery;
+    return b.path.length - a.path.length;
+  });
+  return sorted[0]?.path ?? null;
+}
 
 function initials(name) {
   return (name || 'U')
@@ -55,12 +80,6 @@ function initials(name) {
     .toUpperCase();
 }
 
-function navActive(match, pathname, search) {
-  const full = pathname + search;
-  if (match(pathname) || match(full)) return true;
-  return false;
-}
-
 export function Layout() {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -68,9 +87,17 @@ export function Layout() {
   const location = useLocation();
   const role = user?.role || 'Hiring Manager';
   const [navOpen, setNavOpen] = useState(false);
+  const [dashDateRange, setDashDateRange] = useState('30d');
+  const isDashboard = location.pathname === '/';
+
+  const outletContext = useMemo(
+    () => ({ dashDateRange, setDashDateRange }),
+    [dashDateRange],
+  );
 
   const filterNav = (items) => items.filter((item) => canAccess(role, item.path.split('?')[0]));
   const visibleNav = filterNav(PORTAL_NAV);
+  const activeNavPath = resolveActiveNav(location.pathname, location.search, visibleNav);
 
   useEffect(() => {
     setNavOpen(false);
@@ -110,14 +137,16 @@ export function Layout() {
 
         <div className="portalNavWrap">
           <nav className="portalNav" aria-label="Main navigation">
-            {visibleNav.map(({ path, label, icon: Icon, match }) => {
-              const active = navActive(match, location.pathname, location.search);
+            {visibleNav.map(({ path, label, icon: Icon }) => {
+              const active = activeNavPath === path;
               return (
                 <NavLink
                   key={path}
                   to={path}
-                  className={active ? 'active' : ''}
                   end={path === '/'}
+                  className={() => (active ? 'active' : '')}
+                  activeClassName=""
+                  aria-current={active ? 'page' : undefined}
                 >
                   <Icon size={17} />
                   {label}
@@ -153,7 +182,7 @@ export function Layout() {
       </aside>
 
       <div className="portalMain">
-        <div className="portalTopBar">
+        <div className={`portalTopBar${isDashboard ? ' portalTopBar--withTitle' : ''}`}>
           <button
             type="button"
             className="portalMenuBtn"
@@ -163,18 +192,34 @@ export function Layout() {
           >
             <Menu size={20} />
           </button>
-          <button
-            type="button"
-            className="portalAccountBtn"
-            aria-label="Open account settings"
-            onClick={() => navigate('/settings')}
-          >
-            {initials(user?.name)}
-          </button>
-          <NotificationBell />
+          {isDashboard && (
+            <div className="portalTopBarTitle">
+              <h1>Dashboard</h1>
+              <p>Overview of your hiring activities and insights.</p>
+            </div>
+          )}
+          <div className="portalTopBarActions">
+            {isDashboard && (
+              <DashboardDatePicker value={dashDateRange} onChange={setDashDateRange} />
+            )}
+            <NotificationBell />
+            <button
+              type="button"
+              className="portalAccountBtn"
+              aria-label="Open account settings"
+              onClick={() => navigate('/settings')}
+            >
+              {initials(user?.name)}
+            </button>
+          </div>
         </div>
         <main id="main-content">
-          <Outlet />
+          {!isDashboard && (
+            <div className="pageBackBar">
+              <PageBack />
+            </div>
+          )}
+          <Outlet context={outletContext} />
         </main>
       </div>
     </div>

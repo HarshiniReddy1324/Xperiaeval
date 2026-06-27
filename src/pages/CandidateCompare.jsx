@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { GitCompare } from 'lucide-react';
 import { api } from '../api/client';
+import { returnState } from '../lib/navigation';
 import { Button, Card, BucketBadge } from '../components/ui';
 import { DimensionRadar } from '../components/DimensionRadar';
 
 const COLORS = ['#6366f1', '#059669', '#d97706', '#dc2626'];
 
 export function CandidateCompare() {
+  const location = useLocation();
   const [params] = useSearchParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -27,7 +29,7 @@ export function CandidateCompare() {
     return (
       <Card>
         <p className="error">{error}</p>
-        <Link to="/candidates">
+        <Link to="/candidates" state={returnState(location)}>
           <Button>Back to candidates</Button>
         </Link>
       </Card>
@@ -54,7 +56,7 @@ export function CandidateCompare() {
           </h1>
           <p className="muted">Side-by-side intelligence dimensions for the same role.</p>
         </div>
-        <Link to={data.job_id ? `/candidates?jobId=${data.job_id}` : '/candidates'}>
+        <Link to={data.job_id ? `/candidates?jobId=${data.job_id}` : '/candidates'} state={returnState(location)}>
           <Button variant="outline">← Back to list</Button>
         </Link>
       </div>
@@ -80,7 +82,7 @@ export function CandidateCompare() {
               <p className="muted">
                 <strong>{intel?.recommendation || c.score?.recommendation}</strong>
               </p>
-              <Link to={`/candidates/${c.id}`}>
+              <Link to={`/candidates/${c.id}`} state={returnState(location)}>
                 <Button variant="outline" className="small">
                   Full profile
                 </Button>

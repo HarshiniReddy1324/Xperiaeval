@@ -1,72 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, Download } from 'lucide-react';
+import { ClipboardList, FilePlus2, Library, Briefcase } from 'lucide-react';
 import { api } from '../api/client';
-import { Button, Card } from '../components/ui';
+import { SCREENING_HUB_TILES } from '../lib/rubricConstants';
+
+const TILE_ICONS = {
+  new: FilePlus2,
+  templates: ClipboardList,
+  library: Library,
+  jobs: Briefcase,
+};
 
 export function Rubrics() {
-  const [jobs, setJobs] = useState([]);
-  const [templates, setTemplates] = useState([]);
+  const [stats, setStats] = useState({ templates: 0, questions: 0, jobs: 0 });
 
   useEffect(() => {
-    api('/jobs').then(setJobs).catch(console.error);
-    api('/rubric-templates')
-      .then((d) => setTemplates(d.templates || []))
+    Promise.all([
+      api('/rubric-templates').then((d) => d.templates?.length || 0),
+      api('/question-pool?department=General').then((d) => d.count || 0),
+      api('/jobs').then((d) => d.length || 0),
+    ])
+      .then(([templates, questions, jobs]) => setStats({ templates, questions, jobs }))
       .catch(console.error);
   }, []);
+
+  const tileMeta = {
+    new: 'Start from scratch',
+    templates: `${stats.templates} saved`,
+    library: `${stats.questions}+ questions`,
+    jobs: `${stats.jobs} positions`,
+  };
 
   return (
     <>
       <div className="pageHead">
-        <h1>Rubrics & templates</h1>
+        <h1>Screening</h1>
         <p>
-          Define screening questions per job, or save a full 10-question set as a reusable template (e.g. Senior Backend
-          v2) and apply it in one click on new roles.
+          Build questionnaires, manage your question library, and apply screening rubrics to positions. Every saved
+          template syncs new questions into the library automatically.
         </p>
       </div>
 
-      <Card className="mb">
-        <h2>
-          <Bookmark size={20} /> Saved rubric templates
-        </h2>
-        {templates.length ? (
-          <ul className="templateList">
-            {templates.map((t) => (
-              <li key={t.id} className="templateRow">
-                <div>
-                  <b>{t.name}</b>
-                  <small className="muted">
-                    {t.question_count} questions
-                    {t.department ? ` · ${t.department}` : ''}
-                    {t.experience_level ? ` · ${t.experience_level}` : ''}
-                  </small>
-                </div>
-                <span className="muted">Apply from any job&apos;s detail page</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">
-            No templates yet. Open a job with 7 mandatory + 3 optional questions saved, then use &quot;Save as
-            template&quot; on the job screen.
-          </p>
-        )}
-      </Card>
-
-      <h2 className="sectionTitle">Jobs</h2>
-      {jobs.map((j) => (
-        <Card key={j.id} className="mb">
-          <h3>
-            <Link to={`/jobs/${j.id}`}>{j.title}</Link>
-          </h3>
-          <p className="muted">{j.id}</p>
-          <Link to={`/jobs/${j.id}`}>
-            <Button variant="outline" className="small">
-              <Download size={14} /> Edit rubric & question library
-            </Button>
-          </Link>
-        </Card>
-      ))}
+      <div className="screeningHubGrid">
+        {SCREENING_HUB_TILES.map((tile) => {
+          const Icon = TILE_ICONS[tile.key] || ClipboardList;
+          return (
+            <Link key={tile.key} to={tile.to} className={`screeningHubTile screeningHubTile--${tile.tone}`}>
+              <div className={`screeningHubTileIcon ${tile.tone}`}>
+                <Icon size={22} aria-hidden />
+              </div>
+              <div className="screeningHubTileBody">
+                <span className="screeningHubTileLabel">{tile.label}</span>
+                <small>{tileMeta[tile.key]}</small>
+                <p>{tile.description}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </>
   );
 }

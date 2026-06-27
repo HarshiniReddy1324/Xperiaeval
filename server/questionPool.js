@@ -131,6 +131,7 @@ export function listQuestionPool(db, { orgId, department, level, search }) {
     const q = `%${search.trim()}%`;
     params.push(q, q, q);
   }
+  sql += ' AND (archived IS NULL OR archived = 0)';
   sql += ' ORDER BY department, experience_level, sort_order';
   return db.prepare(sql).all(...params);
 }
@@ -169,4 +170,161 @@ export function poolItemsToRubricCategories(items) {
       pool_id: q.id,
     };
   });
+}
+
+export function normalizeQuestionText(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function findSimilarQuestion(db, orgId, department, questionText) {
+  const norm = normalizeQuestionText(questionText);
+  if (!norm) return null;
+  const items = listQuestionPool(db, { orgId, department: department || undefined });
+  return (
+    items.find((q) => normalizeQuestionText(q.question) === norm) ||
+    items.find((q) => {
+      const qn = normalizeQuestionText(q.question);
+      return qn.includes(norm) || norm.includes(qn);
+    }) ||
+    null
+  );
+}
+
+export function getQuestionPoolItem(db, id, orgId) {
+  return db
+    .prepare(`SELECT * FROM question_pool WHERE id = ? AND (org_id IS NULL OR org_id = ?)`)
+    .get(id, orgId);
+}
+
+export function createQuestion(db, orgId, data, createdBy) {
+  const similar = findSimilarQuestion(db, orgId, data.department, data.question);
+  if (similar) return { error: 'Similar question already exists in library', existing: similar };
+
+  const id = uuid();
+  db.prepare(
+    `INSERT INTO question_pool
+     (id, org_id, department, experience_level, category_type, name, question, expected_evidence, ideal_answer,
+      keywords, default_priority, sort_order, source_type, source_template_id, source_template_name, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'org', NULL, NULL, ?)`
+  ).run(
+    id,
+    orgId,
+    data.department,
+    data.experience_level || 'All',
+    data.category_type || 'General',
+    data.name,
+    data.question,
+    (data.expected_evidence || data.ideal_answer || '').slice(0, 280),
+    data.ideal_answer || data.expected_evidence || '',
+    data.keywords || '',
+    data.default_priority || 'mandatory',
+    data.sort_order || 0,
+    createdBy
+  );
+  return { id };
+}
+
+export function updateQuestion(db, id, orgId, data) {
+  const row = db.prepare(`SELECT * FROM question_pool WHERE id = ? AND org_id = ?`).get(id, orgId);
+  if (!row) return { error: 'Question not found or not editable (system library is read-only)' };
+
+  db.prepare(
+    `UPDATE question_pool SET department = ?, experience_level = ?, category_type = ?, name = ?, question = ?,
+     expected_evidence = ?, ideal_answer = ?, keywords = ?, default_priority = ?, updated_at = datetime('now')
+     WHERE id = ? AND org_id = ?`
+  ).run(
+    data.department ?? row.department,
+    data.experience_level ?? row.experience_level,
+    data.category_type ?? row.category_type,
+    data.name ?? row.name,
+    data.question ?? row.question,
+    (data.expected_evidence || data.ideal_answer || row.expected_evidence || '').slice(0, 280),
+    data.ideal_answer ?? row.ideal_answer ?? row.expected_evidence ?? '',
+    data.keywords ?? row.keywords ?? '',
+    data.default_priority ?? row.default_priority ?? 'mandatory',
+    id,
+    orgId
+  );
+  return { id };
+}
+
+export function archiveQuestion(db, id, orgId) {
+  const row = db.prepare(`SELECT * FROM question_pool WHERE id = ? AND org_id = ?`).get(id, orgId);
+  if (!row) return { error: 'Question not found or not deletable' };
+  db.prepare(`UPDATE question_pool SET archived = 1, updated_at = datetime('now') WHERE id = ?`).run(id);
+  return { ok: true };
+}
+
+/** Add template/job questions to org library with dedupe. */
+export function upsertQuestionsFromCategories(
+  db,
+  { orgId, categories, department, experienceLevel, sourceTemplateId, sourceTemplateName, createdBy }
+) {
+  const results = { added: [], linked: [], skipped: [] };
+  for (const c of categories) {
+    if (!c.question?.trim()) {
+      results.skipped.push({ name: c.name, reason: 'empty' });
+      continue;
+    }
+    const similar = findSimilarQuestion(db, orgId, department, c.question);
+    if (similar) {
+      results.linked.push({ name: c.name, poolId: similar.id, question: similar.question });
+      continue;
+    }
+    const id = uuid();
+    db.prepare(
+      `INSERT INTO question_pool
+       (id, org_id, department, experience_level, category_type, name, question, expected_evidence, ideal_answer,
+        keywords, default_priority, sort_order, source_type, source_template_id, source_template_name, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'template', ?, ?, ?)`
+    ).run(
+      id,
+      orgId,
+      department || 'General',
+      experienceLevel || 'All',
+      c.category_type || 'General',
+      c.name,
+      c.question,
+      (c.expected_evidence || c.ideal_answer || '').slice(0, 280),
+      c.ideal_answer || c.expected_evidence || '',
+      c.keywords || '',
+      c.priority === 'optional' ? 'optional' : 'mandatory',
+      c.sort_order || 0,
+      sourceTemplateId || null,
+      sourceTemplateName || null,
+      createdBy
+    );
+    results.added.push({ id, name: c.name });
+  }
+  return results;
+}
+
+export function exportQuestionPool(db, orgId) {
+  return db
+    .prepare(
+      `SELECT department, experience_level, category_type, name, question, expected_evidence, ideal_answer,
+              keywords, default_priority, sort_order, source_type
+       FROM question_pool WHERE org_id = ? AND (archived IS NULL OR archived = 0)
+       ORDER BY department, experience_level, sort_order`
+    )
+    .all(orgId);
+}
+
+export function importQuestionPool(db, orgId, items, createdBy) {
+  const results = { added: [], linked: [], errors: [] };
+  for (const item of items || []) {
+    const similar = findSimilarQuestion(db, orgId, item.department, item.question);
+    if (similar) {
+      results.linked.push({ name: item.name, poolId: similar.id });
+      continue;
+    }
+    const created = createQuestion(db, orgId, item, createdBy);
+    if (created.error) results.errors.push({ name: item.name, error: created.error });
+    else results.added.push({ id: created.id, name: item.name });
+  }
+  return results;
 }

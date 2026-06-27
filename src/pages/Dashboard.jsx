@@ -1,16 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import {
-  ChevronDown,
   Briefcase,
-  CalendarClock,
   CheckCircle2,
   Clock,
+  Gem,
   Plus,
   ShieldAlert,
   Target,
+  CalendarClock,
+  TrendingUp,
 } from 'lucide-react';
 import { api } from '../api/client';
+import { FROM_DASHBOARD } from '../lib/navigation';
 import { DonutChart, FunnelChart, GaugeChart } from '../components/dashboard/DashboardCharts';
 
 const KPI_ICONS = {
@@ -21,13 +23,35 @@ const KPI_ICONS = {
   red: ShieldAlert,
 };
 
-function formatDateRange(days) {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - days);
-  const fmt = (d) =>
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}`;
+function buildApplicantBuckets(analytics = {}) {
+  if (analytics.applicantBuckets?.length) {
+    return analytics.applicantBuckets;
+  }
+  const scored = analytics.pipeline?.scored ?? 0;
+  if (!scored) return [];
+  const health = analytics.hiringHealth || {};
+  const green = Math.round(((health.healthy_pct ?? 0) / 100) * scored);
+  const amber = Math.round(((health.at_risk_pct ?? 0) / 100) * scored);
+  const red = Math.max(0, scored - green - amber);
+  const pct = (n) => Math.round((n / scored) * 100);
+  return [
+    { label: 'Green', value: green, pct: pct(green), color: '#22c55e', bucket: 'Green' },
+    { label: 'Amber', value: amber, pct: pct(amber), color: '#f59e0b', bucket: 'Amber' },
+    { label: 'Red', value: red, pct: pct(red), color: '#ef4444', bucket: 'Red' },
+  ];
+}
+
+function buildBucketMeta(analytics = {}) {
+  if (analytics.applicantBucketsMeta) {
+    return analytics.applicantBucketsMeta;
+  }
+  const scored = analytics.pipeline?.scored ?? 0;
+  const total = analytics.pipeline?.applied ?? 0;
+  return {
+    scored,
+    total_applicants: total,
+    unscored: Math.max(0, total - scored),
+  };
 }
 
 function normalizeFunnel(raw = {}) {
@@ -42,8 +66,7 @@ function normalizeFunnel(raw = {}) {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState('30d');
-  const [showCalendar, setShowCalendar] = useState(false);
+  const { dashDateRange: dateRange = '30d' } = useOutletContext() || {};
   const [data, setData] = useState({
     kpiCards: [],
     analytics: {},
@@ -65,71 +88,51 @@ export function Dashboard() {
     loadDashboard();
   }, [dateRange]);
 
-  const { analytics = {}, jobTable = [], kpiCards = [], screening = {}, recommendations = [] } = data;
+  const { analytics = {}, jobTable = [], kpiCards = [] } = data;
   const pipeline = normalizeFunnel(analytics.pipeline || {});
   const health = analytics.hiringHealth || {};
   const alerts = analytics.integrityAlerts || {};
   const perf = analytics.recruiterPerformance || {};
+  const hiddenGemCount = analytics.hiddenGems ?? 0;
+  const visibleJobs = jobTable.slice(0, 5);
+  const applicantBuckets = buildApplicantBuckets(analytics);
+  const bucketMeta = buildBucketMeta(analytics);
 
   const funnelStages = [
     { label: 'Applied', value: pipeline.applied ?? 0, to: '/candidates' },
     { label: 'Screened', value: pipeline.screened ?? 0, to: '/candidates?screening=complete' },
     { label: 'Verified', value: pipeline.verified ?? 0, to: '/candidates?screening=complete' },
     { label: 'Recommended', value: pipeline.recommended ?? 0, to: '/candidates?bucket=Green' },
-    { label: 'Interviewed', value: pipeline.interviewed ?? 0, to: '/candidates?pipeline=interview_scheduled' },
-    { label: 'Selected', value: pipeline.selected ?? 0, to: '/candidates?pipeline=final_review' },
+    { label: 'Interviewed', value: pipeline.interviewed ?? 0, to: '/candidates?pipeline=interviewing' },
+    { label: 'Selected', value: pipeline.selected ?? 0, to: '/candidates?pipeline=selected' },
   ];
 
-  const alertItems = [
-    { label: 'AI Generated Responses', value: alerts.ai_generated ?? 0, to: '/candidates?screening=ai_used' },
-    { label: 'Employment Mismatch', value: alerts.employment_mismatch ?? 0, to: '/candidates?integrity=flagged' },
-    { label: 'Voice Verification Failed', value: alerts.voice_verification_failed ?? 0, to: '/candidates?integrity=flagged' },
-    { label: 'Multiple Browser Switches', value: alerts.browser_switches ?? 0, to: '/candidates?integrity=flagged' },
-    { label: 'Fake Experience Risk', value: alerts.fake_experience_risk ?? 0, to: '/candidates?bucket=Red' },
-    { label: 'High Risk Candidates', value: alerts.high_risk_candidates ?? 0, to: '/candidates?integrity=flagged', danger: true },
+  const alertGroups = [
+    {
+      id: 'ai',
+      color: '#8b5cf6',
+      value: alerts.ai_generated ?? 0,
+      to: '/candidates?screening=ai_used',
+      labels: ['AI responses'],
+    },
+    {
+      id: 'integrity',
+      color: '#ef4444',
+      value: Math.max(alerts.voice_verification_failed ?? 0, alerts.high_risk_candidates ?? 0),
+      to: '/candidates?integrity=flagged',
+      labels: ['Voice failed', 'High risk'],
+    },
+    {
+      id: 'browser',
+      color: '#3b82f6',
+      value: alerts.browser_switches ?? 0,
+      to: '/candidates?integrity=flagged',
+      labels: ['Browser switches'],
+    },
   ];
-
-  const rangeDays = dateRange === '7d' ? 7 : dateRange === '90d' ? 90 : 30;
-
-  const dateLabel = useMemo(() => {
-    if (dateRange === '7d') return 'Last 7 days';
-    if (dateRange === '90d') return 'Last 90 days';
-    return 'Last 30 days';
-  }, [dateRange]);
 
   return (
     <div className="enterpriseDash">
-      <header className="enterpriseHead">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Overview of your hiring activities and insights.</p>
-        </div>
-        <div className="enterpriseHeadActions">
-          <div className="headActionWrap">
-            <button type="button" className="headPill headPillBtn" onClick={() => setShowCalendar((s) => !s)}>
-              <CalendarClock size={14} /> {dateLabel} <ChevronDown size={14} />
-            </button>
-            {showCalendar && (
-              <div className="headDropdown">
-                <button type="button" className={dateRange === '7d' ? 'active' : ''} onClick={() => { setDateRange('7d'); setShowCalendar(false); }}>
-                  Last 7 days
-                </button>
-                <button type="button" className={dateRange === '30d' ? 'active' : ''} onClick={() => { setDateRange('30d'); setShowCalendar(false); }}>
-                  Last 30 days
-                </button>
-                <button type="button" className={dateRange === '90d' ? 'active' : ''} onClick={() => { setDateRange('90d'); setShowCalendar(false); }}>
-                  Last 90 days
-                </button>
-                <small>{formatDateRange(rangeDays)}</small>
-              </div>
-            )}
-          </div>
-          <Link to="/jobs/new" className="btn">
-            <Plus size={14} /> New position
-          </Link>
-        </div>
-      </header>
-
       {loadError && (
         <p className="error dashLoadError" role="alert">
           {loadError}{' '}
@@ -148,7 +151,7 @@ export function Dashboard() {
               key={kpi.id}
               type="button"
               className="kpiTile"
-              onClick={() => navigate(kpi.to)}
+              onClick={() => navigate(kpi.to, { state: FROM_DASHBOARD })}
               title={`Open ${kpi.label}`}
             >
               <div>
@@ -175,26 +178,43 @@ export function Dashboard() {
       </section>
 
       <section className="dashRow3">
-        <div className="dashWidget">
+        <div className="dashWidget dashWidget--quality">
           <div className="widgetHead">
-            <h2>Positions Overview</h2>
-            <Link to="/jobs">View all positions</Link>
+            <h2>Applicant quality</h2>
+            <Link to="/candidates" state={FROM_DASHBOARD}>View all</Link>
           </div>
-          <DonutChart segments={analytics.positionsOverview || []} size={140} stroke={24} />
+          {bucketMeta.scored > 0 ? (
+            <DonutChart
+              segments={applicantBuckets}
+              size={180}
+              stroke={36}
+              centerSub="scored"
+              showLegendPct={false}
+              hideTrack
+              legendClassName="chartDonut--quality"
+              onSegmentClick={(seg) =>
+                seg.bucket && navigate(`/candidates?bucket=${seg.bucket}`, { state: FROM_DASHBOARD })
+              }
+            />
+          ) : (
+            <p className="muted dashEmptyChart">
+              No scored applicants in this period yet. Share apply links to start screening.
+            </p>
+          )}
         </div>
 
         <div className="dashWidget">
           <div className="widgetHead">
             <h2>Hiring Pipeline</h2>
-            <Link to="/candidates">View all</Link>
+            <Link to="/candidates" state={FROM_DASHBOARD}>View all</Link>
           </div>
-          <FunnelChart stages={funnelStages} onStageClick={(to) => navigate(to)} />
+          <FunnelChart stages={funnelStages} onStageClick={(to) => navigate(to, { state: FROM_DASHBOARD })} />
           <p className="funnelMeta">
             Conversion Rate: <strong>{analytics.conversionRate ?? 0}%</strong>
           </p>
         </div>
 
-        <div className="dashWidget">
+        <div className="dashWidget dashWidget--health">
           <div className="widgetHead">
             <h2>Hiring Health</h2>
           </div>
@@ -204,18 +224,19 @@ export function Dashboard() {
             healthy={health.healthy_pct ?? 0}
             atRisk={health.at_risk_pct ?? 0}
             critical={health.critical_pct ?? 0}
+            large
           />
         </div>
       </section>
 
       <section className="dashRowBottom">
-        <div className="dashWidget dashWidgetWide">
-          <div className="widgetHead">
+        <div className="dashWidget dashWidgetWide dashWidgetTable">
+          <div className="widgetHead widgetHead--tight">
             <h2>Positions At A Glance</h2>
-            <Link to="/jobs">View all</Link>
+            <Link to="/jobs" state={FROM_DASHBOARD}>View all</Link>
           </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="posTable">
+          <div className="posTableWrap">
+            <table className="posTable posTable--five">
               <thead>
                 <tr>
                   <th>Position</th>
@@ -236,10 +257,10 @@ export function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {jobTable.map((row) => (
+                {visibleJobs.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <Link to={`/candidates?jobId=${row.id}`}>
+                      <Link to={`/candidates?jobId=${row.id}`} state={FROM_DASHBOARD}>
                         <b>{row.title}</b>
                         <small>{row.team}</small>
                       </Link>
@@ -261,9 +282,9 @@ export function Dashboard() {
                     <td>{row.targetHireDate}</td>
                   </tr>
                 ))}
-                {!jobTable.length && (
+                {!visibleJobs.length && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24 }}>
+                    <td colSpan={7} className="posTableEmpty">
                       No positions yet — create a job posting to get started.
                     </td>
                   </tr>
@@ -273,76 +294,84 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="dashSquareCol">
-          {(analytics.hiddenGems > 0 || recommendations.some((r) => r.hidden_gem)) && (
-            <div className="dashWidget dashWidgetSquare">
-              <div className="widgetHead">
-                <h2>Hidden gem candidates</h2>
-                <Link to="/candidates?hiddenGem=1">View all</Link>
+        <div className="dashSideCol">
+          <div className="dashKpiPair">
+            <button
+              type="button"
+              className="kpiTile"
+              onClick={() => hiddenGemCount > 0 && navigate('/candidates?hiddenGem=1', { state: FROM_DASHBOARD })}
+              disabled={hiddenGemCount === 0}
+              title={
+                hiddenGemCount > 0
+                  ? `View ${hiddenGemCount} hidden gem candidate${hiddenGemCount === 1 ? '' : 's'}`
+                  : 'No hidden gem candidates in this period'
+              }
+            >
+              <div>
+                <span className="kpiLabel">Hidden gems</span>
+                <strong>{hiddenGemCount}</strong>
+                <small>
+                  {hiddenGemCount > 0 ? 'Strong fit beyond resume' : 'None in this period'}
+                </small>
               </div>
-              <p className="muted insightsSubtitle">
-                Strong answers + authentic sessions despite weaker resume fit — worth a second look.
-              </p>
-              <p className="hiddenGemCount">
-                <strong>{analytics.hiddenGems ?? 0}</strong> in selected period
-              </p>
-              <ul className="hiddenGemList">
-                {recommendations
-                  .filter((r) => r.hidden_gem)
-                  .slice(0, 4)
-                  .map((r) => (
-                    <li key={r.id}>
-                      <Link to={`/candidates/${r.id}`}>
-                        {r.display_name} · {r.score}/100
-                      </Link>
-                    </li>
-                  ))}
-              </ul>
-            </div>
-          )}
-          <div className="dashWidget dashWidgetSquare">
-            <div className="widgetHead">
+              <div className="kpiTileIcon amber">
+                <Gem size={18} />
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="kpiTile"
+              onClick={() => navigate(`/recruiter-performance?range=${dateRange}`, { state: FROM_DASHBOARD })}
+              title="View recruiter performance details"
+            >
+              <div>
+                <span className="kpiLabel">Recruiter performance</span>
+                <strong>{perf.hours_saved ?? 0}</strong>
+                <small>
+                  hrs saved · {perf.screening_completion_pct ?? perf.screening_accuracy ?? 0}% screened ·{' '}
+                  {perf.integrity_flags ?? perf.fraud_prevented ?? 0} flags
+                </small>
+              </div>
+              <div className="kpiTileIcon purple">
+                <TrendingUp size={18} />
+              </div>
+            </button>
+          </div>
+
+          <div className="dashWidget dashWidgetSide dashWidgetRisk">
+            <div className="widgetHead widgetHead--tight">
               <h2>
-                <ShieldAlert size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                <ShieldAlert size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
                 Risk &amp; Fraud Alerts
               </h2>
             </div>
-            <ul className="alertRows">
-              {alertItems.map((item) => (
-                <li key={item.label} className={item.danger ? 'danger' : ''}>
-                  <button type="button" className="alertBtn" onClick={() => navigate(item.to)}>
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
+            <div className="riskAlertChart">
+              <div className="riskAlertCircles riskAlertCircles--3">
+                {alertGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className="riskAlertBubble"
+                    style={{ '--bubble-color': group.color }}
+                    onClick={() => navigate(group.to, { state: FROM_DASHBOARD })}
+                    title={`${group.labels.join(', ')}: ${group.value}`}
+                    aria-label={`${group.labels.join(', ')}: ${group.value} candidates`}
+                  >
+                    <strong>{group.value}</strong>
                   </button>
-                </li>
-              ))}
-            </ul>
-            <p className="funnelMeta">
-              {screening.integrity_flags ?? screening.integrity_alerts ?? 0} total integrity flags
-            </p>
-          </div>
-          <div className="dashWidget dashWidgetSquare">
-            <div className="widgetHead">
-              <h2>Recruiter Performance</h2>
-            </div>
-            <div className="perfStats">
-              <div className="perfStat" title={perf.hours_saved_basis || 'Estimated from auto-scored applications'}>
-                <label>Est. hours saved</label>
-                <strong>{perf.hours_saved ?? 0}</strong>
-                <span className="perfDelta muted">
-                  {perf.hours_saved_basis || '~45 min per auto-score'}
-                </span>
+                ))}
               </div>
-              <div className="perfStat" title="Share of applicants who completed the full screening (not model accuracy)">
-                <label>Screening completion</label>
-                <strong>{perf.screening_completion_pct ?? perf.screening_accuracy ?? 0}%</strong>
-                <span className="perfDelta muted">applications fully screened</span>
-              </div>
-              <div className="perfStat" title="High-risk integrity signals flagged for review — advisory, not auto-rejected">
-                <label>Integrity flags</label>
-                <strong>{perf.integrity_flags ?? perf.fraud_prevented ?? 0}</strong>
-                <span className="perfDelta muted">candidates to review</span>
-              </div>
+              <ul className="riskAlertLegend">
+                {alertGroups.flatMap((group) =>
+                  group.labels.map((label) => (
+                    <li key={`${group.id}-${label}`}>
+                      <span className="dot" style={{ background: group.color }} aria-hidden />
+                      <span>{label}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
             </div>
           </div>
         </div>

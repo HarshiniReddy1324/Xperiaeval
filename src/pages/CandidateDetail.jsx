@@ -368,9 +368,6 @@ export function CandidateDetail() {
       )}
 
       <div className="candidateHero">
-        <Link to="/candidates" className="backLink">
-          ← Back to candidates
-        </Link>
         <div className="candidateHeroMain">
           <div>
             <h1>{app.display_name || app.name}</h1>

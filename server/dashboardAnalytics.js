@@ -59,10 +59,10 @@ export function buildPositionKpis(jobs, options = {}) {
 
   return [
     { id: 'total', label: 'Total Positions', value: positions.total, sub: 'All positions', to: '/jobs', tone: 'blue' },
-    { id: 'filled', label: 'Filled', value: positions.filled, sub: `${pct(positions.filled)}% of total`, to: '/jobs?stage=Filled', tone: 'green' },
-    { id: 'in_progress', label: 'In Progress', value: positions.in_progress, sub: `${pct(positions.in_progress)}% of total`, to: '/jobs?stage=Screening', tone: 'blue' },
-    { id: 'about_to_start', label: 'About to Start', value: positions.about_to_start, sub: `${pct(positions.about_to_start)}% of total`, to: '/jobs?stage=Open', tone: 'amber' },
-    { id: 'more_time', label: 'More Time', value: positions.delayed, sub: `${pct(positions.delayed)}% of total`, to: '/jobs?stage=Draft', tone: 'purple' },
+    { id: 'filled', label: 'Filled', value: positions.filled, sub: `${pct(positions.filled)}% of total`, to: '/jobs?filter=filled', tone: 'green' },
+    { id: 'in_progress', label: 'In Progress', value: positions.in_progress, sub: `${pct(positions.in_progress)}% of total`, to: '/jobs?filter=in_progress', tone: 'blue' },
+    { id: 'about_to_start', label: 'About to Start', value: positions.about_to_start, sub: `${pct(positions.about_to_start)}% of total`, to: '/jobs?filter=about_to_start', tone: 'amber' },
+    { id: 'more_time', label: 'More Time', value: positions.delayed, sub: `${pct(positions.delayed)}% of total`, to: '/jobs?filter=delayed', tone: 'purple' },
   ];
 }
 
@@ -174,9 +174,15 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
   const healthLabel = healthScore >= 75 ? 'Good' : healthScore >= 50 ? 'Fair' : 'Needs attention';
 
   const complete = apps.filter((a) => a.screening_status === 'complete').length;
+  const started = apps.filter((a) => a.screening_status !== 'incomplete').length;
+  const incomplete = apps.length - complete;
   const screenedTotal = apps.length || 1;
   const autoScored = scored.length;
   const minutesSavedPerScore = 45;
+  const totalMinutesSaved = autoScored * minutesSavedPerScore;
+  const screeningPct = Math.round((complete / screenedTotal) * 100) || 0;
+  const highRisk = integrityAlerts.high_risk_candidates;
+  const bucketPct = (n) => (scored.length ? Math.round((n / scored.length) * 100) : 0);
 
   return {
     positions: {
@@ -186,12 +192,16 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
       about_to_start_pct: pct(positions.about_to_start),
       delayed_pct: pct(positions.delayed),
     },
-    positionsOverview: [
-      { label: 'Filled', value: positions.filled, pct: pct(positions.filled), color: '#22c55e' },
-      { label: 'In Progress', value: positions.in_progress, pct: pct(positions.in_progress), color: '#3b82f6' },
-      { label: 'About to Start', value: positions.about_to_start, pct: pct(positions.about_to_start), color: '#f59e0b' },
-      { label: 'Delayed', value: positions.delayed, pct: pct(positions.delayed), color: '#a855f7' },
+    applicantBuckets: [
+      { label: 'Green', value: green, pct: bucketPct(green), color: '#22c55e', bucket: 'Green' },
+      { label: 'Amber', value: amber, pct: bucketPct(amber), color: '#f59e0b', bucket: 'Amber' },
+      { label: 'Red', value: red, pct: bucketPct(red), color: '#ef4444', bucket: 'Red' },
     ],
+    applicantBucketsMeta: {
+      scored: scored.length,
+      total_applicants: apps.length,
+      unscored: apps.length - scored.length,
+    },
     pipeline,
     conversionRate,
     hiringHealth: {
@@ -203,12 +213,26 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
     },
     integrityAlerts,
     recruiterPerformance: {
-      hours_saved: Math.round((autoScored * minutesSavedPerScore) / 60),
+      hours_saved: Math.round(totalMinutesSaved / 60),
       hours_saved_basis: `${autoScored} auto-scored × ~${minutesSavedPerScore} min`,
-      screening_accuracy: Math.round((complete / screenedTotal) * 100) || 0,
-      screening_completion_pct: Math.round((complete / screenedTotal) * 100) || 0,
-      fraud_prevented: integrityAlerts.high_risk_candidates,
-      integrity_flags: integrityAlerts.high_risk_candidates,
+      auto_scored_count: autoScored,
+      minutes_saved_per_score: minutesSavedPerScore,
+      total_minutes_saved: totalMinutesSaved,
+      applications_in_period: apps.length,
+      screening_complete: complete,
+      screening_started: started,
+      screening_incomplete: incomplete,
+      screening_accuracy: screeningPct,
+      screening_completion_pct: screeningPct,
+      fraud_prevented: highRisk,
+      integrity_flags: highRisk,
+      integrity_breakdown: {
+        ai_generated: integrityAlerts.ai_generated,
+        voice_verification_failed: integrityAlerts.voice_verification_failed,
+        browser_switches: integrityAlerts.browser_switches,
+        employment_mismatch: integrityAlerts.employment_mismatch,
+        fake_experience_risk: integrityAlerts.fake_experience_risk,
+      },
     },
     hiddenGems: apps.filter((a) => a.hidden_gem === 1).length,
     dateRange: {

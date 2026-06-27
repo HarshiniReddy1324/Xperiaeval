@@ -1,12 +1,12 @@
 /** Shared demo portfolio jobs and candidates (6 roles × 3 applicants). */
 
 export const DEMO_PORTFOLIO_JOBS = [
-  { id: 'JOB-INTERN-001', title: 'Software Engineering Intern', team: 'Engineering', location: 'Austin, TX', stage: 'Open' },
-  { id: 'JOB-ASSOC-001', title: 'Associate Product Manager', team: 'Product', location: 'Chicago, IL', stage: 'Screening' },
-  { id: 'JOB-MID-001', title: 'Data Analyst II', team: 'Analytics', location: 'Remote (US)', stage: 'Hiring Team Review' },
-  { id: 'JOB-SENIOR-001', title: 'Senior Product Manager', team: 'Product', location: 'New York, NY', stage: 'Interviewing' },
-  { id: 'JOB-STAFF-001', title: 'Staff Data Engineer', team: 'Data Platform', location: 'Seattle, WA', stage: 'Screening' },
-  { id: 'JOB-DIRECTOR-001', title: 'Director, Talent Operations', team: 'People Ops', location: 'San Francisco, CA', stage: 'Draft' },
+  { id: 'JOB-INTERN-001', title: 'Software Engineering Intern', team: 'Engineering', location: 'Austin, TX', stage: 'Open', position_level: 'internship' },
+  { id: 'JOB-ASSOC-001', title: 'Associate Product Manager', team: 'Product', location: 'Chicago, IL', stage: 'Screening', position_level: 'entry' },
+  { id: 'JOB-MID-001', title: 'Data Analyst II', team: 'Analytics', location: 'Remote (US)', stage: 'Hiring Team Review', position_level: 'mid' },
+  { id: 'JOB-SENIOR-001', title: 'Senior Product Manager', team: 'Product', location: 'New York, NY', stage: 'Interviewing', position_level: 'senior' },
+  { id: 'JOB-STAFF-001', title: 'Staff Data Engineer', team: 'Data Platform', location: 'Seattle, WA', stage: 'Screening', position_level: 'senior' },
+  { id: 'JOB-DIRECTOR-001', title: 'Director, Talent Operations', team: 'People Ops', location: 'San Francisco, CA', stage: 'Draft', position_level: 'senior' },
 ];
 
 export const DEMO_PORTFOLIO_CANDIDATES = [

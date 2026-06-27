@@ -74,7 +74,10 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
       <h2>
         <Bookmark size={20} /> Rubric templates
       </h2>
-      <p className="muted">Save this job&apos;s 10 questions as a reusable template — one click apply on new jobs.</p>
+      <p className="muted">
+        Save this job&apos;s 10 questions as a reusable template — new questions sync to the{' '}
+        <a href="/rubrics/library">question library</a> automatically.
+      </p>
 
       {canSave && (
         <div className="templateSaveRow">

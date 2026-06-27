@@ -12,20 +12,39 @@ function arcPath(cx, cy, r, startAngle, endAngle) {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${large} 0 ${end.x} ${end.y} Z`;
 }
 
-export function DonutChart({ segments, size = 160, stroke = 28 }) {
-  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+export function DonutChart({
+  segments,
+  size = 160,
+  stroke = 28,
+  centerSub = 'total',
+  onSegmentClick,
+  showLegendPct = true,
+  legendClassName = '',
+  hideTrack = false,
+}) {
+  const total = segments.reduce((s, x) => s + x.value, 0) || 0;
+  const displayTotal = total || segments.reduce((s, x) => s + (x.value ?? 0), 0);
   let angle = 0;
   const cx = size / 2;
   const cy = size / 2;
-  const r = (size - stroke) / 2;
+  const r = hideTrack ? size / 2 - 4 : (size - stroke) / 2;
+  const innerHoleR = hideTrack ? r - stroke : r - stroke / 2 - 4;
+
+  const legendValue = (seg) =>
+    showLegendPct
+      ? `${seg.value} · ${seg.pct ?? (total ? Math.round((seg.value / total) * 100) : 0)}%`
+      : String(seg.value);
 
   return (
-    <div className="chartDonut">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+    <div className={`chartDonut${legendClassName ? ` ${legendClassName}` : ''}`}>
+      <div className="chartDonutSvgWrap">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="chartDonutSvg">
+        {!hideTrack && (
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+        )}
         {segments.map((seg) => {
           if (!seg.value) return null;
-          const sweep = (seg.value / total) * 360;
+          const sweep = (seg.value / (total || 1)) * 360;
           const path = arcPath(cx, cy, r, angle, angle + sweep - 0.5);
           angle += sweep;
           return (
@@ -38,22 +57,40 @@ export function DonutChart({ segments, size = 160, stroke = 28 }) {
             />
           );
         })}
-        <circle cx={cx} cy={cy} r={r - stroke / 2 - 4} fill="var(--chart-center, var(--surface-1))" />
+        <circle cx={cx} cy={cy} r={innerHoleR} fill="var(--chart-center, var(--surface-1))" />
         <text x={cx} y={cy - 4} textAnchor="middle" className="chartDonutCenter">
-          {total}
+          {displayTotal}
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle" className="chartDonutSub">
-          positions
+          {centerSub}
         </text>
       </svg>
+      </div>
       <ul className="chartLegend">
         {segments.map((seg) => (
           <li key={seg.label}>
-            <span className="dot" style={{ background: seg.color }} />
-            <span>{seg.label}</span>
-            <strong>
-              {seg.value} · {seg.pct ?? Math.round((seg.value / total) * 100)}%
-            </strong>
+            {onSegmentClick ? (
+              <button
+                type="button"
+                className="chartLegendBtn"
+                onClick={() => onSegmentClick(seg)}
+                disabled={!seg.value}
+              >
+                <span className="dot" style={{ background: seg.color }} />
+                <span className="chartLegendLabel">{seg.label}</span>
+                <strong className="chartLegendCount" style={{ color: seg.color }}>
+                  {legendValue(seg)}
+                </strong>
+              </button>
+            ) : (
+              <>
+                <span className="dot" style={{ background: seg.color }} />
+                <span className="chartLegendLabel">{seg.label}</span>
+                <strong className="chartLegendCount" style={{ color: seg.color }}>
+                  {legendValue(seg)}
+                </strong>
+              </>
+            )}
           </li>
         ))}
       </ul>
@@ -107,18 +144,19 @@ export function FunnelChart({ stages, onStageClick }) {
   );
 }
 
-export function GaugeChart({ score, label, healthy, atRisk, critical }) {
+export function GaugeChart({ score, label, healthy, atRisk, critical, large = false }) {
   const clamped = Math.min(100, Math.max(0, score));
   const rotation = -90 + (clamped / 100) * 180;
+  const stroke = large ? 18 : 14;
   return (
-    <div className="chartGauge">
+    <div className={`chartGauge${large ? ' chartGauge--large' : ''}`}>
       <svg viewBox="0 0 200 120" className="gaugeSvg">
-        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--surface-3)" strokeWidth="14" strokeLinecap="round" />
+        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="var(--surface-3)" strokeWidth={stroke} strokeLinecap="round" />
         <path
           d="M 20 100 A 80 80 0 0 1 180 100"
           fill="none"
           stroke="url(#gaugeGrad)"
-          strokeWidth="14"
+          strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${(clamped / 100) * 251} 251`}
         />

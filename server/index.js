@@ -83,12 +83,26 @@ import {
   repairQuestionPoolIfEmpty,
   POOL_DEPARTMENTS,
   POOL_LEVELS,
+  createQuestion,
+  updateQuestion,
+  archiveQuestion,
+  exportQuestionPool,
+  importQuestionPool,
 } from './questionPool.js';
 import {
   ensureRubricTemplatesTable,
   listTemplates,
   getTemplate,
   saveTemplateFromCategories,
+  saveTemplateFromQuestions,
+  updateTemplate,
+  deleteTemplate,
+  duplicateTemplate,
+  listTemplateVersions,
+  recordTemplateApplication,
+  exportTemplates,
+  importTemplates,
+  saveTemplateFromPoolIds,
 } from './rubricTemplates.js';
 import { isDeiBlindMode } from './identityAccess.js';
 import {
@@ -240,6 +254,18 @@ function getClientBaseUrl(req) {
     }
   }
   return process.env.PUBLIC_APP_URL || 'http://localhost:5173';
+}
+
+function jobIsFilled(jobId, stage) {
+  if (['Filled', 'Closed', 'Hired'].includes(stage)) return true;
+  const row = db
+    .prepare(
+      `SELECT 1 FROM applications
+       WHERE job_id = ? AND deleted_at IS NULL
+         AND pipeline_stage IN ('hired', 'offer_extended') LIMIT 1`
+    )
+    .get(jobId);
+  return Boolean(row);
 }
 
 function jobStats(jobId) {
@@ -681,7 +707,7 @@ app.get('/api/jobs', authMiddleware, (req, res) => {
   res.json(
     jobs.map((j) => {
       const owner = j.owner_id ? db.prepare('SELECT name FROM users WHERE id = ?').get(j.owner_id) : null;
-      return { ...j, owner: owner?.name, ...jobStats(j.id) };
+      return { ...j, owner: owner?.name, is_filled: jobIsFilled(j.id, j.stage), ...jobStats(j.id) };
     })
   );
 });
@@ -700,7 +726,7 @@ function attachPosting(job, org) {
 }
 
 app.post('/api/jobs', authMiddleware, (req, res) => {
-  const { title, team, location, description, stage, posting, green_threshold, amber_threshold } = req.body;
+  const { title, team, location, description, stage, position_level, posting, green_threshold, amber_threshold } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   const th = thresholdsFromOrg(org);
@@ -708,9 +734,9 @@ app.post('/api/jobs', authMiddleware, (req, res) => {
   const slug = `${slugify(title)}-${id.toLowerCase()}`;
   const postingData = serializePosting({ posting, team, description });
   db.prepare(
-    `INSERT INTO jobs (id, org_id, title, team, location, stage, owner_id, slug, description, posting_json,
+    `INSERT INTO jobs (id, org_id, title, team, location, stage, position_level, owner_id, slug, description, posting_json,
      green_threshold, amber_threshold)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     req.user.orgId,
@@ -718,6 +744,7 @@ app.post('/api/jobs', authMiddleware, (req, res) => {
     postingData.department || team || '',
     location || '',
     stage || 'Draft',
+    position_level || 'entry',
     req.user.sub,
     slug,
     postingData.summary || description || '',
@@ -783,7 +810,7 @@ app.get('/api/jobs/:id', authMiddleware, (req, res) => {
 app.patch('/api/jobs/:id', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
   if (!job) return res.status(404).json({ error: 'Job not found' });
-  const { title, team, location, stage, description, green_threshold, amber_threshold, posting } = req.body;
+  const { title, team, location, stage, position_level, description, green_threshold, amber_threshold, posting } = req.body;
   let postingJson = job.posting_json;
   if (posting !== undefined) {
     postingJson = JSON.stringify(serializePosting({ posting, team, description }));
@@ -793,17 +820,17 @@ app.patch('/api/jobs/:id', authMiddleware, (req, res) => {
   if (posting !== undefined) {
     db.prepare(
       `UPDATE jobs SET title=COALESCE(?,title), team=COALESCE(?,team), location=COALESCE(?,location),
-       stage=COALESCE(?,stage), description=COALESCE(?,description),
+       stage=COALESCE(?,stage), position_level=COALESCE(?,position_level), description=COALESCE(?,description),
        green_threshold=COALESCE(?,green_threshold), amber_threshold=COALESCE(?,amber_threshold),
        posting_json=? WHERE id=?`
-    ).run(title, team, location, stage, summary, green_threshold, amber_threshold, postingJson, job.id);
+    ).run(title, team, location, stage, position_level, summary, green_threshold, amber_threshold, postingJson, job.id);
   } else {
     db.prepare(
       `UPDATE jobs SET title=COALESCE(?,title), team=COALESCE(?,team), location=COALESCE(?,location),
-       stage=COALESCE(?,stage), description=COALESCE(?,description),
+       stage=COALESCE(?,stage), position_level=COALESCE(?,position_level), description=COALESCE(?,description),
        green_threshold=COALESCE(?,green_threshold), amber_threshold=COALESCE(?,amber_threshold)
        WHERE id=?`
-    ).run(title, team, location, stage, description, green_threshold, amber_threshold, job.id);
+    ).run(title, team, location, stage, position_level, description, green_threshold, amber_threshold, job.id);
   }
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   res.json(attachPosting(db.prepare('SELECT * FROM jobs WHERE id = ?').get(job.id), org));
@@ -896,12 +923,49 @@ app.get('/api/question-pool', authMiddleware, (req, res) => {
       department,
       level,
       search,
-    });
+    }).map((item) => ({
+      ...item,
+      source_label:
+        item.org_id == null
+          ? 'System'
+          : item.source_type === 'template'
+            ? `Template${item.source_template_name ? `: ${item.source_template_name}` : ''}`
+            : 'Org',
+    }));
     res.json({ items, count: items.length });
   } catch (e) {
     console.error('[question-pool]', e);
     res.status(500).json({ error: e.message || 'Failed to load question pool' });
   }
+});
+
+app.get('/api/question-pool/export', authMiddleware, (req, res) => {
+  res.json({ items: exportQuestionPool(db, req.user.orgId) });
+});
+
+app.post('/api/question-pool/import', authMiddleware, (req, res) => {
+  const { items } = req.body;
+  if (!Array.isArray(items) || !items.length) return res.status(400).json({ error: 'items array is required' });
+  const results = importQuestionPool(db, req.user.orgId, items, req.user.sub);
+  res.status(201).json({ results, message: `Added ${results.added.length}, linked ${results.linked.length}` });
+});
+
+app.post('/api/question-pool', authMiddleware, (req, res) => {
+  const result = createQuestion(db, req.user.orgId, req.body, req.user.sub);
+  if (result.error) return res.status(400).json({ error: result.error, existing: result.existing });
+  res.status(201).json({ id: result.id, message: 'Question added to library' });
+});
+
+app.put('/api/question-pool/:id', authMiddleware, (req, res) => {
+  const result = updateQuestion(db, req.params.id, req.user.orgId, req.body);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json({ id: result.id, message: 'Question updated' });
+});
+
+app.delete('/api/question-pool/:id', authMiddleware, (req, res) => {
+  const result = archiveQuestion(db, req.params.id, req.user.orgId);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json({ message: 'Question archived' });
 });
 
 // ——— Rubric templates ———
@@ -910,34 +974,143 @@ app.get('/api/rubric-templates', authMiddleware, (req, res) => {
   res.json({ templates: listTemplates(db, req.user.orgId) });
 });
 
+app.get('/api/rubric-templates/export', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  res.json({ templates: exportTemplates(db, req.user.orgId) });
+});
+
+app.post('/api/rubric-templates/import', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const { templates } = req.body;
+  if (!Array.isArray(templates) || !templates.length) {
+    return res.status(400).json({ error: 'templates array is required' });
+  }
+  const results = importTemplates(db, req.user.orgId, templates, req.user.sub);
+  res.status(201).json({ results, message: `Imported ${results.filter((r) => r.id).length} template(s)` });
+});
+
+app.get('/api/rubric-templates/:id', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const tpl = getTemplate(db, req.params.id, req.user.orgId);
+  if (!tpl) return res.status(404).json({ error: 'Template not found' });
+  res.json({ template: tpl });
+});
+
+app.get('/api/rubric-templates/:id/versions', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const versions = listTemplateVersions(db, req.params.id, req.user.orgId);
+  if (!versions.length) return res.status(404).json({ error: 'Template not found' });
+  res.json({ versions });
+});
+
 app.post('/api/rubric-templates', authMiddleware, (req, res) => {
   ensureRubricTemplatesTable(db);
-  const { job_id, name, description, department, experience_level } = req.body;
+  const { job_id, name, description, department, experience_level, questions, sync_to_library } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Template name is required' });
-  const job = db.prepare(`SELECT id FROM jobs WHERE id = ? AND org_id = ?`).get(job_id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
-  const rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
-  if (!rubric) return res.status(400).json({ error: 'No rubric on this job' });
-  const categories = getRubricCategories(rubric.id);
-  const result = saveTemplateFromCategories(db, {
-    orgId: req.user.orgId,
-    name: name.trim(),
-    description,
-    department,
-    experience_level,
-    categories,
-    createdBy: req.user.sub,
-  });
+
+  let result;
+  if (job_id) {
+    const job = db.prepare(`SELECT id, title FROM jobs WHERE id = ? AND org_id = ?`).get(job_id, req.user.orgId);
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    const rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
+    if (!rubric) return res.status(400).json({ error: 'No rubric on this job' });
+    const categories = getRubricCategories(rubric.id);
+    result = saveTemplateFromCategories(db, {
+      orgId: req.user.orgId,
+      name: name.trim(),
+      description: description || `From ${job.title}`,
+      department,
+      experience_level,
+      categories,
+      createdBy: req.user.sub,
+      syncToLibrary: sync_to_library !== false,
+    });
+  } else if (Array.isArray(questions) && questions.length) {
+    result = saveTemplateFromQuestions(db, {
+      orgId: req.user.orgId,
+      name: name.trim(),
+      description,
+      department,
+      experience_level,
+      questions,
+      createdBy: req.user.sub,
+      syncToLibrary: sync_to_library !== false,
+    });
+  } else {
+    return res.status(400).json({ error: 'Provide job_id or questions array' });
+  }
+
   if (result.error) return res.status(400).json({ error: result.error });
   logAudit({
     orgId: req.user.orgId,
-    jobId: job.id,
     actorId: req.user.sub,
     actorName: req.user.name,
     eventType: 'Rubric template saved',
     description: `Template "${name}" created`,
   });
-  res.status(201).json({ id: result.id, message: 'Template saved' });
+  res.status(201).json({
+    id: result.id,
+    version: result.version,
+    librarySync: result.librarySync,
+    message: 'Template saved',
+  });
+});
+
+app.post('/api/rubric-templates/from-pool', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const { name, description, department, experience_level, pool_ids: poolIds } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Template name is required' });
+  if (!Array.isArray(poolIds) || poolIds.length < 10) {
+    return res.status(400).json({ error: 'Select at least 10 questions from the library' });
+  }
+  const placeholders = poolIds.map(() => '?').join(',');
+  const items = db
+    .prepare(`SELECT * FROM question_pool WHERE id IN (${placeholders}) AND (org_id IS NULL OR org_id = ?) AND (archived IS NULL OR archived = 0)`)
+    .all(...poolIds, req.user.orgId);
+  if (items.length < 10) return res.status(400).json({ error: 'Some selected questions were not found' });
+
+  const result = saveTemplateFromPoolIds(db, {
+    orgId: req.user.orgId,
+    name: name.trim(),
+    description,
+    department,
+    experience_level,
+    poolItems: items,
+    createdBy: req.user.sub,
+  });
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json({ id: result.id, message: `Template "${name}" created from library` });
+});
+
+app.put('/api/rubric-templates/:id', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const { name, description, department, experience_level, questions, sync_to_library } = req.body;
+  const result = updateTemplate(db, req.params.id, req.user.orgId, {
+    name,
+    description,
+    department,
+    experience_level,
+    questions,
+    syncToLibrary: sync_to_library !== false,
+    updatedBy: req.user.sub,
+  });
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.json({ id: result.id, librarySync: result.librarySync, message: 'Template updated' });
+});
+
+app.post('/api/rubric-templates/:id/duplicate', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const { name } = req.body;
+  const result = duplicateTemplate(db, req.params.id, req.user.orgId, name, req.user.sub);
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json({ id: result.id, message: 'Template duplicated' });
+});
+
+app.delete('/api/rubric-templates/:id', authMiddleware, (req, res) => {
+  ensureRubricTemplatesTable(db);
+  const result = deleteTemplate(db, req.params.id, req.user.orgId);
+  if (result.error) return res.status(404).json({ error: result.error });
+  res.json({ message: 'Template deleted' });
 });
 
 app.post('/api/jobs/:id/rubric/from-template/:templateId', authMiddleware, (req, res) => {
@@ -994,6 +1167,7 @@ app.post('/api/jobs/:id/rubric/from-template/:templateId', authMiddleware, (req,
     eventType: 'Rubric from template',
     description: `Applied template "${tpl.name}" to ${job.title}`,
   });
+  recordTemplateApplication(db, tpl.id, job.id, req.user.sub);
 
   res.json({ rubric, categories: getRubricCategories(rubric.id), message: `Applied template "${tpl.name}"` });
 });
@@ -1576,7 +1750,11 @@ app.get('/api/applications', authMiddleware, (req, res) => {
     sql += ' AND s.bucket = ?';
     params.push(bucket);
   }
-  if (pipeline) {
+  if (pipeline === 'interviewing') {
+    sql += ` AND a.pipeline_stage IN ('interview_scheduled', 'interview_completed', 'interview_pending')`;
+  } else if (pipeline === 'selected') {
+    sql += ` AND a.pipeline_stage IN ('offer_extended', 'hired', 'final_review')`;
+  } else if (pipeline) {
     sql += ' AND a.pipeline_stage = ?';
     params.push(pipeline);
   }

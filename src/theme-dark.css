@@ -3,6 +3,11 @@
  * Activated via <html data-theme="dark">.
  */
 
+[data-theme='light'] body {
+  background: var(--portal-bg);
+  color: var(--portal-text);
+}
+
 [data-theme='dark'] body {
   background: #0f172a;
   color: #f1f5f9;
@@ -55,7 +60,7 @@
 }
 
 [data-theme='dark'] main {
-  background: #0f172a;
+  background: transparent;
 }
 
 [data-theme='dark'] .card {

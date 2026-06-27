@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   Loader2,
   Save,
   Trash2,
@@ -16,8 +15,8 @@ import { api } from '../api/client';
 import { Button } from '../components/ui';
 import { FormSection, FormField, FormGrid } from '../components/forms/FormSection';
 import { EMPTY_POSTING_FIELDS, listToText, textToList } from '../lib/jobPostingForm';
+import { JOB_STAGES, JOB_STAGE_DESCRIPTIONS, JOB_STAGE_FILTER_HINT, POSITION_LEVELS } from '../lib/jobStages';
 
-const STAGES = ['Draft', 'Open', 'Screening', 'Hiring Team Review', 'Interviewing'];
 const inputClass = 'formInput';
 const textareaClass = 'formInput formTextarea';
 const textareaMono = 'formInput formTextarea mono';
@@ -35,6 +34,7 @@ export function JobForm() {
     team: '',
     location: '',
     stage: 'Draft',
+    position_level: 'entry',
     description: '',
     green_threshold: '',
     amber_threshold: '',
@@ -52,6 +52,7 @@ export function JobForm() {
           team: d.team || '',
           location: d.location || '',
           stage: d.stage || 'Draft',
+          position_level: d.position_level || 'entry',
           description: d.description || '',
           green_threshold: d.green_threshold ?? '',
           amber_threshold: d.amber_threshold ?? '',
@@ -80,6 +81,7 @@ export function JobForm() {
     team: form.team,
     location: form.location,
     stage: form.stage,
+    position_level: form.position_level,
     description: form.posting.summary || form.description,
     green_threshold: form.green_threshold !== '' ? Number(form.green_threshold) : undefined,
     amber_threshold: form.amber_threshold !== '' ? Number(form.amber_threshold) : undefined,
@@ -142,16 +144,14 @@ export function JobForm() {
   return (
     <div className="formPage">
       <div className="formPageTop">
-        <Link to="/jobs" className="backLink light">
-          <ArrowLeft size={16} /> Jobs
-        </Link>
         <div className="formPageTitleRow">
           <div>
-            <p className="eyebrow">Recruiter · Job posting</p>
-            <h1>{isEdit ? 'Edit job posting' : 'Create job posting'}</h1>
+            <p className="eyebrow">Recruiter · Position</p>
+            <h1>{isEdit ? 'Edit position' : 'Create position'}</h1>
             <p className="lead">
               Candidates see a careers page with full details. <strong>Apply</strong> opens your screening
-              questions (7 required + 3 optional).
+              questions (7 required + 3 optional). Choose a <strong>workflow stage</strong> below to control
+              where this role appears (Draft, About to Start, In Progress, and so on).
             </p>
           </div>
           <div className="formPageActions">
@@ -242,12 +242,34 @@ export function JobForm() {
                   onChange={(e) => setPosting('visaSponsorship', e.target.value)}
                 />
               </FormField>
-              <FormField label="Job status">
-                <select className={inputClass} value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
-                  {STAGES.map((s) => (
-                    <option key={s}>{s}</option>
+              <FormField label="Position level" required hint="Used to sort and filter on the Positions page.">
+                <select
+                  className={inputClass}
+                  required
+                  value={form.position_level}
+                  onChange={(e) => setForm({ ...form, position_level: e.target.value })}
+                >
+                  {POSITION_LEVELS.map((level) => (
+                    <option key={level.id} value={level.id}>
+                      {level.label}
+                    </option>
                   ))}
                 </select>
+              </FormField>
+              <FormField
+                label="Workflow stage"
+                hint="Starts as Draft. Change to Open when ready to publish (edit position later)."
+                className="span2"
+              >
+                <select className={inputClass} value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
+                  {JOB_STAGES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                      {JOB_STAGE_FILTER_HINT[s] ? ` · ${JOB_STAGE_FILTER_HINT[s]}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="fieldNote muted">{JOB_STAGE_DESCRIPTIONS[form.stage]}</p>
               </FormField>
               {isEdit && (
                 <>

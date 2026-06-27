@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { Pencil, ExternalLink } from 'lucide-react';
 import { api } from '../api/client';
 import { Button, Card } from '../components/ui';
 import { QuestionPoolPicker } from '../components/QuestionPoolPicker';
 import { RubricTemplatePanel } from '../components/RubricTemplatePanel';
+
+import { returnState } from '../lib/navigation';
 
 const RESPONSE_TYPES = [
   { value: 'text', label: 'Text' },
@@ -30,6 +32,7 @@ const CATEGORY_TYPES = [
 
 export function JobDetail() {
   const { id } = useParams();
+  const location = useLocation();
   const [job, setJob] = useState(null);
   const [categories, setCategories] = useState([]);
   const [rubric, setRubric] = useState(null);
@@ -147,14 +150,13 @@ export function JobDetail() {
     <>
       <div className="pageHead row">
         <div>
-          <Link to="/jobs">← Jobs</Link>
           <h1>{job.title}</h1>
           <p>
             {job.id} · {job.team} · {job.location} · Stage: {job.stage}
           </p>
         </div>
         <div className="row">
-          <Link to={`/jobs/${id}/edit`}>
+          <Link to={`/jobs/${id}/edit`} state={returnState(location)}>
             <Button variant="outline">
               <Pencil size={15} /> Edit posting
             </Button>
@@ -326,7 +328,7 @@ export function JobDetail() {
               {job.red} <small>Red</small>
             </span>
           </div>
-          <Link to={`/candidates?jobId=${job.id}`}>
+          <Link to={`/candidates?jobId=${job.id}`} state={returnState(location)}>
             <Button>View candidates</Button>
           </Link>
         </Card>

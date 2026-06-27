@@ -11,12 +11,18 @@ import { JobPostingPublic } from './pages/JobPostingPublic';
 import { Candidates } from './pages/Candidates';
 import { CandidateDetail } from './pages/CandidateDetail';
 import { Rubrics } from './pages/Rubrics';
+import { RubricBuilder } from './pages/RubricBuilder';
+import { RubricTemplates } from './pages/RubricTemplates';
+import { RubricTemplateDetail } from './pages/RubricTemplateDetail';
+import { RubricLibrary } from './pages/RubricLibrary';
+import { RubricJobs } from './pages/RubricJobs';
 import { Audit } from './pages/Audit';
 import { Apply } from './pages/Apply';
 import { CandidateSchedule } from './pages/CandidateSchedule';
 import { Settings } from './pages/Settings';
 import { Access } from './pages/Access';
 import { Reports } from './pages/Reports';
+import { RecruiterPerformance } from './pages/RecruiterPerformance';
 import { Help } from './pages/Help';
 import { Integrations } from './pages/Integrations';
 import { Trash } from './pages/Trash';
@@ -70,8 +76,14 @@ export function App() {
             <Route path="candidates/:id" element={<CandidateDetail />} />
             <Route path="trash" element={<Trash />} />
             <Route path="rubrics" element={<Rubrics />} />
+            <Route path="rubrics/new" element={<RubricBuilder />} />
+            <Route path="rubrics/templates" element={<RubricTemplates />} />
+            <Route path="rubrics/templates/:id" element={<RubricTemplateDetail />} />
+            <Route path="rubrics/library" element={<RubricLibrary />} />
+            <Route path="rubrics/jobs" element={<RubricJobs />} />
             <Route path="audit" element={<Audit />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="recruiter-performance" element={<RecruiterPerformance />} />
             <Route path="integrations" element={<Integrations />} />
             <Route path="access" element={<Access />} />
             <Route path="help" element={<Help />} />

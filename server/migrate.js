@@ -75,6 +75,41 @@ export function runSchemaMigrations() {
   addColumn('jobs', 'candidate_notice_override', 'TEXT');
   addColumn('jobs', 'posting_json', 'TEXT');
   addColumn('jobs', 'deleted_at', 'TEXT');
+  addColumn('jobs', 'position_level', "TEXT DEFAULT 'entry'");
+
+  const demoLevelByJobId = {
+    'JOB-INTERN-001': 'internship',
+    'JOB-ASSOC-001': 'entry',
+    'JOB-MID-001': 'mid',
+    'JOB-SENIOR-001': 'senior',
+    'JOB-STAFF-001': 'senior',
+    'JOB-DIRECTOR-001': 'senior',
+  };
+  for (const [jobId, level] of Object.entries(demoLevelByJobId)) {
+    db.prepare(`UPDATE jobs SET position_level = ? WHERE id = ?`).run(level, jobId);
+  }
+  db.prepare(
+    `UPDATE jobs SET position_level = 'internship'
+     WHERE position_level = 'entry' AND (LOWER(title) LIKE '%intern%' OR LOWER(id) LIKE '%intern%')`
+  ).run();
+  db.prepare(
+    `UPDATE jobs SET position_level = 'senior'
+     WHERE position_level = 'entry' AND (
+       LOWER(title) LIKE '%senior%' OR LOWER(title) LIKE '%staff%'
+       OR LOWER(title) LIKE '%director%' OR LOWER(title) LIKE '%principal%'
+     )`
+  ).run();
+  db.prepare(
+    `UPDATE jobs SET position_level = 'mid'
+     WHERE position_level = 'entry' AND (
+       LOWER(title) LIKE '% ii%' OR LOWER(title) LIKE '% iii%'
+       OR LOWER(title) LIKE '%mid-%' OR LOWER(title) LIKE '%middle%'
+     )`
+  ).run();
+  db.prepare(
+    `UPDATE jobs SET position_level = 'entry'
+     WHERE position_level = 'entry' AND LOWER(title) LIKE '%associate%'`
+  ).run();
 
   addColumn('applications', 'deleted_at', 'TEXT');
   addColumn('applications', 'integrity_json', 'TEXT');
@@ -113,6 +148,30 @@ export function runSchemaMigrations() {
   addColumn('rubric_categories', 'keywords', 'TEXT');
   addColumn('rubric_categories', 'category_type', "TEXT DEFAULT 'General'");
   addColumn('rubric_categories', 'ideal_answer', 'TEXT');
+
+  addColumn('question_pool', 'ideal_answer', 'TEXT');
+  addColumn('question_pool', 'source_type', "TEXT DEFAULT 'system'");
+  addColumn('question_pool', 'source_template_id', 'TEXT');
+  addColumn('question_pool', 'source_template_name', 'TEXT');
+  addColumn('question_pool', 'created_by', 'TEXT');
+  addColumn('question_pool', 'archived', 'INTEGER DEFAULT 0');
+  addColumn('question_pool', 'updated_at', 'TEXT');
+
+  addColumn('rubric_templates', 'version', 'INTEGER DEFAULT 1');
+  addColumn('rubric_templates', 'parent_template_id', 'TEXT');
+  addColumn('rubric_templates', 'updated_at', 'TEXT');
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS rubric_template_applications (
+      id TEXT PRIMARY KEY,
+      template_id TEXT NOT NULL,
+      job_id TEXT NOT NULL,
+      applied_by TEXT,
+      applied_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.prepare(`UPDATE question_pool SET source_type = 'system' WHERE org_id IS NULL AND (source_type IS NULL OR source_type = '')`).run();
 
   addColumn('scores', 'intelligence_json', 'TEXT');
   addColumn('scores', 'recommendation', 'TEXT');
