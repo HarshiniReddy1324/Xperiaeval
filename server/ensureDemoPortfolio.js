@@ -296,26 +296,69 @@ function insertPortfolioData() {
   return { jobsAdded, candidatesAdded };
 }
 
-export function ensureDemoPortfolio() {
-  if (!needsDemoPortfolioSeed()) {
-    return { skipped: true, jobsAdded: 0, candidatesAdded: 0 };
-  }
+/** Keep demo portfolio activity inside dashboard date ranges on long-lived production DBs. */
+export function refreshStaleDemoTimestamps() {
+  if (process.env.XPERIEVAL_SKIP_DEMO_PORTFOLIO === '1') return 0;
 
-  ensureMetaTable();
-  let result = { skipped: false, jobsAdded: 0, candidatesAdded: 0 };
+  const stale = db
+    .prepare(
+      `SELECT a.id FROM applications a
+       JOIN jobs j ON j.id = a.job_id
+       WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
+         AND datetime(a.created_at) < datetime('now', '-30 days')
+       ORDER BY a.id`
+    )
+    .all(ORG_ID);
+
+  if (!stale.length) return 0;
+
+  const updateApp = db.prepare(`UPDATE applications SET created_at = datetime('now', ?) WHERE id = ?`);
+  const updateScore = db.prepare(
+    `UPDATE scores SET created_at = datetime('now', ?) WHERE application_id = ?`
+  );
 
   const run = db.transaction(() => {
-    ensureBaseOrg();
-    result = insertPortfolioData();
+    stale.forEach((row, i) => {
+      const offset = `-${1 + (i % 28)} days`;
+      updateApp.run(offset, row.id);
+      updateScore.run(offset, row.id);
+    });
     db.prepare(
-      `INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now'))
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-    ).run('demo_portfolio_marker', DEMO_PORTFOLIO_MARKER);
+      `UPDATE jobs SET created_at = datetime('now', '-14 days')
+       WHERE org_id = ? AND deleted_at IS NULL AND datetime(created_at) < datetime('now', '-30 days')`
+    ).run(ORG_ID);
   });
 
   run();
-  console.log(
-    `[seed] Demo portfolio ensured — ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
-  );
-  return result;
+  return stale.length;
+}
+
+export function ensureDemoPortfolio() {
+  ensureMetaTable();
+  let result = { skipped: true, jobsAdded: 0, candidatesAdded: 0 };
+
+  if (needsDemoPortfolioSeed()) {
+    result = { skipped: false, jobsAdded: 0, candidatesAdded: 0 };
+
+    const run = db.transaction(() => {
+      ensureBaseOrg();
+      result = insertPortfolioData();
+      db.prepare(
+        `INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+      ).run('demo_portfolio_marker', DEMO_PORTFOLIO_MARKER);
+    });
+
+    run();
+    console.log(
+      `[seed] Demo portfolio ensured — ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
+    );
+  }
+
+  const refreshed = refreshStaleDemoTimestamps();
+  if (refreshed > 0) {
+    console.log(`[seed] Refreshed activity dates on ${refreshed} demo application(s) for dashboard ranges`);
+  }
+
+  return { ...result, timestampsRefreshed: refreshed };
 }

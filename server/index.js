@@ -33,7 +33,7 @@ import {
   keywordMatchScore,
   analyzePerAnswerIntegrity,
 } from './screening.js';
-import { buildDashboardAnalytics, buildJobTableRows, buildPositionKpis, sinceFromRange, daysFromRange } from './dashboardAnalytics.js';
+import { buildDashboardAnalytics, buildJobTableRows, buildPositionKpis, sinceFromRange, daysFromRange, sqliteRangeModifier } from './dashboardAnalytics.js';
 import {
   summarizeExperienceScores,
   buildQualityTrend,
@@ -570,7 +570,8 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 // ——— Dashboard ———
 app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
   const range = req.query.range || '30d';
-  const since = sinceFromRange(range);
+  const rangeModifier = sqliteRangeModifier(range);
+  const since = sinceFromRange(range, db);
   const days = daysFromRange(range);
 
   const jobs = db
@@ -590,7 +591,7 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
     { applicants: 0, green: 0, amber: 0, red: 0 }
   );
   const screening = buildScreeningMetrics(req.user.orgId, db);
-  const analytics = buildDashboardAnalytics(req.user.orgId, db, enriched, { since, days, range });
+  const analytics = buildDashboardAnalytics(req.user.orgId, db, enriched, { since, days, range, rangeModifier });
   const hiredJobIds = db
     .prepare(
       `SELECT DISTINCT a.job_id FROM applications a
@@ -608,9 +609,12 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
-         AND datetime(a.created_at) >= datetime(?)`
+         AND (
+           datetime(a.created_at) >= datetime('now', ?)
+           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
+         )`
     )
-    .all(req.user.orgId, since);
+    .all(req.user.orgId, rangeModifier, rangeModifier);
   const jobTable = buildJobTableRows(enriched, appsInRange);
   const recommendations = db
     .prepare(
@@ -620,11 +624,14 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND ${SQL_JOB_ACTIVE_J} AND ${SQL_APP_ACTIVE_A}
-         AND datetime(a.created_at) >= datetime(?)
+         AND (
+           datetime(a.created_at) >= datetime('now', ?)
+           OR datetime(s.created_at) >= datetime('now', ?)
+         )
          AND a.screening_status = 'complete' AND s.overall IS NOT NULL
        ORDER BY a.hidden_gem DESC, s.overall DESC LIMIT 8`
     )
-    .all(req.user.orgId, since)
+    .all(req.user.orgId, rangeModifier, rangeModifier)
     .map((r) => ({
       id: r.id,
       display_name: r.anonymized_code || r.id,

@@ -16,11 +16,23 @@ export function daysFromRange(range) {
   return 30;
 }
 
-/** SQLite-friendly datetime string for filtering applications.created_at */
-export function sinceFromRange(range) {
+/** SQLite datetime('now', modifier) — keeps filters aligned with stored UTC timestamps. */
+export function sqliteRangeModifier(range) {
+  if (range === '7d') return '-7 days';
+  if (range === '90d') return '-90 days';
+  return '-30 days';
+}
+
+/** Human-readable since boundary using the same clock as SQLite filters. */
+export function sinceFromRange(range, db) {
+  const modifier = sqliteRangeModifier(range);
+  if (db) {
+    const row = db.prepare(`SELECT datetime('now', ?) as since`).get(modifier);
+    if (row?.since) return row.since;
+  }
   const days = daysFromRange(range);
   const d = new Date();
-  d.setDate(d.getDate() - days);
+  d.setUTCDate(d.getUTCDate() - days);
   return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
@@ -72,7 +84,9 @@ export function buildApplicationKpis(jobs, totals, screening) {
 }
 
 export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
-  const since = options.since || sinceFromRange('30d');
+  const range = options.range || '30d';
+  const rangeModifier = options.rangeModifier || sqliteRangeModifier(range);
+  const since = options.since || sinceFromRange(range, db);
   const apps = db
     .prepare(
       `SELECT a.id, a.job_id, a.screening_status, a.authenticity_score, a.proctoring_failed,
@@ -82,9 +96,12 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
-         AND datetime(a.created_at) >= datetime(?)`
+         AND (
+           datetime(a.created_at) >= datetime('now', ?)
+           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
+         )`
     )
-    .all(orgId, since);
+    .all(orgId, rangeModifier, rangeModifier);
 
   const hiredJobIds = db
     .prepare(
@@ -237,8 +254,8 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
     hiddenGems: apps.filter((a) => a.hidden_gem === 1).length,
     dateRange: {
       since,
-      days: options.days ?? daysFromRange('30d'),
-      label: formatRangeLabel(options.range || '30d'),
+      days: options.days ?? daysFromRange(range),
+      label: formatRangeLabel(range),
     },
   };
 }
