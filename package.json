@@ -13,7 +13,6 @@
     "seed:reset-demo": "node server/resetDemoPortfolio.js",
     "seed:candidates": "node server/seedPortfolioCandidates.js",
     "seed:ensure": "node --input-type=module -e \"import('./server/ensureDemoPortfolio.js').then(m=>m.ensureDemoPortfolio()).then(()=>import('./server/seedPortfolioCandidates.js')).then(m=>m.enrichPortfolioCandidates({onlyMissing:true}))\"",
-    "prebuild": "node scripts/prebuild-vercel.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js"

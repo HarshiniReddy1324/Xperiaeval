@@ -34,21 +34,6 @@ function buildExperienceIntelBuckets(data = {}) {
   ];
 }
 
-function experienceIntelFromTotals(totals = {}) {
-  const green = totals.green ?? 0;
-  const amber = totals.amber ?? 0;
-  const red = totals.red ?? 0;
-  const scored = green + amber + red;
-  if (!scored) return null;
-  return {
-    scored_count: scored,
-    elite_candidates: 0,
-    strong_match: green,
-    needs_review: amber,
-    high_risk: red,
-  };
-}
-
 function normalizeFunnel(raw = {}) {
   const applied = Math.max(0, raw.applied ?? 0);
   const screened = Math.min(applied, Math.max(0, raw.screened ?? 0));
@@ -83,19 +68,15 @@ export function Dashboard() {
     loadDashboard();
   }, [dateRange]);
 
-  const { analytics = {}, jobTable = [], kpiCards = [], totals = {} } = data;
+  const { analytics = {}, jobTable = [], kpiCards = [] } = data;
   const pipeline = normalizeFunnel(analytics.pipeline || {});
   const health = analytics.hiringHealth || {};
   const alerts = analytics.integrityAlerts || {};
   const perf = analytics.recruiterPerformance || {};
   const hiddenGemCount = analytics.hiddenGems ?? 0;
   const visibleJobs = jobTable.slice(0, 5);
-  const experienceIntel =
-    (analytics.experienceIntelligence?.scored_count ?? 0) > 0
-      ? analytics.experienceIntelligence
-      : experienceIntelFromTotals(totals) || analytics.experienceIntelligence || {};
+  const experienceIntel = analytics.experienceIntelligence || {};
   const experienceBuckets = buildExperienceIntelBuckets(experienceIntel);
-  const showExperienceDonut = (experienceIntel.scored_count ?? 0) > 0;
 
   const funnelStages = [
     { label: 'Applied', value: pipeline.applied ?? 0, to: '/candidates' },
@@ -182,13 +163,15 @@ export function Dashboard() {
             <h2>Experience Intelligence</h2>
             <Link to="/reports" state={FROM_DASHBOARD}>Analytics</Link>
           </div>
-          {showExperienceDonut ? (
+          {(experienceIntel.scored_count ?? 0) > 0 ? (
             <DonutChart
               segments={experienceBuckets}
-              size={168}
-              stroke={32}
+              size={180}
+              stroke={36}
               centerSub="evaluated"
               showLegendPct={false}
+              hideTrack
+              legendClassName="chartDonut--quality"
               onSegmentClick={(seg) => seg.to && navigate(seg.to, { state: FROM_DASHBOARD })}
             />
           ) : (
