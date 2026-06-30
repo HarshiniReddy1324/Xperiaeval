@@ -1,5 +1,5 @@
 /**
- * Hidden-gem / second-chance candidate detection — strong answers + authentic session
+ * Hidden-gem / second-chance candidate detection, strong answers + authentic session
  * despite weaker resume fit or Amber bucket.
  */
 
@@ -24,10 +24,10 @@ export function buildHiddenGemAssessment({
     reasons.push('Strong screening answers despite limited resume overlap with role keywords');
   }
   if (bucket === 'Amber' && mandatoryPct >= 78 && auth >= 85) {
-    reasons.push('High-integrity responses — worth a second-chance recruiter review');
+    reasons.push('High-integrity responses, worth a second-chance recruiter review');
   }
   if (overall >= 58 && overall < 80 && mandatoryPct >= 82 && auth >= 90) {
-    reasons.push('Answer quality exceeds what resume alone suggests — hidden talent signal');
+    reasons.push('Answer quality exceeds what resume alone suggests, hidden talent signal');
   }
   if (transferable.length >= 2 && mandatoryPct >= 70 && auth >= 75) {
     reasons.push(`Transferable strengths detected: ${transferable.slice(0, 3).join(', ')}`);

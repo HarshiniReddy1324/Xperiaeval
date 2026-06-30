@@ -1,5 +1,5 @@
 export const MAIN_NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
+  { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
   { path: '/jobs', label: 'Positions', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter'] },
   { path: '/candidates', label: 'Candidates', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter', 'Compliance Auditor'] },
   { path: '/rubrics', label: 'Screening', roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
@@ -24,7 +24,7 @@ export function navForRole(role) {
 export const NAV_ITEMS = [...MAIN_NAV_ITEMS, ...BOTTOM_NAV_ITEMS];
 
 export function canAccess(role, path) {
-  const item = NAV_ITEMS.find((n) => n.path === path || (path !== '/' && path.startsWith(n.path) && n.path !== '/'));
+  const item = NAV_ITEMS.find((n) => n.path === path || (path !== '/dashboard' && path.startsWith(n.path) && n.path !== '/dashboard'));
   if (!item) return true;
   return item.roles.includes(role);
 }

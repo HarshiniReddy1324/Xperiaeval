@@ -3,6 +3,7 @@ import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-do
 import { Eye, Trash2, GitCompare, CircleCheck, CircleAlert, CircleX, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
 import { formatApplicationSource } from '../lib/applicationSource';
+import { sanitizeProductCopy } from '../lib/copy';
 import { useAuth } from '../context/AuthContext';
 import { normalizeProductMode } from '../lib/productMode';
 import { returnState, rememberCandidatesList } from '../lib/navigation';
@@ -162,6 +163,8 @@ export function Candidates() {
       : 'Candidates'
     : filters.integrity === 'flagged'
       ? 'Experience Verification'
+      : filters.pipeline === 'interviewing'
+        ? 'Interviews'
       : filters.bucket
         ? `${filters.bucket} candidates`
         : 'Candidates';
@@ -172,13 +175,19 @@ export function Candidates() {
         <h1>{pageTitle}</h1>
         <p>
           {isIntelOnly &&
-            'Candidates synced from your ATS or scored via the Intelligence API — review experience scores and explainability.'}
+            'Candidates synced from your ATS or scored via the Intelligence API: review experience scores and explainability.'}
           {!isIntelOnly && filters.integrity === 'flagged' &&
-            'Candidates with integrity, authenticity, or experience verification flags — review before advancing.'}
+            'Candidates with integrity, authenticity, or experience verification flags: review before advancing.'}
           {!isIntelOnly && showBucketPicker && filters.integrity !== 'flagged' &&
             'Choose a score bucket to view applicants ranked by fit and integrity signals.'}
           {!isIntelOnly && showListView && filters.bucket && bucketMeta?.description}
-          {!isIntelOnly && showListView && !filters.bucket && hasNonBucketFilters(filters) && (
+          {!isIntelOnly && showListView && filters.pipeline === 'interviewing' && (
+            <>
+              Candidates shortlisted or in the interview pipeline. Open a profile to send a scheduling link, confirm
+              their chosen time, or record interview outcomes.
+            </>
+          )}
+          {!isIntelOnly && showListView && !filters.bucket && hasNonBucketFilters(filters) && filters.pipeline !== 'interviewing' && (
             <>Filtered applicant list across all buckets. Use screening and pipeline filters to narrow results.</>
           )}
           {isIntelOnly && showBucketPicker && 'Choose a score bucket to review candidates by experience fit.'}
@@ -303,9 +312,9 @@ export function Candidates() {
                       'Check two rows below to open a side-by-side score breakdown.'}
                     {compareIds.length === 1 &&
                       compareJobTitle &&
-                      `Selected one — pick another candidate for ${compareJobTitle}.`}
-                    {compareIds.length === 1 && !compareJobTitle && 'Selected one — pick one more for the same position.'}
-                    {compareIds.length >= 2 && 'Ready — open the comparison view.'}
+                      `Selected one: pick another candidate for ${compareJobTitle}.`}
+                    {compareIds.length === 1 && !compareJobTitle && 'Selected one: pick one more for the same position.'}
+                    {compareIds.length >= 2 && 'Ready: open the comparison view.'}
                   </p>
                 </div>
               </div>
@@ -384,13 +393,13 @@ export function Candidates() {
                         {c.id} · {c.email}
                       </small>
                     </td>
-                    <td className="score">{c.application_score ?? c.score ?? '—'}</td>
+                    <td className="score">{c.application_score ?? c.score ?? 'N/A'}</td>
                     <td>
-                      <small>{c.recommendation || '—'}</small>
+                      <small>{sanitizeProductCopy(c.recommendation) || 'N/A'}</small>
                     </td>
                     {!filters.bucket && (
                       <td>
-                        {bucketOf(c) ? <BucketBadge bucket={bucketOf(c)} /> : '—'}
+                        {bucketOf(c) ? <BucketBadge bucket={bucketOf(c)} /> : 'N/A'}
                       </td>
                     )}
                     {!isIntelOnly && (
@@ -400,19 +409,19 @@ export function Candidates() {
                           {SCHEDULE_LABELS[c.schedule_status] || c.schedule_status}
                         </span>
                       ) : (
-                        '—'
+                        'N/A'
                       )}
                     </td>
                     )}
                     {!isIntelOnly && (
                     <td>
                       <span className={`screenTag ${c.screening_status || ''}`}>
-                        {c.screening_category || c.screening_status || '—'}
+                        {c.screening_category || c.screening_status || 'N/A'}
                       </span>
                     </td>
                     )}
-                    {!isIntelOnly && <td>{c.completion_pct != null ? `${c.completion_pct}%` : '—'}</td>}
-                    {!isIntelOnly && <td>{PIPELINE_LABELS[c.pipeline_stage] || c.pipeline_stage || '—'}</td>}
+                    {!isIntelOnly && <td>{c.completion_pct != null ? `${c.completion_pct}%` : 'N/A'}</td>}
+                    {!isIntelOnly && <td>{PIPELINE_LABELS[c.pipeline_stage] || c.pipeline_stage || 'N/A'}</td>}
                     <td>{formatApplicationSource(c.source)}</td>
                     {!isIntelOnly && (
                     <td>
@@ -425,7 +434,7 @@ export function Candidates() {
                           {c.authenticity_score}
                         </span>
                       ) : (
-                        '—'
+                        'N/A'
                       )}
                     </td>
                     )}
@@ -458,7 +467,7 @@ export function Candidates() {
                       {hasActiveFilters
                         ? 'No candidates match the current filters.'
                         : isIntelOnly
-                          ? 'No candidates yet — ingest via ATS webhook or evaluate via API.'
+                          ? 'No candidates yet: ingest via ATS webhook or evaluate via API.'
                           : 'No applications yet. Share a position apply link to collect candidates.'}
                     </td>
                   </tr>

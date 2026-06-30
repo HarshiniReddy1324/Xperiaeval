@@ -26,7 +26,7 @@ async function extractDocx(buffer) {
 }
 
 /**
- * Extract resume text from an uploaded file (async — PDF/DOCX supported).
+ * Extract resume text from an uploaded file (async, PDF/DOCX supported).
  */
 export async function extractResumeText(filePath, originalName = '') {
   if (!filePath || !existsSync(filePath)) return '';
@@ -47,7 +47,7 @@ export async function extractResumeText(filePath, originalName = '') {
       return text.slice(0, MAX_CHARS);
     }
 
-    // Unknown extension — try UTF-8 read
+    // Unknown extension, try UTF-8 read
     const asText = buffer.toString('utf8');
     if (asText && !/[\x00-\x08]/.test(asText.slice(0, 200))) {
       return asText.slice(0, MAX_CHARS).trim();
@@ -59,7 +59,7 @@ export async function extractResumeText(filePath, originalName = '') {
   }
 }
 
-/** Sync helper — text/md only; use extractResumeText for PDF/DOCX. */
+/** Sync helper, text/md only; use extractResumeText for PDF/DOCX. */
 export function extractResumeTextSync(filePath, originalName = '') {
   if (!filePath || !existsSync(filePath)) return '';
   const ext = extOf(originalName || filePath);

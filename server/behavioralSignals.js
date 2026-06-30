@@ -1,5 +1,5 @@
 /**
- * Keystroke + behavioral signals for recruiter UI — derived from proctoring session data.
+ * Keystroke + behavioral signals for recruiter UI, derived from proctoring session data.
  */
 
 function clamp(n, lo = 0, hi = 100) {
@@ -110,7 +110,7 @@ export function buildBehavioralSignals(integrity = {}, behavioral = {}, appRow =
       status: anomalyFields > 0 ? 'warn' : 'pass',
       detail:
         anomalyFields > 0
-          ? `${anomalyFields} field(s) show paste-like or bot-like timing — review answer authenticity`
+          ? `${anomalyFields} field(s) show paste-like or bot-like timing, review answer authenticity`
           : 'Natural typing rhythm across screening fields',
     });
 
@@ -121,7 +121,7 @@ export function buildBehavioralSignals(integrity = {}, behavioral = {}, appRow =
         label: 'Typing speed',
         value: `~${avgWpm} WPM avg`,
         status: wpmStatus,
-        detail: wpmStatus === 'warn' ? 'Unusually fast or slow — may indicate dictation or paste' : 'Within typical human range',
+        detail: wpmStatus === 'warn' ? 'Unusually fast or slow, may indicate dictation or paste' : 'Within typical human range',
       });
       if (wpmStatus === 'warn') score -= 8;
     }
@@ -156,7 +156,7 @@ export function buildBehavioralSignals(integrity = {}, behavioral = {}, appRow =
       label: 'Focus / tab switches',
       value: String(tabSwitches),
       status: tabSwitches >= 5 ? 'warn' : 'review',
-      detail: `${integrity?.hidden_time_seconds || 0}s away from form — context only, not auto-reject`,
+      detail: `${integrity?.hidden_time_seconds || 0}s away from form, context only; not auto-reject`,
     });
     if (tabSwitches >= 5) score -= 6;
   }
@@ -202,9 +202,9 @@ export function buildBehavioralSignals(integrity = {}, behavioral = {}, appRow =
     signals.push({
       id: 'gaze_tracking',
       label: 'Gaze / attention tracking',
-      value: `${gt.attention_score ?? '—'}% attention`,
+      value: `${gt.attention_score ?? 'N/A'}% attention`,
       status: (gt.attention_score ?? 100) >= 75 ? 'pass' : (gt.attention_score ?? 0) >= 50 ? 'warn' : 'fail',
-      detail: `${gt.look_away_pct ?? 0}% look-away · ${gt.off_center_pct ?? 0}% off-center — no video stored`,
+      detail: `${gt.look_away_pct ?? 0}% look-away · ${gt.off_center_pct ?? 0}% off-center, no video stored`,
     });
     if ((gt.attention_score ?? 100) < 60) score -= 8;
   }
@@ -246,8 +246,8 @@ export function buildBehavioralSignals(integrity = {}, behavioral = {}, appRow =
       score >= 85
         ? 'Keystroke and session behavior support authentic self-authored answers.'
         : score >= 65
-          ? 'Some behavioral anomalies — correlate with answer quality and integrity flags.'
-          : 'Significant behavioral signals — verify authorship before advancing.',
+          ? 'Some behavioral anomalies, correlate with answer quality and integrity flags.'
+          : 'Significant behavioral signals, verify authorship before advancing.',
     signals,
     per_question: questionRows || [],
     metrics: {

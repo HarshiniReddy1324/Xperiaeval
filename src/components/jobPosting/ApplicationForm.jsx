@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 
 /**
- * Optional quick-apply on careers page — full screening lives at /apply/:slug
+ * Optional quick-apply on careers page: full screening lives at /apply/:slug
  */
 export function ApplicationForm({ applyUrl, onApplyClick }) {
   const [submitting, setSubmitting] = useState(false);

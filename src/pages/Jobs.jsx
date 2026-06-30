@@ -189,7 +189,7 @@ export function Jobs() {
             {showLevelPicker && 'Choose a career level to view and manage positions.'}
             {showLevelList && (
               <>
-                {levelMeta?.description}. New positions start as <strong>Draft</strong> — edit and set to{' '}
+                {levelMeta?.description}. New positions start as <strong>Draft</strong>: edit and set to{' '}
                 <strong>Open</strong> when ready to go live.
               </>
             )}

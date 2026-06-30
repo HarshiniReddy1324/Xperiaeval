@@ -7,6 +7,7 @@ import './public-portal.css';
 import './theme-dark.css';
 import './ease-health-tokens.css';
 import './ease-health-portal.css';
+import './auth.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

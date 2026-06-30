@@ -1,5 +1,5 @@
 /**
- * Internal per-question time guidelines — not enforced on applicants in real time.
+ * Internal per-question time guidelines; not enforced on applicants in real time.
  * Recruiters configure max_response_seconds; we flag and score when exceeded beyond grace.
  */
 
@@ -16,7 +16,7 @@ export function formatDuration(seconds = 0) {
 
 /**
  * @param {number} timeTakenSeconds
- * @param {number} maxAllowedSeconds — recruiter-configured guideline per question
+ * @param {number} maxAllowedSeconds, recruiter-configured guideline per question
  * @param {number} [graceSeconds]
  */
 export function evaluateAnswerTiming(timeTakenSeconds, maxAllowedSeconds, graceSeconds = TIMING_GRACE_SECONDS) {
@@ -55,7 +55,7 @@ export function evaluateAnswerTiming(timeTakenSeconds, maxAllowedSeconds, graceS
     return {
       ...base,
       status: 'grace',
-      detail: `${formatDuration(overBy)} over guideline — within ${formatDuration(grace)} grace, no penalty.`,
+      detail: `${formatDuration(overBy)} over guideline, within ${formatDuration(grace)} grace, no penalty.`,
     };
   }
 
@@ -79,7 +79,7 @@ export function evaluateAnswerTiming(timeTakenSeconds, maxAllowedSeconds, graceS
     exceeded_beyond_grace: true,
     score_penalty: scorePenalty,
     flag,
-    detail: `Took ${formatDuration(taken)} vs ${formatDuration(maxAllowed)} guideline — ${flag}.`,
+    detail: `Took ${formatDuration(taken)} vs ${formatDuration(maxAllowed)} guideline, ${flag}.`,
   };
 }
 

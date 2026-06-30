@@ -55,7 +55,7 @@ export function DimensionRadar({ dimensions, label, color = '#6366f1', size = 20
       <div className="radarLegend">
         {DIM_KEYS.map((d) => (
           <span key={d.key}>
-            {d.label}: <strong>{dimensions?.[d.key] ?? '—'}</strong>
+            {d.label}: <strong>{dimensions?.[d.key] ?? 'N/A'}</strong>
           </span>
         ))}
       </div>

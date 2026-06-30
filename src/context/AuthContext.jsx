@@ -3,28 +3,14 @@ import { auth, getToken, setToken } from '../api/client';
 
 const AuthContext = createContext(null);
 
-const DEMO_EMAIL = 'demo@xperieval.com';
-const DEMO_PASSWORD = 'demo1234';
-
-/** Set VITE_REQUIRE_LOGIN=1 on Vercel to restore the login screen. */
-const autoLoginEnabled = import.meta.env.VITE_REQUIRE_LOGIN !== '1';
-
 async function restoreSession() {
   const token = getToken();
-  if (token) {
-    try {
-      return await auth.me();
-    } catch {
-      setToken(null);
-    }
-  }
-  if (!autoLoginEnabled) return null;
-  const { token: nextToken, user } = await auth.login(DEMO_EMAIL, DEMO_PASSWORD);
-  setToken(nextToken);
+  if (!token) return null;
   try {
     return await auth.me();
   } catch {
-    return user;
+    setToken(null);
+    return null;
   }
 }
 
@@ -37,7 +23,7 @@ export function AuthProvider({ children }) {
     restoreSession()
       .then((u) => {
         setUser(u);
-        setAuthError(u ? '' : 'Check that the API is running and reachable.');
+        setAuthError('');
       })
       .catch((err) => {
         setUser(null);

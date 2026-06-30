@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { db } from './db.js';
 import { logAudit } from './audit.js';
+import { queueEmail } from './email.js';
 import { generateDefaultSlots, formatSlotLabel, buildIcsEvent } from './scheduling.js';
 import { createNotification, notifyHiringTeam } from './notifications.js';
 
@@ -137,7 +138,7 @@ export function createScheduleInvite({
     actorId: interviewerId,
     actorName: interviewerName,
     eventType: 'Scheduling invite sent',
-    description: `Candidate booking link created — ${payload.slots.length} slots`,
+    description: `Candidate booking link created, ${payload.slots.length} slots`,
   });
 
   notifyHiringTeam(orgId, jobId, {
@@ -147,6 +148,33 @@ export function createScheduleInvite({
     body: `Scheduling link sent for ${applicationId}. Waiting for candidate to pick a time.`,
     link: `/candidates/${applicationId}`,
   }, [interviewerId]);
+
+  const app = db
+    .prepare(
+      `SELECT a.name, a.email, j.title as job_title
+       FROM applications a JOIN jobs j ON j.id = a.job_id WHERE a.id = ?`
+    )
+    .get(applicationId);
+
+  if (app?.email && payload?.booking_url) {
+    const firstName = (app.name || 'there').split(/\s+/)[0];
+    queueEmail({
+      orgId,
+      to: app.email,
+      subject: `Schedule your interview for ${app.job_title || 'your application'}`,
+      body: [
+        `Hi ${firstName},`,
+        '',
+        'You have been shortlisted for an interview. Please choose a time using the link below:',
+        payload.booking_url,
+        '',
+        message || 'Please select a time for your interview.',
+        '',
+        'If you have questions, reply to the recruiter who contacted you.',
+      ].join('\n'),
+      meta: { type: 'scheduling_invite', applicationId, inviteId },
+    });
+  }
 
   return payload;
 }
@@ -174,7 +202,7 @@ export function candidateBookSlot(token, slotId) {
   const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(invite.application_id);
   const job = db.prepare('SELECT org_id, title FROM jobs WHERE id = ?').get(invite.job_id);
 
-  db.prepare(`UPDATE applications SET status='Interview slot chosen — pending confirmation' WHERE id=?`).run(
+  db.prepare(`UPDATE applications SET status='Interview slot chosen: pending confirmation' WHERE id=?`).run(
     invite.application_id
   );
 
@@ -235,7 +263,7 @@ export function interviewerConfirmSchedule(applicationId, userId, userName, orgI
   const job = db.prepare('SELECT title FROM jobs WHERE id = ?').get(invite.job_id);
 
   const ics = buildIcsEvent({
-    title: `Interview — ${job.title}`,
+    title: `Interview, ${job.title}`,
     startsAt: invite.confirmed_starts_at,
     endsAt: invite.confirmed_ends_at,
     description: invite.message,
@@ -273,7 +301,7 @@ export function interviewerDeclineSchedule(applicationId, userId, userName, orgI
     invite.id
   );
 
-  db.prepare(`UPDATE applications SET status='Interview time declined — reschedule needed' WHERE id=?`).run(
+  db.prepare(`UPDATE applications SET status='Interview time declined: reschedule needed' WHERE id=?`).run(
     applicationId
   );
 

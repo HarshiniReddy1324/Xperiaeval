@@ -13,11 +13,11 @@ export function JobExperienceIntelligence({ data, jobId, locationState }) {
             <Sparkles size={12} /> Experience Intelligence
           </span>
           <h2>Role fit at a glance</h2>
-          <p className="muted">Evaluated candidates for this position — review fit tiers before pipeline actions.</p>
+          <p className="muted">Evaluated candidates for this position: review fit tiers before pipeline actions.</p>
         </div>
         <div className="expIntelHeroScore">
           <span className="expIntelHeroLabel">Average score</span>
-          <strong className="expIntelHeroValue">{data.avg_experience_score ?? '—'}</strong>
+          <strong className="expIntelHeroValue">{data.avg_experience_score ?? 'N/A'}</strong>
         </div>
       </div>
       <div className="expIntelGrid expIntelGrid--5">

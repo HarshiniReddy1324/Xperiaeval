@@ -35,7 +35,7 @@ export function buildIntegritySignals(integrity, appRow = {}) {
   signals.push({
     id: 'authenticity',
     label: 'Session authenticity',
-    value: auth != null ? `${auth}/100` : '—',
+    value: auth != null ? `${auth}/100` : 'N/A',
     status: auth == null ? 'review' : auth >= 75 ? 'pass' : auth >= 50 ? 'warn' : 'fail',
     detail: integrity?.authenticity_verdict || appRow.authenticity_verdict || 'No session data',
   });
@@ -46,7 +46,7 @@ export function buildIntegritySignals(integrity, appRow = {}) {
       label: 'Tab / window switches',
       value: String(tabs),
       status: tabs >= 3 ? 'fail' : tabs >= 1 ? 'warn' : 'pass',
-      detail: tabs >= 3 ? 'Frequent focus loss — possible external lookup' : 'Tracked for context only',
+      detail: tabs >= 3 ? 'Frequent focus loss, possible external lookup' : 'Tracked for context only',
     });
   }
 
@@ -68,8 +68,8 @@ export function buildIntegritySignals(integrity, appRow = {}) {
       status: camera.presence_pct >= 80 ? 'pass' : camera.presence_pct >= 50 ? 'warn' : 'fail',
       detail:
         camera.look_away_samples > 0
-          ? `${camera.look_away_samples} look-away signal(s) — no video stored`
-          : 'Face presence verified — no video stored',
+          ? `${camera.look_away_samples} look-away signal(s), no video stored`
+          : 'Face presence verified, no video stored',
     });
   }
 
@@ -124,7 +124,7 @@ export function buildIntegritySignals(integrity, appRow = {}) {
       level === 'ok'
         ? 'Session integrity supports trusting the submitted answers.'
         : level === 'warn'
-          ? 'Minor integrity signals — review alongside answer quality.'
-          : 'Significant integrity concerns — verify before advancing.',
+          ? 'Minor integrity signals, review alongside answer quality.'
+          : 'Significant integrity concerns, verify before advancing.',
   };
 }

@@ -4,7 +4,7 @@ import {
   CalendarClock,
   ChevronDown,
   Clock,
-  ShieldAlert,
+  Info,
   Target,
   TrendingUp,
   Users,
@@ -18,7 +18,7 @@ function formatDateRange(days) {
   start.setDate(end.getDate() - days);
   const fmt = (d) =>
     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${fmt(start)} – ${fmt(end)}`;
+  return `${fmt(start)} to ${fmt(end)}`;
 }
 
 export function RecruiterPerformance() {
@@ -70,15 +70,6 @@ export function RecruiterPerformance() {
       to: '/candidates?screening=complete',
     },
     {
-      id: 'flags',
-      label: 'Integrity flags',
-      value: perf.integrity_flags ?? 0,
-      sub: 'High-risk signals for review',
-      icon: ShieldAlert,
-      tone: 'red',
-      to: '/candidates?integrity=flagged',
-    },
-    {
       id: 'scored',
       label: 'Auto-scored',
       value: perf.auto_scored_count ?? 0,
@@ -87,8 +78,6 @@ export function RecruiterPerformance() {
       tone: 'blue',
     },
   ];
-
-  const breakdown = perf.integrity_breakdown || {};
 
   if (error) {
     return (
@@ -105,7 +94,10 @@ export function RecruiterPerformance() {
       <div className="pageHead row">
         <div>
           <h1>Recruiter performance</h1>
-          <p>Estimated time saved, screening throughput, and integrity workload for {dateLabel.toLowerCase()}.</p>
+          <p>
+            Time saved and screening throughput for {dateLabel.toLowerCase()}. Integrity and fraud signals live on the
+            dashboard under <strong>Risk &amp; Fraud Alerts</strong>.
+          </p>
         </div>
         <div className="headActionWrap">
           <button type="button" className="headPill headPillBtn" onClick={() => setShowCalendar((s) => !s)}>
@@ -163,44 +155,19 @@ export function RecruiterPerformance() {
 
       <div className="grid two perfDetailGrid">
         <section className="card perfExplainCard">
-          <h2>How hours saved is calculated</h2>
+          <h2>Screening throughput</h2>
           <p className="muted">
-            Each application with an overall score counts as one auto-scored review. We estimate{' '}
-            <strong>{perf.minutes_saved_per_score ?? 45} minutes</strong> of manual recruiter time saved per
-            scored application (resume read, rubric alignment, and note-taking).
+            Share of applicants in the selected period who finished the full screening flow, out of all applications
+            created in that window.
           </p>
-          <div className="perfFormula">
-            <div>
-              <span>Auto-scored applications</span>
-              <strong>{perf.auto_scored_count ?? 0}</strong>
-            </div>
-            <span className="perfFormulaOp">×</span>
-            <div>
-              <span>Minutes per review</span>
-              <strong>{perf.minutes_saved_per_score ?? 45}</strong>
-            </div>
-            <span className="perfFormulaOp">=</span>
-            <div>
-              <span>Total minutes saved</span>
-              <strong>{perf.total_minutes_saved ?? 0}</strong>
-            </div>
-            <span className="perfFormulaOp">→</span>
-            <div>
-              <span>Hours saved (rounded)</span>
-              <strong>{perf.hours_saved ?? 0}</strong>
-            </div>
+          <div className="perfThroughputBar" aria-hidden>
+            <div
+              className="perfThroughputBarFill"
+              style={{ width: `${Math.min(100, perf.screening_completion_pct ?? 0)}%` }}
+            />
           </div>
-          <p className="muted perfNote">
-            This is an operational estimate for planning — not payroll or billing. Adjust the per-review
-            assumption in your internal ops model if your team spends more or less time per screen.
-          </p>
-        </section>
-
-        <section className="card perfExplainCard">
-          <h2>Screening completion</h2>
-          <p className="muted">
-            Share of applicants in the selected period who finished the full screening flow (
-            <code>screening_status = complete</code>), out of all applications created in that window.
+          <p className="perfThroughputPct">
+            <strong>{perf.screening_completion_pct ?? 0}%</strong> completion rate
           </p>
           <ul className="perfBreakdownList">
             <li>
@@ -219,61 +186,48 @@ export function RecruiterPerformance() {
               <span>Incomplete / in progress</span>
               <strong>{perf.screening_incomplete ?? 0}</strong>
             </li>
-            <li>
-              <span>Completion rate</span>
-              <strong>{perf.screening_completion_pct ?? 0}%</strong>
-            </li>
           </ul>
           <Link to="/candidates?screening=complete" state={returnState(location)} className="btn outline perfLinkBtn">
             <Users size={14} /> View fully screened candidates
           </Link>
         </section>
 
-        <section className="card perfExplainCard perfExplainCard--wide">
-          <h2>Integrity flags</h2>
-          <p className="muted">
-            Count of candidates flagged as <strong>high risk</strong> in the period — any applicant with
-            proctoring failure, AI-assisted responses detected, or authenticity score below 50. These are
-            advisory signals for recruiter review, not automatic rejections.
+        <section className="card perfExplainCard">
+          <h2>Time savings</h2>
+          <div className="perfSavingsHero">
+            <span className="perfSavingsValue">{perf.hours_saved ?? 0}</span>
+            <span className="perfSavingsUnit">hours saved</span>
+          </div>
+          <p className="muted perfSavingsLead">
+            Based on <strong>{perf.auto_scored_count ?? 0}</strong> auto-scored applications in this period, each
+            estimated to save ~<strong>{perf.minutes_saved_per_score ?? 45}</strong> minutes of manual review.
           </p>
-          <ul className="perfBreakdownList perfBreakdownList--grid">
+          <ul className="perfBreakdownList perfBreakdownList--compact">
             <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?integrity=flagged', { state: returnState(location) })}>
-                <span>Total high-risk flags</span>
-                <strong>{perf.integrity_flags ?? 0}</strong>
-              </button>
+              <span>Auto-scored applications</span>
+              <strong>{perf.auto_scored_count ?? 0}</strong>
             </li>
             <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?screening=ai_used', { state: returnState(location) })}>
-                <span>AI-generated responses</span>
-                <strong>{breakdown.ai_generated ?? 0}</strong>
-              </button>
-            </li>
-            <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?integrity=flagged', { state: returnState(location) })}>
-                <span>Voice verification failed</span>
-                <strong>{breakdown.voice_verification_failed ?? 0}</strong>
-              </button>
-            </li>
-            <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?integrity=flagged', { state: returnState(location) })}>
-                <span>Browser / tab switches</span>
-                <strong>{breakdown.browser_switches ?? 0}</strong>
-              </button>
-            </li>
-            <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?integrity=flagged', { state: returnState(location) })}>
-                <span>Employment mismatch</span>
-                <strong>{breakdown.employment_mismatch ?? 0}</strong>
-              </button>
-            </li>
-            <li>
-              <button type="button" className="perfBreakdownBtn" onClick={() => navigate('/candidates?bucket=Red', { state: returnState(location) })}>
-                <span>Fake experience risk</span>
-                <strong>{breakdown.fake_experience_risk ?? 0}</strong>
-              </button>
+              <span>Total minutes saved</span>
+              <strong>{perf.total_minutes_saved ?? 0}</strong>
             </li>
           </ul>
+          <details className="perfMethodology">
+            <summary>
+              <Info size={14} aria-hidden /> How we estimate hours saved
+            </summary>
+            <div className="perfMethodologyBody">
+              <p>
+                Each application with an overall score counts as one auto-scored review. We assume{' '}
+                {perf.minutes_saved_per_score ?? 45} minutes of recruiter time per review (resume read, rubric
+                alignment, and notes). This is an operational planning estimate; not payroll or billing.
+              </p>
+              <p className="perfMethodologyFormula">
+                {perf.auto_scored_count ?? 0} scored × {perf.minutes_saved_per_score ?? 45} min ={' '}
+                {perf.total_minutes_saved ?? 0} min → {perf.hours_saved ?? 0} hrs
+              </p>
+            </div>
+          </details>
         </section>
       </div>
     </div>

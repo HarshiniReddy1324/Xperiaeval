@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
+import { AuthLayout } from '../components/AuthLayout';
 
 export function Register() {
   const { register } = useAuth();
@@ -11,13 +11,15 @@ export function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
   const submit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       await register(form);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -26,36 +28,54 @@ export function Register() {
   };
 
   return (
-    <div className="authPage">
-      <div className="authCard">
-        <div className="brand center">
-          <div className="logo">
-            <Sparkles size={24} />
-          </div>
-          <div>
-            <b>Xperieval</b>
-            <span>Create your workspace</span>
-          </div>
+    <AuthLayout
+      title="Create workspace"
+      lead="Start your 90-day pilot. The first user becomes Admin. Upgrade anytime from Settings."
+      footer={
+        <>
+          Already have an account? <Link to="/login">Sign in</Link>
+        </>
+      }
+    >
+      <form className="authForm" onSubmit={submit}>
+        <div className="authField">
+          <label htmlFor="reg-name">Your name</label>
+          <input id="reg-name" value={form.name} onChange={update('name')} placeholder="Alex Rivera" required />
         </div>
-        <h1>Register</h1>
-        <form onSubmit={submit}>
-          <label>Your name</label>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          <label>Organization</label>
-          <input value={form.orgName} onChange={(e) => setForm({ ...form, orgName: e.target.value })} placeholder="Acme Inc" />
-          <label>Email</label>
-          <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-          <label>Password</label>
-          <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
-          {error && <p className="error">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Creating…' : 'Create workspace'}
-          </Button>
-        </form>
-        <p className="authFooter">
-          Have an account? <Link to="/login">Sign in</Link>
-        </p>
-      </div>
-    </div>
+        <div className="authField">
+          <label htmlFor="reg-org">Organization</label>
+          <input id="reg-org" value={form.orgName} onChange={update('orgName')} placeholder="Acme Inc" />
+        </div>
+        <div className="authField">
+          <label htmlFor="reg-email">Work email</label>
+          <input
+            id="reg-email"
+            type="email"
+            autoComplete="email"
+            value={form.email}
+            onChange={update('email')}
+            placeholder="you@company.com"
+            required
+          />
+        </div>
+        <div className="authField">
+          <label htmlFor="reg-password">Password</label>
+          <input
+            id="reg-password"
+            type="password"
+            autoComplete="new-password"
+            value={form.password}
+            onChange={update('password')}
+            placeholder="At least 6 characters"
+            required
+            minLength={6}
+          />
+        </div>
+        {error ? <p className="authError">{error}</p> : null}
+        <Button type="submit" className="authSubmit" disabled={loading}>
+          {loading ? 'Creating workspace…' : 'Start 90-day pilot'}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

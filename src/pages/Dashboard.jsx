@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { canManageIntegrations } from '../lib/integrationAccess';
 import {
   Briefcase,
   CheckCircle2,
@@ -14,6 +16,7 @@ import {
 import { api } from '../api/client';
 import { FROM_DASHBOARD } from '../lib/navigation';
 import { DonutChart, FunnelChart, GaugeChart } from '../components/dashboard/DashboardCharts';
+import { OnboardingChecklist } from '../components/dashboard/OnboardingChecklist';
 
 const KPI_ICONS = {
   blue: Briefcase,
@@ -46,6 +49,8 @@ function normalizeFunnel(raw = {}) {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canManage = canManageIntegrations(user);
   const { dashDateRange: dateRange = '30d' } = useOutletContext() || {};
   const [data, setData] = useState({
     kpiCards: [],
@@ -54,6 +59,7 @@ export function Dashboard() {
     screening: {},
     totals: {},
     recommendations: [],
+    onboarding: null,
   });
   const [loadError, setLoadError] = useState('');
 
@@ -122,6 +128,8 @@ export function Dashboard() {
         </p>
       )}
 
+      <OnboardingChecklist onboarding={data.onboarding} canManage={canManage} />
+
       <section className="kpiGrid">
         {kpiCards.length > 0 ? (
           kpiCards.map((kpi) => {
@@ -188,7 +196,7 @@ export function Dashboard() {
           </div>
           <FunnelChart stages={funnelStages} onStageClick={(to) => navigate(to, { state: FROM_DASHBOARD })} />
           <p className="funnelMeta">
-            Hire rate: <strong>{analytics.conversionRate ?? 0}%</strong>
+            Selection rate: <strong>{analytics.conversionRate ?? 0}%</strong>
           </p>
         </div>
 
@@ -198,7 +206,7 @@ export function Dashboard() {
           </div>
           <GaugeChart
             score={health.score ?? 0}
-            label={`${health.label ?? '—'} · Overall health`}
+            label={`${health.label ?? 'N/A'} · Overall health`}
             healthy={health.healthy_pct ?? 0}
             atRisk={health.at_risk_pct ?? 0}
             critical={health.critical_pct ?? 0}
@@ -263,7 +271,7 @@ export function Dashboard() {
                 {!visibleJobs.length && (
                   <tr>
                     <td colSpan={7} className="posTableEmpty">
-                      No positions yet — create your first position to get started.
+                      No positions yet: create your first position to get started.
                     </td>
                   </tr>
                 )}
@@ -306,10 +314,7 @@ export function Dashboard() {
               <div>
                 <span className="kpiLabel">Recruiter performance</span>
                 <strong>{perf.hours_saved ?? 0}</strong>
-                <small>
-                  hrs saved · {perf.screening_completion_pct ?? perf.screening_accuracy ?? 0}% screened ·{' '}
-                  {perf.integrity_flags ?? perf.fraud_prevented ?? 0} flags
-                </small>
+                <small>hrs saved</small>
               </div>
               <div className="kpiTileIcon purple">
                 <TrendingUp size={18} />
@@ -323,6 +328,9 @@ export function Dashboard() {
                 <ShieldAlert size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
                 Risk &amp; Fraud Alerts
               </h2>
+              <Link to="/candidates?integrity=flagged" state={FROM_DASHBOARD}>
+                Review
+              </Link>
             </div>
             <div className="riskAlertChart">
               <div className="riskAlertCircles riskAlertCircles--3">

@@ -36,7 +36,7 @@ export function getIdentityPolicy(user, application, org = {}) {
     return {
       anonymized: true,
       canReveal: false,
-      reason: 'Compliance role — anonymized view only (audit without bias)',
+      reason: 'Compliance role, anonymized view only (audit without bias)',
       stage: pipeline,
     };
   }
@@ -46,7 +46,7 @@ export function getIdentityPolicy(user, application, org = {}) {
       anonymized: false,
       canReveal: false,
       autoRevealed: true,
-      reason: 'DEI-safe mode — identity revealed after shortlist for interview stage',
+      reason: 'DEI-safe mode, identity revealed after shortlist for interview stage',
       stage: pipeline,
       deiMode: true,
     };
@@ -58,7 +58,7 @@ export function getIdentityPolicy(user, application, org = {}) {
         anonymized: false,
         canReveal: false,
         autoRevealed: true,
-        reason: 'Final hiring stage — identity visible to hiring decision-makers',
+        reason: 'Final hiring stage, identity visible to hiring decision-makers',
         stage: pipeline,
       };
     }
@@ -73,11 +73,11 @@ export function getIdentityPolicy(user, application, org = {}) {
       autoRevealed: false,
       reason: deiBlind
         ? shortlisted
-          ? 'DEI-safe — shortlisted; identity now visible'
-          : 'DEI-safe blind review — scores visible, identity hidden until shortlist'
+          ? 'DEI-safe, shortlisted; identity now visible'
+          : 'DEI-safe blind review, scores visible, identity hidden until shortlist'
         : canReveal
-          ? 'Blind screening — reveal when ready to contact candidate'
-          : 'Complete screening review first — identity unlocks at shortlist',
+          ? 'Blind screening, reveal when ready to contact candidate'
+          : 'Complete screening review first, identity unlocks at shortlist',
       stage: pipeline,
       deiMode: deiBlind,
     };
@@ -87,7 +87,7 @@ export function getIdentityPolicy(user, application, org = {}) {
     anonymized: true,
     canReveal: false,
     reason: deiBlind
-      ? 'DEI-safe blind review — identity unlocks when candidate is shortlisted'
+      ? 'DEI-safe blind review, identity unlocks when candidate is shortlisted'
       : 'Recruiters see anonymized profiles until hiring team unlocks identity',
     stage: pipeline,
     deiMode: deiBlind,
@@ -107,6 +107,11 @@ export function applyIdentityView(user, application, org) {
   return {
     ...application,
     display_name: application.anonymized_code || application.id,
+    name: null,
+    email: null,
+    phone: null,
+    resume_path: null,
+    resume_text: null,
     name_hidden: true,
     email_hidden: true,
     phone_hidden: true,

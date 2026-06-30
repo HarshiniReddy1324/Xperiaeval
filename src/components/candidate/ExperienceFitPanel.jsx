@@ -10,7 +10,7 @@ const SEVERITY_TONE = {
 };
 
 /**
- * Experience / seniority fit — surfaces years-gap and role-level mismatch.
+ * Experience / seniority fit: surfaces years-gap and role-level mismatch.
  */
 export function ExperienceFitPanel({ experienceFit }) {
   if (!experienceFit) return null;
@@ -34,11 +34,11 @@ export function ExperienceFitPanel({ experienceFit }) {
       <div className="experienceFitGrid">
         <div className="experienceFitStat">
           <span>Resume years</span>
-          <strong>{experienceFit.candidate_years ?? '—'}</strong>
+          <strong>{experienceFit.candidate_years ?? 'N/A'}</strong>
         </div>
         <div className="experienceFitStat">
           <span>Role minimum</span>
-          <strong>{experienceFit.required_min_years ?? '—'}+</strong>
+          <strong>{experienceFit.required_min_years ?? 'N/A'}+</strong>
         </div>
         <div className="experienceFitStat">
           <span>Gap</span>
@@ -56,7 +56,7 @@ export function ExperienceFitPanel({ experienceFit }) {
         <div className="experienceFitAlert">
           <AlertTriangle size={16} />
           <span>
-            Employment mismatch flagged — overall score penalized by {experienceFit.overall_penalty} pts
+            Employment mismatch flagged: overall score penalized by {experienceFit.overall_penalty} pts
             {experienceFit.recommendation_cap != null
               ? ` · recommendation capped at ${experienceFit.recommendation_cap}`
               : ''}

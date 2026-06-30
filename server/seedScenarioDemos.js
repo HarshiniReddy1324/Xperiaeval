@@ -1,6 +1,6 @@
 /**
  * Demo scenario seed: entry-level role + three contrasting candidate profiles.
- * Idempotent — safe to run on every server start.
+ * Idempotent; safe to run on every server start.
  */
 
 import { v4 as uuid } from 'uuid';
@@ -39,7 +39,7 @@ const ENTRY_LEVEL_POSTING = {
   visaSponsorship: 'Not available for this role',
   department: 'Product',
   aboutCompany:
-    'Xperieval builds evidence-based hiring software that helps teams evaluate candidates fairly and at scale. We combine structured rubrics, advisory scoring, and human-in-the-loop decisions so recruiters can focus on judgment, not guesswork.',
+    'Xperieval builds evidence-based hiring software that helps teams evaluate candidates fairly and at scale. We combine structured rubrics, advisory scoring, and human-in-the-loop decisions so recruiters can focus on judgment; not guesswork.',
   summary:
     'We are hiring an Associate Product Manager to support discovery, delivery, and measurement for our core applicant screening workflow. This is an entry-level role designed for high-potential early-career talent who want structured mentorship while owning real product outcomes.',
   responsibilities: [
@@ -56,7 +56,7 @@ const ENTRY_LEVEL_POSTING = {
     'Bachelor\'s degree in Business, Computer Science, Design, or equivalent practical experience',
     'Strong written communication and comfort working with cross-functional partners',
     'Basic familiarity with agile delivery (sprints, backlogs, user stories)',
-    'Demonstrated curiosity about user problems — coursework, internships, or side projects count',
+    'Demonstrated curiosity about user problems, coursework, internships, or side projects count',
   ],
   preferredQualifications: [
     'Internship or co-op experience at a B2B SaaS company',
@@ -99,7 +99,7 @@ const SCENARIO_CANDIDATES = [
     source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
-      'Jordan Rivera — Associate Product Manager candidate. B.S. Business Analytics, University of Illinois (2024). Product analyst internship at PayFlow (fintech startup, 10 weeks): user research, Amplitude dashboards, sprint support. Campus product club president. Skills: Figma, Jira, SQL basics, Google Sheets, user interviews.',
+      'Jordan Rivera, Associate Product Manager candidate. B.S. Business Analytics, University of Illinois (2024). Product analyst internship at PayFlow (fintech startup, 10 weeks): user research, Amplitude dashboards, sprint support. Campus product club president. Skills: Figma, Jira, SQL basics, Google Sheets, user interviews.',
     integrity: {
       started_at: Date.now() - 2400000,
       focus_loss_count: 1,
@@ -124,18 +124,18 @@ const SCENARIO_CANDIDATES = [
       { time_taken_seconds: 0, idle_seconds: 0, focus_loss_count: 0 },
     ],
     answers: [
-      'I graduated in 2024 with a Business Analytics degree and completed a product analyst internship at PayFlow, where I supported onboarding work for eight weeks — user interviews, funnel notes, and sprint tasks alongside the PM.',
+      'I graduated in 2024 with a Business Analytics degree and completed a product analyst internship at PayFlow, where I supported onboarding work for eight weeks, user interviews, funnel notes, and sprint tasks alongside the PM.',
       'I owned our internship capstone on email verification in onboarding: I gathered requirements from support tickets, built Amplitude funnels, and presented three friction hypotheses to the PM and design lead with specific examples.',
       'During the internship I improved onboarding completion by 12% over eight weeks and reduced verify-email drop-off because I tested shorter copy and a clearer progress indicator in our prototype with measurable results.',
       'When design wanted multi-step KYC and engineering wanted a lighter MVP, I documented both options with effort and user impact estimates, then facilitated a prioritization session to align stakeholders on trade-offs and communicate the decision.',
-      'I recommended shipping the lighter email-verification MVP first because funnel data showed most users abandoned before heavy KYC — therefore we validated the hypothesis in two weeks and avoided rework with a clear result.',
+      'I recommended shipping the lighter email-verification MVP first because funnel data showed most users abandoned before heavy KYC, therefore we validated the hypothesis in two weeks and avoided rework with a clear result.',
       'I use Figma for wireframe review, Jira for sprint tasks, Google Sheets for roadmaps, and SQL for basic funnel queries with guidance from our data analyst; I also document user interview notes in Notion for the team.',
-      'I want to grow into a product owner role at a company that invests in early-career PMs with mentorship and real ownership — your Associate PM posting matches my experience level and career growth goals at this stage.',
-      'I led our campus product club and organized two hackathons with 80+ participants, which taught me to coordinate volunteers and sponsors under deadlines — a professional achievement I am proud of outside work.',
+      'I want to grow into a product owner role at a company that invests in early-career PMs with mentorship and real ownership, your Associate PM posting matches my experience level and career growth goals at this stage.',
+      'I led our campus product club and organized two hackathons with 80+ participants, which taught me to coordinate volunteers and sponsors under deadlines, a professional achievement I am proud of outside work.',
       'I collaborate with teammates through shared docs and weekly syncs, though I am still building depth in executive stakeholder management compared to senior PMs on the team.',
       '',
     ],
-    scenarioNote: 'Entry-level applicant — solid intern background, scores Amber (mixed fit).',
+    scenarioNote: 'Entry-level applicant, solid intern background, scores Amber (mixed fit).',
   },
   {
     id: 'XP-2011',
@@ -147,7 +147,7 @@ const SCENARIO_CANDIDATES = [
     source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
-      'Priya Sharma — Associate Product Manager, 2 years at BloomDesk (seed-stage workflow SaaS). Prior: Business Analyst at regional bank (1 year). MBA coursework (evenings, incomplete). Skills listed: Jira, Google Sheets, user interviews. No people management title; no Senior PM or platform architecture experience on resume.',
+      'Priya Sharma, Associate Product Manager, 2 years at BloomDesk (seed-stage workflow SaaS). Prior: Business Analyst at regional bank (1 year). MBA coursework (evenings, incomplete). Skills listed: Jira, Google Sheets, user interviews. No people management title; no Senior PM or platform architecture experience on resume.',
     integrity: {
       started_at: Date.now() - 3600000,
       focus_loss_count: 0,
@@ -161,15 +161,15 @@ const SCENARIO_CANDIDATES = [
     },
     answerMeta: Array(10).fill({ time_taken_seconds: 280, idle_seconds: 4, focus_loss_count: 0 }),
     answers: [
-      'I have two years as Associate PM at BloomDesk plus one year as a business analyst — I led feature delivery end-to-end but my resume title is still Associate PM, so I have less senior tenure than this posting describes on paper.',
+      'I have two years as Associate PM at BloomDesk plus one year as a business analyst, I led feature delivery end-to-end but my resume title is still Associate PM, so I have less senior tenure than this posting describes on paper.',
       'I owned our approval-routing launch from discovery through GA: first I ran 18 customer interviews, then I wrote the PRD, ran a beta with five design partners, and led weekly ship reviews with engineering and customer success until launch.',
       'I architected and deployed the routing module rollout: I cut median approval cycle time by 41%, I increased weekly active teams by 28%, and I added $1.1M ARR in two quarters because I owned SQL funnel analysis in Amplitude, pricing experiments, and onboarding fixes with 89% gross retention.',
       'When sales wanted enterprise SSO in the same sprint as the routing MVP, I built a decision memo comparing revenue risk vs delivery risk, facilitated alignment with sales, legal, and eng leads, and therefore sequenced SSO to Q2 with documented trade-offs and a clear result for stakeholders.',
-      'I chose event-driven notifications over nightly batch jobs because ops leaders needed sub-minute alerts — I accepted higher ops complexity after load tests showed p95 under 400ms, which was a difficult technical trade-off I led with platform engineering using a documented hypothesis and rollback plan.',
-      'I use SQL, Amplitude, Figma, and Jira daily; I write PRDs and executive decision docs; I run architecture reviews with engineering and build REST API requirements for integrations — specific tools and methods I apply every week in my current role at BloomDesk.',
+      'I chose event-driven notifications over nightly batch jobs because ops leaders needed sub-minute alerts, I accepted higher ops complexity after load tests showed p95 under 400ms, which was a difficult technical trade-off I led with platform engineering using a documented hypothesis and rollback plan.',
+      'I use SQL, Amplitude, Figma, and Jira daily; I write PRDs and executive decision docs; I run architecture reviews with engineering and build REST API requirements for integrations, specific tools and methods I apply every week in my current role at BloomDesk.',
       'I am interested in this Senior PM role because I have run 0-to-1 and 1-to-N motions in a small team and want a growth-stage product where I can scale those habits, even though my formal experience level is below the typical 5+ years required on the job description.',
-      'I won BloomDesk\'s Customer Obsession award because I rebuilt our onboarding checklist after I shadowed 12 support calls and cut time-to-first-value by 35% — a professional achievement I led outside the routing launch with measurable impact.',
-      'I collaborate across functions through shared Slack triage, async Loom walkthroughs, and fortnightly roadmap reviews — for example I partner with design early on problem framing before we commit engineering capacity to a solution.',
+      'I won BloomDesk\'s Customer Obsession award because I rebuilt our onboarding checklist after I shadowed 12 support calls and cut time-to-first-value by 35%, a professional achievement I led outside the routing launch with measurable impact.',
+      'I collaborate across functions through shared Slack triage, async Loom walkthroughs, and fortnightly roadmap reviews, for example I partner with design early on problem framing before we commit engineering capacity to a solution.',
       'I can start in four weeks and can share a redacted PRD sample from the routing launch; my resume understates scope because I was promoted internally without a title change to Senior PM yet, which is why my years of experience look lighter than my actual ownership.',
     ],
     scenarioNote: 'Under-experienced on resume vs Senior PM role, but exceptionally strong screening answers.',
@@ -184,7 +184,7 @@ const SCENARIO_CANDIDATES = [
     source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
-      'Marcus Chen — Senior Product Manager, 9 years B2B SaaS. Currently Senior PM at CloudLedger (fintech). Led platform analytics SKU from beta to $6M ARR. Managed squads of 14 across eng, design, and data. Expertise: roadmap, pricing, Amplitude, SQL, stakeholder management, enterprise retention. MBA, Northwestern Kellogg.',
+      'Marcus Chen, Senior Product Manager, 9 years B2B SaaS. Currently Senior PM at CloudLedger (fintech). Led platform analytics SKU from beta to $6M ARR. Managed squads of 14 across eng, design, and data. Expertise: roadmap, pricing, Amplitude, SQL, stakeholder management, enterprise retention. MBA, Northwestern Kellogg.',
     integrity: {
       started_at: Date.now() - 1800000,
       focus_loss_count: 14,
@@ -220,12 +220,12 @@ const SCENARIO_CANDIDATES = [
       { time_taken_seconds: 0, idle_seconds: 0, focus_loss_count: 0 },
     ],
     answers: [
-      'I have nine years in B2B SaaS product management across analytics, billing, and platform products — most recently Senior PM at CloudLedger where I led a platform analytics squad of 14 engineers, designers, and data analysts.',
+      'I have nine years in B2B SaaS product management across analytics, billing, and platform products, most recently Senior PM at CloudLedger where I led a platform analytics squad of 14 engineers, designers, and data analysts.',
       'I owned our analytics platform launch end-to-end: first I led discovery with 24 enterprise customers, then I ran the beta program, owned pricing inputs, and led cross-functional rituals through GA with documented milestones.',
       'I delivered measurable impact: I reduced time-to-insight by 38%, I added $6.1M ARR in 14 months, and I held 94% net revenue retention on the new SKU because I led onboarding and expansion plays with NPS up 11 points.',
       'When sales demanded custom SSO and engineering needed stability work, I prioritized using an impact × urgency matrix, documented trade-offs in a decision memo, and aligned legal and sales in one review to communicate the result.',
-      'I chose event-driven architecture over batch pipelines because real-time alerts drove a 12-point NPS lift — therefore I accepted ops complexity after load tests showed p95 under 350ms, a difficult decision I led with platform engineering.',
-      'I use SQL, Amplitude, Figma, and Jira daily, and I write PRDs and executive decision docs for quarterly business reviews with finance and customer success — tools and methods central to my Senior PM work at CloudLedger.',
+      'I chose event-driven architecture over batch pipelines because real-time alerts drove a 12-point NPS lift, therefore I accepted ops complexity after load tests showed p95 under 350ms, a difficult decision I led with platform engineering.',
+      'I use SQL, Amplitude, Figma, and Jira daily, and I write PRDs and executive decision docs for quarterly business reviews with finance and customer success, tools and methods central to my Senior PM work at CloudLedger.',
       'I want to lead product discipline at a growth-stage hiring-tech company where I can apply 0-to-1 and scale motions with measurable outcomes, which is why I am interested in this Senior PM role at this stage of my career.',
       '',
       '',
@@ -249,7 +249,7 @@ const SCENARIO_CANDIDATES = [
     },
     answerMeta: ELENA_VASQUEZ_ANSWER_META,
     answers: ELENA_VASQUEZ_ANSWERS,
-    scenarioNote: 'Green-bucket Associate PM — 2-page resume, strong answers, perfect session authenticity.',
+    scenarioNote: 'Green-bucket Associate PM, 2-page resume, strong answers, perfect session authenticity.',
   },
 ];
 
@@ -565,7 +565,7 @@ export async function seedScenarioDemos() {
       appId,
       'System',
       'Scenario demo seeded',
-      `${candidate.name}: ${candidate.scenarioNote} — scored ${scored.overall}/100 (${scored.bucket})`
+      `${candidate.name}: ${candidate.scenarioNote}, scored ${scored.overall}/100 (${scored.bucket})`
     );
   }
 

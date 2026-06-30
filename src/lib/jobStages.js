@@ -1,5 +1,5 @@
 /**
- * Job requisition workflow stages — set manually when creating/editing a position.
+ * Job requisition workflow stages: set manually when creating/editing a position.
  * Not derived from applicant counts or pipeline stages.
  *
  * Order matches the hiring workflow left → right.
@@ -14,7 +14,7 @@ export const JOB_STAGES = [
 ];
 
 export const JOB_STAGE_DESCRIPTIONS = {
-  Draft: 'Requisition is being prepared — not yet accepting applicants.',
+  Draft: 'Requisition is being prepared: not yet accepting applicants.',
   Open: 'Posting is live and accepting applications.',
   Screening: 'Applicants are being screened and scored.',
   'Hiring Team Review': 'Hiring team is reviewing scored candidates.',
@@ -72,7 +72,7 @@ export const POSITION_FILTERS = [
   { id: 'delayed', label: 'More Time', tone: 'purple' },
 ];
 
-/** Legacy dashboard links used ?stage= — map to bucket filters. */
+/** Legacy dashboard links used ?stage=: map to bucket filters. */
 export const LEGACY_STAGE_FILTER = {
   Filled: 'filled',
   Screening: 'in_progress',
@@ -103,7 +103,7 @@ export const POSITION_LEVELS = [
 ];
 
 export function positionLevelLabel(levelId) {
-  return POSITION_LEVELS.find((l) => l.id === levelId)?.label || levelId || '—';
+  return POSITION_LEVELS.find((l) => l.id === levelId)?.label || levelId || 'N/A';
 }
 
 export function positionLevelSortIndex(levelId) {

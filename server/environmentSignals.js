@@ -1,5 +1,5 @@
 /**
- * Browser environment heuristics — VM, multi-monitor, automation signals (client-reported).
+ * Browser environment heuristics, VM, multi-monitor, automation signals (client-reported).
  */
 
 export function analyzeEnvironmentSignals(env = {}) {
@@ -51,9 +51,9 @@ export function analyzeEnvironmentSignals(env = {}) {
     vm_reasons: vmReasons,
     multi_monitor_suspected: flags.includes('multi_monitor_suspected'),
     summary: vm_suspected
-      ? 'Environment resembles VM or automated browser — review with integrity signals.'
+      ? 'Environment resembles VM or automated browser, review with integrity signals.'
       : flags.length
-        ? 'Minor display/environment flags — context only.'
+        ? 'Minor display/environment flags, context only.'
         : 'Standard browser environment.',
   };
 }

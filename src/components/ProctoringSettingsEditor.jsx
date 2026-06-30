@@ -10,17 +10,39 @@ const TOGGLES = [
   { key: 'track_focus', label: 'Track blur, focus loss, and tab switches' },
   { key: 'fail_on_focus_loss', label: 'Auto-fail after too many tab switches (fail mode)' },
   { key: 'outside_boundary_fail', label: 'Fail if clicking outside test area repeatedly' },
-  { key: 'track_devtools', label: 'Detect developer tools' },
-  { key: 'track_multi_monitor', label: 'Detect multiple monitors (when browser allows)' },
-  { key: 'no_backtrack', label: 'No backtrack — cannot return to previous questions' },
+  { key: 'no_backtrack', label: 'No backtrack: cannot return to previous questions' },
   { key: 'shuffle_questions', label: 'Shuffle question order per candidate' },
-  { key: 'per_question_timer', label: 'Enforce per-question time limits from rubric' },
-  { key: 'keystroke_dynamics', label: 'Keystroke dynamics — flag non-human typing patterns' },
+  { key: 'keystroke_dynamics', label: 'Keystroke dynamics: flag non-human typing patterns' },
   { key: 'track_ip_duplicates', label: 'Flag duplicate submissions from same IP' },
-  { key: 'audio_monitoring', label: 'Audio level monitoring during recording (experimental)' },
+  {
+    key: 'track_devtools',
+    label: 'Detect developer tools',
+    comingSoon: true,
+    hint: 'Heuristic detection only: not reliable enough to ship yet.',
+  },
+  {
+    key: 'track_multi_monitor',
+    label: 'Detect multiple monitors (when browser allows)',
+    comingSoon: true,
+    hint: 'Depends on browser APIs; coverage is limited today.',
+  },
+  {
+    key: 'per_question_timer',
+    label: 'Enforce per-question time limits from rubric',
+    comingSoon: true,
+    hint: 'We record time today; auto-enforce limits is not wired yet.',
+  },
+  {
+    key: 'audio_monitoring',
+    label: 'Audio level monitoring during recording',
+    comingSoon: true,
+    hint: 'No client audio capture yet.',
+  },
   {
     key: 'camera_presence_monitoring',
-    label: 'Camera presence & gaze monitoring (no video stored — face in frame only)',
+    label: 'Camera presence & gaze monitoring (no video stored)',
+    comingSoon: true,
+    hint: 'Experimental FaceDetector support: Chrome only, off until we finish rollout.',
   },
 ];
 
@@ -67,20 +89,32 @@ export function ProctoringSettingsEditor({ policy, onChange }) {
       <label className="proctorMode">
         Enforcement mode
         <select value={policy.mode || 'strict'} onChange={(e) => set('mode', e.target.value)}>
-          <option value="monitor">Monitor only — log signals, always accept submit</option>
-          <option value="strict">Strict — heavy penalties + fail on critical violations</option>
-          <option value="fail">Fail — reject submission on critical proctoring violations</option>
+          <option value="monitor">Monitor only: log signals, always accept submit</option>
+          <option value="strict">Strict: heavy penalties + fail on critical violations</option>
+          <option value="fail">Fail: reject submission on critical proctoring violations</option>
         </select>
       </label>
       <p className="muted">
-        Browsers cannot block OS shortcuts (Alt+Tab) globally — we detect and flag them. Full enforcement works for
+        Browsers cannot block OS shortcuts (Alt+Tab) globally: we detect and flag them. Full enforcement works for
         copy/paste, selection, right-click, fullscreen, and in-page boundaries.
       </p>
       <div className="proctorToggleGrid">
-        {TOGGLES.map(({ key, label }) => (
-          <label key={key} className="checkRow">
-            <input type="checkbox" checked={!!policy[key]} onChange={(e) => set(key, e.target.checked)} />
-            {label}
+        {TOGGLES.map(({ key, label, comingSoon, hint }) => (
+          <label
+            key={key}
+            className={`checkRow${comingSoon ? ' checkRow--comingSoon' : ''}`}
+            title={hint || undefined}
+          >
+            <input
+              type="checkbox"
+              checked={!!policy[key]}
+              disabled={comingSoon}
+              onChange={(e) => set(key, e.target.checked)}
+            />
+            <span className="checkRowText">
+              {label}
+              {comingSoon && <span className="proctorComingSoonBadge">Coming soon</span>}
+            </span>
           </label>
         ))}
       </div>

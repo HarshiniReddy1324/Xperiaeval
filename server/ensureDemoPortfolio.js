@@ -1,5 +1,5 @@
 /**
- * Idempotent demo portfolio seed — 7 jobs, 21 scored candidates.
+ * Idempotent demo portfolio seed, 7 jobs, 21 scored candidates.
  * Runs automatically on API startup; INSERT OR IGNORE keeps production DBs in sync.
  */
 
@@ -352,7 +352,7 @@ export function ensureDemoPortfolio() {
 
   if (result.jobsAdded > 0 || result.candidatesAdded > 0) {
     console.log(
-      `[seed] Demo portfolio synced — ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
+      `[seed] Demo portfolio synced, ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
     );
   }
 

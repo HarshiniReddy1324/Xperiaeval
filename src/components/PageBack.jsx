@@ -7,7 +7,15 @@ import { pageLabel, parentRoute, candidatesListReturnPath, isCandidateSectionPat
 import { positionFilterLabel } from '../lib/jobStages';
 import { hasNonBucketFilters } from '../lib/candidateFilters';
 
-export function PageBack({ fallback = '/', fallbackLabel, className = '' }) {
+function resolveBackTarget(location, fallback) {
+  const stateFrom = location.state?.from;
+  if (stateFrom && typeof stateFrom === 'string' && stateFrom.startsWith('/') && !stateFrom.startsWith('//')) {
+    return stateFrom;
+  }
+  return parentRoute(location.pathname) || fallback;
+}
+
+export function PageBack({ fallback = '/dashboard', fallbackLabel, className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -47,22 +55,11 @@ export function PageBack({ fallback = '/', fallbackLabel, className = '' }) {
       return;
     }
     if (location.pathname === '/candidates') {
-      const candidatesBucket = search.get('bucket');
       if (candidatesBucket) {
         navigate('/candidates', { replace: true });
         return;
       }
-      if (hasNonBucketFilters({
-        jobId: search.get('jobId') || '',
-        pipeline: search.get('pipeline') || '',
-        screening: search.get('screening') || '',
-        integrity: search.get('integrity') || '',
-        hiddenGem: search.get('hiddenGem') || '',
-      })) {
-        navigate(fallback, { replace: true });
-        return;
-      }
-      navigate(fallback);
+      navigate(resolveBackTarget(location, fallback), { replace: true });
       return;
     }
     if (location.pathname === '/jobs') {
@@ -73,17 +70,17 @@ export function PageBack({ fallback = '/', fallbackLabel, className = '' }) {
         return;
       }
       if (jobsFilter) {
-        navigate(fallback, { replace: true });
+        navigate(resolveBackTarget(location, fallback), { replace: true });
         return;
       }
-      navigate(fallback);
+      navigate(resolveBackTarget(location, fallback), { replace: true });
       return;
     }
     if (isNestedPage) {
       navigate(parent, { replace: true });
       return;
     }
-    navigate(fallback);
+    navigate(resolveBackTarget(location, fallback), { replace: true });
   };
 
   const backTitle =

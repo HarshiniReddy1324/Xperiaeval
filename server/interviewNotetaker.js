@@ -1,11 +1,11 @@
-/** Parse interview transcript into Q&A pairs (free heuristic — paste from Zoom/Meet notes) */
+/** Parse interview transcript into Q&A pairs (free heuristic, paste from Zoom/Meet notes) */
 
 const DEFAULT_INTERVIEW_QUESTIONS = [
   ['Tell me about a recent project you led and the measurable outcome.', 'Specific role, metrics, timeline, and lesson learned.'],
   ['Walk through a difficult technical or stakeholder decision you made.', 'Trade-offs, alternatives considered, and result.'],
-  ['How does your experience prepare you for this specific role?', 'Direct tie to job requirements, not generic passion.'],
+  ['How does your experience prepare you for this specific role?', 'Direct tie to job requirements; not generic passion.'],
   ['Describe a time you received critical feedback. How did you respond?', 'Self-awareness, actions taken, outcome.'],
-  ['What questions do you have for us about the role or team?', 'Thoughtful, researched questions — not only benefits.'],
+  ['What questions do you have for us about the role or team?', 'Thoughtful, researched questions; not only benefits.'],
 ];
 
 export function getDefaultInterviewRubric() {

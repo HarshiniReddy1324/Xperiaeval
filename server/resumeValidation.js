@@ -56,7 +56,7 @@ function extractYearSpans(text = '') {
 }
 
 /**
- * Resume intelligence validation — advisory signals from resume text + job context.
+ * Resume intelligence validation, advisory signals from resume text + job context.
  */
 export function buildResumeValidation({
   resumeText = '',
@@ -104,7 +104,7 @@ export function buildResumeValidation({
       status: ok ? 'pass' : 'review',
       detail: ok
         ? `Claimed ${years} years aligns with graduation year (${gradYear}).`
-        : `Claims ${years} years experience but graduated ~${gradYear} — verify employment timeline.`,
+        : `Claims ${years} years experience but graduated ~${gradYear}, verify employment timeline.`,
     });
   } else if (years != null) {
     checks.push({
@@ -126,7 +126,7 @@ export function buildResumeValidation({
       label: 'Timeline continuity',
       status: gaps.length ? 'review' : 'pass',
       detail: gaps.length
-        ? `Large gaps between referenced years (${gaps.join(', ')}) — confirm career history.`
+        ? `Large gaps between referenced years (${gaps.join(', ')}), confirm career history.`
         : 'Employment years appear reasonably continuous.',
     });
   }
@@ -137,7 +137,7 @@ export function buildResumeValidation({
     status: education === 'Other' ? 'review' : 'pass',
     detail:
       education === 'Other'
-        ? 'No standard degree pattern detected — manual qualification review recommended.'
+        ? 'No standard degree pattern detected, manual qualification review recommended.'
         : `${education} credentials referenced in resume materials.`,
   });
 
@@ -153,7 +153,7 @@ export function buildResumeValidation({
     detail:
       domain.hits.length > 0
         ? `Matched role signals: ${domain.hits.slice(0, 6).join(', ')}.`
-        : 'Limited overlap between resume and role keywords — review fit carefully.',
+        : 'Limited overlap between resume and role keywords, review fit carefully.',
   });
 
   const experienceFit = buildExperienceFit({
@@ -186,7 +186,7 @@ export function buildResumeValidation({
     id: 'domain_matrix',
     label: 'Domain competency matrix',
     status: domainMatrix.coverage_score >= 60 ? 'pass' : domainMatrix.coverage_score >= 35 ? 'review' : 'fail',
-    detail: `${domainMatrix.hits_count}/${domainMatrix.total_signals} ${domainMatrix.department} signals (${domainMatrix.tier} tier) — ${domainMatrix.coverage_score}% coverage`,
+    detail: `${domainMatrix.hits_count}/${domainMatrix.total_signals} ${domainMatrix.department} signals (${domainMatrix.tier} tier), ${domainMatrix.coverage_score}% coverage`,
   });
 
   const certs = [...new Set((text.match(CERT_PATTERNS) || []).map((c) => c.toUpperCase()))];
@@ -196,7 +196,7 @@ export function buildResumeValidation({
     status: certs.length ? 'pass' : 'review',
     detail: certs.length
       ? `Credentials referenced: ${certs.slice(0, 5).join(', ')}.`
-      : 'No standard certifications detected — verify if role requires them.',
+      : 'No standard certifications detected, verify if role requires them.',
   });
 
   const workAuth = WORK_AUTH_PATTERNS.test(text);
@@ -206,7 +206,7 @@ export function buildResumeValidation({
     status: workAuth ? 'pass' : 'review',
     detail: workAuth
       ? 'Work authorization language found in resume materials.'
-      : 'No work authorization statement — confirm eligibility during screening.',
+      : 'No work authorization statement, confirm eligibility during screening.',
   });
 
   const leadership = LEADERSHIP_PATTERNS.test(text);
@@ -216,7 +216,7 @@ export function buildResumeValidation({
     status: leadership ? 'pass' : 'review',
     detail: leadership
       ? 'Resume references team leadership or cross-functional ownership.'
-      : 'Limited leadership language — appropriate for some individual-contributor roles.',
+      : 'Limited leadership language, appropriate for some individual-contributor roles.',
   });
 
   const skills = extractSkills(text);
@@ -228,18 +228,18 @@ export function buildResumeValidation({
   const confidence = Math.round(((pass * 1 + review * 0.5) / Math.max(checks.length, 1)) * 100);
 
   const recommendations = [];
-  if (review || fail) recommendations.push('Needs validation — verify timeline and qualifications in interview');
-  if (domain.score >= 60) recommendations.push('Strong match — recommend advancing to structured screening review');
-  if (confidence >= 80) recommendations.push('Fast-track candidate — resume signals align with role requirements');
+  if (review || fail) recommendations.push('Needs validation, verify timeline and qualifications in interview');
+  if (domain.score >= 60) recommendations.push('Strong match, recommend advancing to structured screening review');
+  if (confidence >= 80) recommendations.push('Fast-track candidate, resume signals align with role requirements');
   if (domain.score < 50 && transferableSkills.length >= 2) {
     recommendations.push(
-      `Hidden talent potential — transferable skills (${transferableSkills.slice(0, 3).join(', ')}) may outweigh resume gap`
+      `Hidden talent potential, transferable skills (${transferableSkills.slice(0, 3).join(', ')}) may outweigh resume gap`
     );
   }
-  if (!recommendations.length) recommendations.push('Standard review — no major resume flags detected');
+  if (!recommendations.length) recommendations.push('Standard review, no major resume flags detected');
   if (experienceFit.years_gap >= 3) {
     recommendations.unshift(
-      `Experience gap: resume ~${experienceFit.candidate_years ?? '?'} yrs vs role ~${experienceFit.required_min_years}+ yrs — verify before advancing`
+      `Experience gap: resume ~${experienceFit.candidate_years ?? '?'} yrs vs role ~${experienceFit.required_min_years}+ yrs, verify before advancing`
     );
   }
 

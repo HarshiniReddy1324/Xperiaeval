@@ -70,7 +70,7 @@ export function classifyScreeningStatus({ completion, integrityResult, mandatory
       screening_category: 'Proctoring Violation',
       recommendation:
         integrityResult.proctoring_verdict ||
-        'Session failed proctoring requirements — review log before advancing.',
+        'Session failed proctoring requirements, review log before advancing.',
     };
   }
 
@@ -83,7 +83,7 @@ export function classifyScreeningStatus({ completion, integrityResult, mandatory
     return {
       screening_status: 'ai_used',
       screening_category: 'AI Used',
-      recommendation: 'Flagged for review — possible AI-generated responses or suspicious session behavior.',
+      recommendation: 'Flagged for review, possible AI-generated responses or suspicious session behavior.',
     };
   }
 
@@ -98,7 +98,7 @@ export function classifyScreeningStatus({ completion, integrityResult, mandatory
   return {
     screening_status: 'complete',
     screening_category: 'Ready for Review',
-    recommendation: 'Strong completion and integrity signals — recommend for hiring manager review.',
+    recommendation: 'Strong completion and integrity signals, recommend for hiring manager review.',
   };
 }
 

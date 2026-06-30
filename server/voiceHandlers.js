@@ -37,7 +37,7 @@ export function getVoiceSampleForApplication(applicationId) {
       has_sample: false,
       pending_media_path: audioAnswer.media_path,
       source: 'answer_media',
-      hint: 'Audio on file — click “Index voice from screening” to enable verification',
+      hint: 'Audio on file, click “Index voice from screening” to enable verification',
     };
   }
 

@@ -151,7 +151,7 @@ export function ScreeningQuestion({
       {showAudioRecord && (
         <div className="answerModeBlock mediaBlock">
           <p className="answerModeLabel">
-            <Mic size={14} /> Record your answer {forceAudioOnly ? '(required)' : '(optional — or instead of typing)'}
+            <Mic size={14} /> Record your answer {forceAudioOnly ? '(required)' : '(optional: or instead of typing)'}
           </p>
           {!recording ? (
             <div className="mediaActions">

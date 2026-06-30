@@ -1,5 +1,5 @@
 /**
- * Experience / seniority fit engine — compares resume tenure vs role requirements.
+ * Experience / seniority fit engine, compares resume tenure vs role requirements.
  * Fixes cases like 4 years applying to a 20-year executive role.
  */
 
@@ -167,7 +167,7 @@ export function buildExperienceFit({ resumeText = '', job = {}, posting = {} }) 
         ? `Inferred ${candidateSeniority} seniority vs ${jobReq.expectedSeniority} role expectations.`
         : fitScore >= 85
           ? 'Experience level aligns with role seniority requirements.'
-          : 'Experience signals are borderline — confirm scope in interview.';
+          : 'Experience signals are borderline, confirm scope in interview.';
 
   return {
     fit_score: fitScore,
@@ -201,9 +201,9 @@ export function applyExperienceFitToScore(overall, experienceFit, recommendation
   }
   let rec = recommendation;
   if (experienceFit.severity === 'critical' && /advance|strong|interview/i.test(rec || '')) {
-    rec = 'Not recommended — experience gap vs role requirements';
+    rec = 'Not recommended, experience gap vs role requirements';
   } else if (experienceFit.severity === 'high' && /strong/i.test(rec || '')) {
-    rec = 'Review carefully — significant experience gap';
+    rec = 'Review carefully, significant experience gap';
   }
   return { overall: adjusted, recommendation: rec };
 }

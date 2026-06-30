@@ -160,7 +160,7 @@ export function VoiceVerificationPanel({ applicationId, voiceVerification, onUpd
         <div className={`voiceResult ${result.match_score >= 80 ? 'ok' : result.match_score >= 55 ? 'warn' : 'bad'}`}>
           <strong>{result.verdict}</strong>
           <p>Match score: {result.match_score}%</p>
-          <small>Demo fingerprint — same recording ≈ 100%; different speaker scores lower.</small>
+          <small>Demo fingerprint: same recording ≈ 100%; different speaker scores lower.</small>
         </div>
       )}
     </div>

@@ -6,6 +6,7 @@ import {
   ClipboardList,
   HelpCircle,
   LayoutDashboard,
+  LogOut,
   Menu,
   Moon,
   Settings,
@@ -23,18 +24,21 @@ import { useTheme } from '../context/ThemeContext';
 import { canAccess } from '../lib/roles';
 import { filterNavByProductMode, PRODUCT_LABELS, PRODUCT_SUBTITLES, normalizeProductMode, homeNavLabel, hasHiringFeatures, hasIntelligenceFeatures } from '../lib/productMode';
 import { isCandidateHubPath, isCandidateSectionPath } from '../lib/navigation';
+import { isAnalyticsHubPath } from '../lib/analyticsSections';
+import { isSettingsHubPath } from '../lib/settingsSections';
 import { NotificationBell } from './NotificationBell';
+import { PilotBanner } from './PilotProgram';
 import { DashboardDatePicker } from './DashboardDatePicker';
 import { PageBack } from './PageBack';
 
 const PORTAL_NAV_BASE = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/' || p === '' },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' || p === '/dashboard/' },
   { path: '/jobs', label: 'Positions', icon: Briefcase, match: (p) => p.startsWith('/jobs') },
   {
-    path: '/candidates?pipeline=shortlisted_interview',
+    path: '/candidates?pipeline=interviewing',
     label: 'Interviews',
     icon: Video,
-    match: (p) => p.includes('pipeline=shortlisted'),
+    match: (p) => p.includes('pipeline=interviewing'),
   },
   {
     path: '/candidates?integrity=flagged',
@@ -49,7 +53,7 @@ const PORTAL_NAV_BASE = [
     match: (p) => {
       if (!p.startsWith('/candidates')) return false;
       if (p.includes('integrity=flagged')) return false;
-      if (p.includes('pipeline=shortlisted')) return false;
+      if (p.includes('pipeline=interviewing')) return false;
       return true;
     },
   },
@@ -65,7 +69,7 @@ const PORTAL_NAV_BASE = [
 function buildPortalNav(productMode, role) {
   const homeLabel = homeNavLabel(productMode);
   const items = PORTAL_NAV_BASE.map((item) =>
-    item.path === '/' ? { ...item, label: homeLabel } : item,
+    item.path === '/dashboard' ? { ...item, label: homeLabel } : item,
   );
   if (role === 'Admin' || role === 'Compliance Auditor') {
     items.splice(items.length - 2, 0, {
@@ -101,7 +105,7 @@ function initials(name) {
 }
 
 export function Layout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -111,10 +115,17 @@ export function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem('xperieval_sidebar_collapsed') === '1',
   );
-  const [dashDateRange, setDashDateRange] = useState('30d');
-  const isDashboard = location.pathname === '/';
+  const [dashDateRange, setDashDateRange] = useState(() => {
+    if (typeof window === 'undefined') return '30d';
+    const saved = localStorage.getItem('xperieval_dash_range');
+    return saved === '7d' || saved === '90d' || saved === '30d' ? saved : '30d';
+  });
+  const isDashboard = location.pathname === '/dashboard';
   const hideGlobalPageBack =
-    isCandidateHubPath(location.pathname) || isCandidateSectionPath(location.pathname);
+    isCandidateHubPath(location.pathname) ||
+    isCandidateSectionPath(location.pathname) ||
+    isAnalyticsHubPath(location.pathname) ||
+    isSettingsHubPath(location.pathname);
   const brandSubtitle = PRODUCT_SUBTITLES[productMode] || PRODUCT_SUBTITLES.both;
   const dashboardTitle = productMode === 'intelligence' ? 'Intelligence' : 'Dashboard';
   const dashboardSubtitle =
@@ -142,6 +153,12 @@ export function Layout() {
     setNavOpen(false);
   }, [location.pathname, location.search]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('xperieval_dash_range', dashDateRange);
+    }
+  }, [dashDateRange]);
+
   const toggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth <= 700) {
       setNavOpen((v) => !v);
@@ -160,12 +177,17 @@ export function Layout() {
       !hasHiringFeatures(productMode) &&
       (p.startsWith('/jobs') || p.startsWith('/rubrics') || p === '/trash' || p.startsWith('/recruiter-performance'))
     ) {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
     if (!hasIntelligenceFeatures(productMode) && p.startsWith('/integrations')) {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   }, [productMode, location.pathname, navigate]);
+
+  const signOut = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className={`portalApp${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -210,7 +232,7 @@ export function Layout() {
                 <NavLink
                   key={path}
                   to={path}
-                  end={path === '/'}
+                  end={path === '/dashboard'}
                   className={() => (active ? 'active' : '')}
                   activeClassName=""
                   aria-current={active ? 'page' : undefined}
@@ -254,6 +276,11 @@ export function Layout() {
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             <span className="navLabel">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
+
+          <button type="button" className="portalThemeBtn portalSignOutBtn" onClick={signOut} aria-label="Sign out">
+            <LogOut size={15} />
+            <span className="navLabel">Sign out</span>
+          </button>
         </div>
       </aside>
 
@@ -290,6 +317,7 @@ export function Layout() {
           </div>
         </div>
         <main id="main-content">
+          <PilotBanner pilot={user?.pilot} />
           {!isDashboard && !hideGlobalPageBack && (
             <div className="pageBackBar">
               <PageBack />

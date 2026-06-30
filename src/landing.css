@@ -1,0 +1,873 @@
+/* Xperieval marketing landing — Ease Health design tokens */
+
+.landingPage {
+  --lp-bg: #fffefc;
+  --lp-surface: #fffefc;
+  --lp-surface-2: #e1f4df;
+  --lp-surface-3: #cfe7d3;
+  --lp-sage: #b1dbb8;
+  --lp-mist: #b6ced5;
+  --lp-ink: #0f3e17;
+  --lp-text: #000000;
+  --lp-muted: #222222;
+  --lp-border: #e5e7eb;
+  --lp-max: 1120px;
+  --lp-radius: 14px;
+  --lp-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --lp-display: 'Fraunces', Georgia, serif;
+
+  min-height: 100vh;
+  background: var(--lp-bg);
+  color: var(--lp-text);
+  font-family: var(--lp-font);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.42px;
+}
+
+.landingPage *,
+.landingPage *::before,
+.landingPage *::after {
+  box-sizing: border-box;
+}
+
+.landingPage a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.landingProgress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--lp-ink), var(--lp-sage));
+  z-index: 100;
+  pointer-events: none;
+}
+
+.landingNav {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: rgba(255, 254, 252, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.landingNavInner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+  padding: 0 21px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.landingBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.landingBrandMark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--lp-ink);
+  color: var(--lp-bg);
+  display: grid;
+  place-items: center;
+}
+
+.landingBrand strong {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.landingBrand span {
+  display: block;
+  font-size: 10px;
+  color: var(--lp-muted);
+}
+
+.landingNavLinks {
+  display: flex;
+  gap: 22px;
+  flex: 1;
+}
+
+.landingNavLinks button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--lp-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.landingNavLinks button:hover {
+  color: var(--lp-ink);
+}
+
+.landingNavActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landingNavToggle {
+  display: none;
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.landingBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--lp-radius);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.landingBtnPrimary {
+  background: var(--lp-ink);
+  color: var(--lp-bg);
+}
+
+.landingBtnPrimary:hover {
+  background: #0a3211;
+}
+
+.landingBtnOutline {
+  background: transparent;
+  border-color: var(--lp-border);
+  color: var(--lp-ink);
+}
+
+.landingBtnOutline:hover {
+  background: var(--lp-surface-2);
+  border-color: var(--lp-ink);
+}
+
+.landingSection {
+  padding: 80px 21px;
+  scroll-margin-top: 72px;
+}
+
+.landingSectionInner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+}
+
+.landingSectionAlt {
+  background: var(--lp-surface-2);
+}
+
+.landingEyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--lp-ink);
+  margin-bottom: 14px;
+}
+
+.landingH2 {
+  margin: 0 0 14px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  color: var(--lp-ink);
+}
+
+.landingLead {
+  margin: 0;
+  max-width: 560px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--lp-muted);
+}
+
+.landingHero {
+  padding: 56px 21px 80px;
+  scroll-margin-top: 72px;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -20%, var(--lp-sage) 0%, transparent 60%),
+    var(--lp-bg);
+}
+
+.landingHeroGrid {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.landingHero h1 {
+  margin: 0 0 18px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.6px;
+  color: var(--lp-ink);
+}
+
+.landingHero h1 em {
+  font-style: normal;
+  color: var(--lp-ink);
+  background: linear-gradient(180deg, transparent 65%, var(--lp-sage) 65%);
+}
+
+.landingHero p {
+  margin: 0 0 28px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--lp-muted);
+  max-width: 480px;
+}
+
+.landingHeroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.landingPreview {
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(15, 62, 23, 0.06);
+}
+
+.landingPreviewBar {
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--lp-muted);
+  border-bottom: 1px solid var(--lp-border);
+  background: var(--lp-surface-2);
+}
+
+.landingPreviewBody {
+  padding: 18px;
+}
+
+.landingBucketRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.landingBucket {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface-2);
+}
+
+.landingBucket strong {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--lp-muted);
+}
+
+.landingBucket span {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--lp-ink);
+}
+
+.landingBucket.green {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.landingBucket.amber {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.landingBucket.red {
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+.landingCandidateRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--lp-border);
+  margin-bottom: 8px;
+}
+
+.landingCandidateScore {
+  font-size: 20px;
+  font-weight: 800;
+  min-width: 36px;
+}
+
+.landingCandidateInfo b {
+  display: block;
+  font-size: 13px;
+}
+
+.landingCandidateInfo small {
+  color: var(--lp-muted);
+  font-size: 11px;
+}
+
+.landingTag {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--lp-mist);
+  color: var(--lp-ink);
+}
+
+.landingMarquee {
+  padding: 28px 0;
+  border-block: 1px solid var(--lp-border);
+  overflow: hidden;
+  background: var(--lp-surface);
+}
+
+.landingMarqueeTrack {
+  display: flex;
+  gap: 48px;
+  width: max-content;
+  animation: landingMarquee 40s linear infinite;
+  padding-left: 48px;
+}
+
+.landingMarqueeTrack span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lp-muted);
+  white-space: nowrap;
+}
+
+@keyframes landingMarquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.landingFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.landingFeatureCard {
+  padding: 21px;
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+}
+
+.landingFeatureCard h3 {
+  margin: 12px 0 8px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: 18px;
+  color: var(--lp-ink);
+}
+
+.landingFeatureCard p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lp-muted);
+}
+
+.landingFeatureIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--lp-surface-3);
+  color: var(--lp-ink);
+}
+
+.landingSteps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 21px;
+  margin-top: 42px;
+}
+
+.landingStep {
+  padding: 21px;
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+}
+
+.landingStepNum {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lp-ink);
+  margin-bottom: 12px;
+}
+
+.landingStep h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.landingStep p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--lp-muted);
+  line-height: 1.55;
+}
+
+.landingCompare {
+  margin-top: 42px;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  overflow: hidden;
+  background: var(--lp-surface);
+}
+
+.landingDiffGrid {
+  display: grid;
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.landingDiffCard {
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius);
+  background: var(--lp-surface);
+  overflow: hidden;
+}
+
+.landingDiffHead {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--lp-border);
+  background: var(--lp-surface-2);
+}
+
+.landingDiffHead h3 {
+  margin: 0 0 4px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: 20px;
+  color: var(--lp-ink);
+}
+
+.landingDiffExamples {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lp-muted);
+}
+
+.landingDiffCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.landingDiffCol {
+  padding: 18px 20px;
+}
+
+.landingDiffColTypical {
+  border-right: 1px solid var(--lp-border);
+  background: var(--lp-bg);
+}
+
+.landingDiffColXper {
+  background: var(--lp-surface-3);
+}
+
+.landingDiffLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--lp-muted);
+}
+
+.landingDiffCol p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--lp-text);
+}
+
+.landingCompare table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.landingCompare th,
+.landingCompare td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.landingCompare th {
+  background: var(--lp-surface-2);
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.landingCompare td:first-child {
+  color: var(--lp-muted);
+  font-weight: 500;
+}
+
+.landingCompare tr:last-child td {
+  border-bottom: 0;
+}
+
+.landingPricing {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.landingPriceCard {
+  padding: 24px;
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.landingPriceCard.featured {
+  border-color: var(--lp-ink);
+  background: var(--lp-surface-2);
+}
+
+.landingPriceCard h3 {
+  margin: 0 0 6px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: 22px;
+}
+
+.landingPriceCard .tier {
+  font-size: 12px;
+  color: var(--lp-muted);
+  margin-bottom: 14px;
+}
+
+.landingPriceCard ul {
+  margin: 0 0 20px;
+  padding-left: 18px;
+  flex: 1;
+  font-size: 13px;
+  color: var(--lp-muted);
+  line-height: 1.7;
+}
+
+.landingPriceCard .landingBtn {
+  width: 100%;
+}
+
+.landingStats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.landingStat {
+  padding: 18px;
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+  text-align: center;
+}
+
+.landingStat strong {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--lp-ink);
+}
+
+.landingStat span {
+  font-size: 12px;
+  color: var(--lp-muted);
+}
+
+.landingContact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 42px;
+  align-items: start;
+}
+
+.landingForm {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+}
+
+.landingForm label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lp-muted);
+}
+
+.landingForm input,
+.landingForm textarea,
+.landingForm select {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface-2);
+  font: inherit;
+  color: var(--lp-text);
+}
+
+.landingForm input:focus,
+.landingForm textarea:focus,
+.landingForm select:focus {
+  outline: none;
+  border-color: var(--lp-ink);
+  background: var(--lp-surface);
+}
+
+.landingFormSuccess {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--lp-surface-3);
+  border: 1px solid var(--lp-sage);
+  color: var(--lp-ink);
+  font-size: 13px;
+}
+
+.landingCta {
+  padding: 80px 21px;
+  text-align: center;
+  background: var(--lp-ink);
+  color: var(--lp-bg);
+}
+
+.landingCta h2 {
+  margin: 0 0 12px;
+  font-family: var(--lp-display);
+  font-weight: 300;
+  font-size: clamp(28px, 4vw, 40px);
+}
+
+.landingCta p {
+  margin: 0 auto 28px;
+  max-width: 480px;
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+.landingCta .landingBtnPrimary {
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+}
+
+.landingCta .landingBtnOutline {
+  border-color: rgba(255, 254, 252, 0.35);
+  color: var(--lp-bg);
+}
+
+.landingCta .landingBtnOutline:hover {
+  background: rgba(255, 254, 252, 0.1);
+}
+
+.landingFooter {
+  padding: 42px 21px 28px;
+  border-top: 1px solid var(--lp-border);
+}
+
+.landingFooterInner {
+  max-width: var(--lp-max);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.landingFooterNav {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.landingFooterLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landingFooterLinks li {
+  display: flex;
+  align-items: center;
+}
+
+.landingFooterLinks button,
+.landingFooterLinks a {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--lp-muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.landingFooterLinks a:hover,
+.landingFooterLinks button:hover {
+  color: var(--lp-ink);
+}
+
+.landingFooter small {
+  display: block;
+  margin-top: 8px;
+  color: var(--lp-muted);
+  font-size: 12px;
+}
+
+.landingPriceCard .landingBtn {
+  text-align: center;
+  text-decoration: none;
+}
+
+.landingIntegrations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.landingIntegrationChip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--lp-border);
+  background: var(--lp-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lp-muted);
+}
+
+.landingMobileMenu {
+  display: none;
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: var(--lp-surface);
+  border-bottom: 1px solid var(--lp-border);
+  padding: 16px 21px 20px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landingMobileMenu.open {
+  display: flex;
+}
+
+@media (max-width: 960px) {
+  .landingHeroGrid,
+  .landingContact,
+  .landingFeatureGrid,
+  .landingSteps,
+  .landingPricing,
+  .landingStats,
+  .landingDiffCols {
+    grid-template-columns: 1fr;
+  }
+
+  .landingDiffColTypical {
+    border-right: 0;
+    border-bottom: 1px solid var(--lp-border);
+  }
+
+  .landingFooterInner {
+    align-items: flex-start;
+  }
+
+  .landingFooterNav {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .landingFooterLinks {
+    justify-content: flex-start;
+  }
+
+  .landingNavLinks {
+    display: none;
+  }
+
+  .landingNavToggle {
+    display: block;
+    margin-left: auto;
+  }
+
+  .landingNavActions .landingBtnOutline {
+    display: none;
+  }
+}

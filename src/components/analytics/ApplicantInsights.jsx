@@ -54,7 +54,7 @@ export function ApplicantInsights({ initialData = null }) {
     api(`/reports${q}`)
       .then((payload) => {
         const insights = payload.applicantInsights;
-        if (!insights) throw new Error('Applicant insights unavailable — restart the API server');
+        if (!insights) throw new Error('Applicant insights unavailable: restart the API server');
         setData(insights);
         if (!jobId && insights.jobId) setJobId(insights.jobId);
       })
@@ -153,11 +153,11 @@ export function ApplicantInsights({ initialData = null }) {
           <div className="insightsKpiRow">
             <KpiMini
               label="Avg years experience"
-              value={data.avgYearsExperience != null ? data.avgYearsExperience : '—'}
+              value={data.avgYearsExperience != null ? data.avgYearsExperience : 'N/A'}
             />
             <KpiMini
               label="Avg resume score"
-              value={data.avgResumeScore != null ? `${data.avgResumeScore}/100` : '—'}
+              value={data.avgResumeScore != null ? `${data.avgResumeScore}/100` : 'N/A'}
             />
             <KpiMini label="Strong fit (Green)" value={`${data.greenPct}%`} sub="of scored applicants" />
           </div>

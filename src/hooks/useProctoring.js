@@ -97,7 +97,7 @@ export function useProctoring(policy, boundaryRef) {
       if (document.hidden) {
         hiddenStartRef.current = Date.now();
         sessionRef.current.focus_loss_count += 1;
-        addWarning('Tab or window switched — stay on this application');
+        addWarning('Tab or window switched: stay on this application');
         if (policy.fail_on_focus_loss && sessionRef.current.focus_loss_count >= policy.focus_loss_fail_threshold) {
           triggerAutoFail('Exceeded allowed tab/window switches');
         }
@@ -233,7 +233,7 @@ export function useProctoring(policy, boundaryRef) {
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
       sessionRef.current.fullscreen_entered = true;
     } catch {
-      addWarning('Fullscreen could not be enabled — continue in maximized window');
+      addWarning('Fullscreen could not be enabled: continue in maximized window');
     }
   }, [policy.require_fullscreen, addWarning]);
 

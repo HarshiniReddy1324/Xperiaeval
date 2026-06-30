@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
+import { AuthLayout } from '../components/AuthLayout';
 
 const DEMO_ACCOUNTS = [
   { email: 'demo@xperieval.com', role: 'Admin' },
@@ -14,8 +14,8 @@ const DEMO_ACCOUNTS = [
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('demo@xperieval.com');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +25,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -40,7 +40,7 @@ export function Login() {
     setLoading(true);
     try {
       await login(accountEmail, 'demo1234');
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -49,44 +49,68 @@ export function Login() {
   };
 
   return (
-    <div className="authPage">
-      <div className="authCard wide">
-        <div className="brand center">
-          <div className="logo">
-            <Sparkles size={24} />
-          </div>
-          <div>
-            <b>Xperieval</b>
-            <span>Experience Evaluation Portal</span>
-          </div>
+    <AuthLayout
+      title="Sign in"
+      lead="Use the email and password assigned to your role."
+      footer={
+        <>
+          New workspace? <Link to="/register">Create account</Link>
+          <span className="authFooterSep"> · </span>
+          <Link to="/">About Xperieval</Link>
+        </>
+      }
+    >
+      <form className="authForm" onSubmit={submit}>
+        <div className="authField">
+          <label htmlFor="login-email">Email</label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            required
+          />
         </div>
-        <h1>Sign in</h1>
-        <p className="muted">Your role is tied to your account — sign in with the email assigned to your role.</p>
-        <form onSubmit={submit}>
-          <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <label>Password</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {error && <p className="error">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </form>
-        <div className="demoAccounts">
-          <p className="muted">Demo accounts (password: demo1234)</p>
-          <div className="demoGrid">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button key={a.email} type="button" className="demoBtn" onClick={() => quickLogin(a.email)} disabled={loading}>
-                <strong>{a.role}</strong>
-                <small>{a.email}</small>
-              </button>
-            ))}
-          </div>
+        <div className="authField">
+          <label htmlFor="login-password">Password</label>
+          <input
+            id="login-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+          />
         </div>
-        <p className="authFooter">
-          New workspace? <Link to="/register">Create account</Link> (first user becomes Admin)
-        </p>
-      </div>
-    </div>
+        {error ? <p className="authError">{error}</p> : null}
+        <Button type="submit" className="authSubmit" disabled={loading}>
+          {loading ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
+
+      <details className="authDemo">
+        <summary>Try a demo account</summary>
+        {import.meta.env.DEV && (
+          <p className="authDemoHint">Demo accounts use the local seed password configured for this environment.</p>
+        )}
+        <div className="authDemoGrid">
+          {DEMO_ACCOUNTS.map((a) => (
+            <button
+              key={a.email}
+              type="button"
+              className="authDemoTile"
+              onClick={() => quickLogin(a.email)}
+              disabled={loading}
+            >
+              <strong>{a.role}</strong>
+              <small>{a.email}</small>
+            </button>
+          ))}
+        </div>
+      </details>
+    </AuthLayout>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * ATS egress writeback — real HTTP delivery to configured webhook (Greenhouse-compatible).
+ * ATS egress writeback, real HTTP delivery to configured webhook (Greenhouse-compatible).
  */
 
 import { v4 as uuid } from 'uuid';
@@ -15,7 +15,7 @@ export async function processWritebackQueue(db, { orgId = null, limit = 15 } = {
     SELECT w.*, i.provider, i.writeback_url, i.writeback_api_key, i.webhook_secret
     FROM ats_writeback_queue w
     JOIN ats_integrations i ON i.org_id = w.org_id AND i.enabled = 1
-    WHERE w.status IN ('pending', 'failed') AND (w.attempts IS NULL OR w.attempts < 5)
+    WHERE w.status IN ('pending', 'failed', 'queued') AND (w.attempts IS NULL OR w.attempts < 5)
   `;
   const params = [];
   if (orgId) {

@@ -1,4 +1,4 @@
-/** Flexible rubric sizing — total application score always sums to 100. */
+/** Flexible rubric sizing, total application score always sums to 100. */
 
 export const MIN_RUBRIC_QUESTIONS = 1;
 export const MAX_RUBRIC_QUESTIONS = 40;

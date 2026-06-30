@@ -99,7 +99,7 @@ export function scoreInterview({ responses, jobTitle, applicationText, greenThre
       'Interview responses show depth, role relevance, and natural delivery. Candidate appears consistent with application materials.';
   } else if (bucket === 'Amber') {
     explanation =
-      'Mixed interview performance — some answers lack depth or sound rehearsed. Recommend debrief with hiring team before final decision.';
+      'Mixed interview performance, some answers lack depth or sound rehearsed. Recommend debrief with hiring team before final decision.';
   } else {
     explanation =
       'Interview answers were thin, off-topic, or showed AI-like phrasing. Human review required; compare with application score before deciding.';
@@ -118,7 +118,7 @@ export function scoreInterview({ responses, jobTitle, applicationText, greenThre
         ? 'Likely genuine in interview'
         : authScore >= 50
           ? 'Review interview authenticity'
-          : 'High risk — rehearsed or AI-assisted responses',
+          : 'High risk, rehearsed or AI-assisted responses',
     ai_phrase_flags: aiHits,
     explanation,
     breakdown: [

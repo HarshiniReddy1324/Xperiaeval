@@ -11,7 +11,7 @@ function bucketClass(bucket) {
 }
 
 function formatWhen(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'N/A';
   try {
     return new Date(iso.includes('T') ? iso : `${iso.replace(' ', 'T')}Z`).toLocaleString(undefined, {
       month: 'short',
@@ -67,7 +67,7 @@ export function IntelligenceDashboard() {
             <strong>Connect your ATS</strong>
             <p>Greenhouse, Lever, or any system that can send webhooks.</p>
           </div>
-          <Link to="/integrations" className="intelWorkflowLink">
+          <Link to="/integrations?tab=ats" className="intelWorkflowLink">
             Set up <ArrowRight size={14} />
           </Link>
         </Card>
@@ -78,7 +78,7 @@ export function IntelligenceDashboard() {
             <strong>Score experience</strong>
             <p>Each candidate gets an explainable fit score with evidence and risk flags.</p>
           </div>
-          <Link to="/integrations" className="intelWorkflowLink">
+          <Link to="/integrations?tab=api" className="intelWorkflowLink">
             API keys <ArrowRight size={14} />
           </Link>
         </Card>
@@ -89,7 +89,7 @@ export function IntelligenceDashboard() {
             <strong>Write back to ATS</strong>
             <p>Scores, tags, and notes sync to your system of record automatically.</p>
           </div>
-          <Link to="/integrations#writeback-queue" className="intelWorkflowLink">
+          <Link to="/integrations?tab=ats#writeback-queue" className="intelWorkflowLink">
             View queue <ArrowRight size={14} />
           </Link>
         </Card>
@@ -99,7 +99,7 @@ export function IntelligenceDashboard() {
         <Card className="intelKpi">
           <Sparkles size={20} />
           <div>
-            <strong>{summary.avg_experience_score ?? '—'}</strong>
+            <strong>{summary.avg_experience_score ?? 'N/A'}</strong>
             <span>Avg experience score</span>
             <small>{hasEvaluations ? `From ${data.evaluations_total} API evaluations` : 'No evaluations yet'}</small>
           </div>
@@ -120,7 +120,7 @@ export function IntelligenceDashboard() {
             <span>Active API keys</span>
             <small>For direct evaluate calls</small>
           </div>
-          <Link to="/integrations">Manage</Link>
+          <Link to="/integrations?tab=api">Manage</Link>
         </Card>
         <Card className="intelKpi">
           <RefreshCw size={20} />
@@ -169,7 +169,7 @@ export function IntelligenceDashboard() {
           <h2>Get your first score</h2>
           <p>
             You haven&apos;t evaluated any candidates yet. Create an API key and POST a candidate payload, or send a test
-            webhook from <Link to="/integrations">Integrations</Link>.
+            webhook from <Link to="/integrations?tab=ats">Integrations → ATS</Link>.
           </p>
           <div className="row">
             <Link to="/integrations" className="btn">
@@ -198,13 +198,13 @@ export function IntelligenceDashboard() {
             <tbody>
               {(data.recent_evaluations || []).map((row) => (
                 <tr key={row.id}>
-                  <td>{row.candidate_name || row.external_id || '—'}</td>
-                  <td>{row.job_title || '—'}</td>
+                  <td>{row.candidate_name || row.external_id || 'N/A'}</td>
+                  <td>{row.job_title || 'N/A'}</td>
                   <td>
                     {row.experience_score != null ? (
                       <span className={bucketClass(row.bucket)}>{row.experience_score}</span>
                     ) : (
-                      '—'
+                      'N/A'
                     )}
                   </td>
                   <td>{formatWhen(row.created_at)}</td>

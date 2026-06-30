@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 
-/** Demo voice fingerprint — not production biometrics; stores hash of audio buffer metadata. */
+/** Demo voice fingerprint; not production biometrics; stores hash of audio buffer metadata. */
 export function fingerprintAudio(buffer, mimeType = 'audio/webm') {
   if (!buffer || !buffer.length) return null;
   const hash = createHash('sha256')
@@ -27,8 +27,8 @@ export function compareFingerprints(a, b) {
       score >= 80
         ? 'Likely same speaker'
         : score >= 55
-          ? 'Review recommended — voice variance detected'
-          : 'Potential mismatch — possible proxy interview',
+          ? 'Review recommended, voice variance detected'
+          : 'Potential mismatch, possible proxy interview',
   };
 }
 

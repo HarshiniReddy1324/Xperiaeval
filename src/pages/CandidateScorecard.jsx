@@ -46,7 +46,7 @@ export function CandidateScorecard() {
       </header>
       <CandidateIntelligenceReport report={intel} applicationScore={data.applicationScore} />
       <footer className="scorecardPrintFooter">
-        <p>Advisory score — human review required before hiring decision. Confidential.</p>
+        <p>Advisory score: human review required before hiring decision. Confidential.</p>
       </footer>
     </div>
   );

@@ -19,8 +19,10 @@ import {
   candidateSectionLabel,
 } from '../lib/candidateSections';
 import { formatApplicationSource } from '../lib/applicationSource';
+import { sanitizeProductCopy } from '../lib/copy';
 import { PIPELINE_LABELS } from '../lib/candidateFilters';
 import { useCandidateApplication, SCHEDULE_STATUS_LABELS } from '../hooks/useCandidateApplication';
+import { CandidateWorkflowActions } from '../components/integrations/CandidateWorkflowActions';
 
 function Toast({ msg, type }) {
   if (!msg) return null;
@@ -35,10 +37,12 @@ export function CandidateDetail() {
   const { user } = useAuth();
   const isIntelOnly = normalizeProductMode(user?.productMode) === 'intelligence';
   const canSeeIntegrity = ['Admin', 'Recruiter', 'Hiring Manager'].includes(user?.role || '');
+  const canManageIntegrations = ['Admin', 'Recruiter'].includes(user?.role || '');
 
   const vm = useCandidateApplication(id, navState);
   const {
     data,
+    load,
     toast,
     setPipeline,
     sendSchedulingInvite,
@@ -99,7 +103,7 @@ export function CandidateDetail() {
       {pendingScheduleAction && scheduling?.selected_slot && !section && (
         <div className="actionBanner">
           <div>
-            <strong>Action required — candidate selected interview time</strong>
+            <strong>Action required: candidate selected interview time</strong>
             <p>
               {scheduling.selected_slot.label} · Review scheduling to confirm or decline.
             </p>
@@ -141,7 +145,7 @@ export function CandidateDetail() {
                 {hiddenGem?.isHiddenGem && (
                   <span
                     className="hiddenGemBadge"
-                    title="Strong screening + authentic session, but resume keywords understate fit — manual second look recommended."
+                    title="Strong screening + authentic session, but resume keywords understate fit: manual second look recommended."
                   >
                     Standout candidate
                   </span>
@@ -152,7 +156,7 @@ export function CandidateDetail() {
                   </span>
                 )}
                 {identityPolicy?.autoRevealed && (
-                  <span className="pipelineStage">Identity visible — final hiring stage</span>
+                  <span className="pipelineStage">Identity visible: final hiring stage</span>
                 )}
                 {identityPolicy?.canReveal && (
                   <Button className="small" onClick={revealIdentity}>
@@ -166,7 +170,7 @@ export function CandidateDetail() {
             <div className={`heroMetric heroMetric--primary heroMetric--${scoreTone || 'neutral'}`}>
               <span className="heroMetricLabel">Experience score</span>
               <div className="heroMetricValueRow">
-                <strong className="heroMetricValue">{appScore?.overall ?? '—'}</strong>
+                <strong className="heroMetricValue">{appScore?.overall ?? 'N/A'}</strong>
                 {appScore?.bucket && <BucketBadge bucket={appScore.bucket} />}
               </div>
               {appScore?.tier && <span className="heroMetricMeta">{appScore.tier}</span>}
@@ -182,9 +186,9 @@ export function CandidateDetail() {
                 {appScore?.recommendation && !section && (
                   <div className="heroScoreExtra heroScoreExtra--rec">
                     <span>Recommendation</span>
-                    <p>{appScore.recommendation}</p>
+                    <p>{sanitizeProductCopy(appScore.recommendation)}</p>
                     {integrity?.authenticity_verdict && (
-                      <p className="heroScoreExtraFoot">{integrity.authenticity_verdict}</p>
+                      <p className="heroScoreExtraFoot">{sanitizeProductCopy(integrity.authenticity_verdict)}</p>
                     )}
                   </div>
                 )}
@@ -220,6 +224,14 @@ export function CandidateDetail() {
                   </Link>
                 )}
               </div>
+            )}
+            {(canManageIntegrations || data.connectorLinks?.jira) && (
+              <CandidateWorkflowActions
+                applicationId={id}
+                connectorLinks={data.connectorLinks}
+                canManage={canManageIntegrations}
+                onUpdated={load}
+              />
             )}
             {isIntelOnly && intelligence && (
               <div className="pipelineBar">

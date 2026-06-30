@@ -271,7 +271,7 @@ export function JobDetail() {
         <Card>
           <h2>Screening question builder</h2>
           <p className="muted">
-            Configure any number of questions — points split evenly to 100 total. Candidates see questions only — no
+            Configure any number of questions: points split evenly to 100 total. Candidates see questions only: no
             timers. Recruiters set an <strong>internal time guideline</strong> per question (not shown to applicants);
             we flag and lightly penalize scores only when time exceeds the guideline by more than ~2 minutes.
           </p>
@@ -319,7 +319,7 @@ export function JobDetail() {
                   ))}
                 </select>
               </div>
-              <label className="rubricFieldLabel">Time guideline (seconds, internal — not shown to applicants)</label>
+              <label className="rubricFieldLabel">Time guideline (seconds, internal: not shown to applicants)</label>
               <input
                 type="number"
                 className="rubricTimeGuideline"
@@ -327,14 +327,14 @@ export function JobDetail() {
                 onChange={(e) => updateCategory(i, 'max_response_seconds', e.target.value)}
                 min={60}
                 max={3600}
-                title="Internal time guideline — flags scoring if exceeded by more than ~2 min"
+                title="Internal time guideline: flags scoring if exceeded by more than ~2 min"
               />
               <p className="rubricFieldHint muted">
                 Applicants are not timed or blocked. We only flag when they exceed this by more than ~2 minutes.
               </p>
               <label className="rubricFieldLabel">Question (shown to applicants)</label>
               <textarea value={c.question} onChange={(e) => updateCategory(i, 'question', e.target.value)} rows={2} placeholder="Question text" />
-              <label className="rubricFieldLabel">Sample answer — internal only (HR / recruiter reference for AI scoring)</label>
+              <label className="rubricFieldLabel">Sample answer: internal only (HR / recruiter reference for AI scoring)</label>
               <textarea
                 value={c.ideal_answer || ''}
                 onChange={(e) => updateCategory(i, 'ideal_answer', e.target.value)}
@@ -366,7 +366,7 @@ export function JobDetail() {
           {rubric?.status === 'approved' && (
             <p className="muted">
               Screening v{rubric.version} is approved. Use <strong>Revise screening</strong>, edit below and save, or apply
-              library questions — each creates a new draft you must approve before candidates see changes.
+              library questions: each creates a new draft you must approve before candidates see changes.
             </p>
           )}
           <p className="muted">

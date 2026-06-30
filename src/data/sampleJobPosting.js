@@ -24,7 +24,7 @@ export const sampleJobPosting = {
     aboutCompany:
       'We build evidence-based hiring software that helps teams evaluate candidates fairly and at scale. Our platform combines structured rubrics, advisory scoring, and human-in-the-loop decisions.',
     summary:
-      'We are looking for a Senior Product Manager to own roadmap delivery for our core hiring workflow — from application intake through recruiter review.',
+      'We are looking for a Senior Product Manager to own roadmap delivery for our core hiring workflow: from application intake through recruiter review.',
     responsibilities: [
       'Own product discovery and delivery for the candidate application experience',
       'Partner with engineering, design, and customer success on quarterly roadmap',

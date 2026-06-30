@@ -91,7 +91,21 @@ body.sidebarResizing *{cursor:col-resize!important}.brand{display:flex;gap:12px;
 .bgCheckItem.fail{background:#fff1f2}
 .bgCheckItem p{margin:4px 0 0;font-size:14px;color:#475569}
 .disclaimer{font-size:12px;color:#94a3b8;line-height:1.5;margin-top:16px;font-style:italic}
-.helpPage{max-width:900px}
+.helpPage{max-width:960px}
+.helpToc{margin-bottom:24px;padding:16px 18px;border-radius:14px;border:1px solid #e2e8f0;background:#fff}
+.helpTocTitle{margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b}
+.helpToc ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px 16px}
+.helpToc a{font-size:13px;font-weight:600;color:#0f766e;text-decoration:none;padding:4px 0}
+.helpToc a:hover{text-decoration:underline;color:#0d5c56}
+.helpSection{scroll-margin-top:72px}
+.helpSection h2{margin-top:0}
+.helpSection h3{margin:20px 0 10px;font-size:15px}
+.helpPillarList{margin:12px 0 0}
+.helpModuleGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.helpModuleCard{padding:16px;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc}
+.helpModuleCard h3{margin:0 0 8px;font-size:15px}
+.helpModuleCard p{margin:0;font-size:14px;line-height:1.55;color:#475569}
+.helpFooter{margin-top:8px;padding-top:8px}
 .helpPage .card{margin-bottom:20px}
 .helpPage ul{line-height:1.8;color:#334155}
 .helpPage code{background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:13px}
@@ -531,6 +545,10 @@ body.sidebarResizing *{cursor:col-resize!important}.brand{display:flex;gap:12px;
 .proctorNotice{font-size:13px;color:#b45309;margin:8px 0 0}
 .proctorSettings{margin-top:16px}
 .proctorToggleGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:16px 0}
+.checkRow--comingSoon{opacity:.72;cursor:not-allowed}
+.checkRow--comingSoon input{cursor:not-allowed}
+.checkRowText{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+.proctorComingSoonBadge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:999px;background:#e8edf2;color:#5a6578;white-space:nowrap}
 .proctorMode{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-weight:600;font-size:14px}
 .proctorMode select,.proctorMode input{padding:10px;border:1px solid #e2e8f0;border-radius:10px;font-weight:500}
 .integrityStats .warn{color:#b45309;font-weight:700}

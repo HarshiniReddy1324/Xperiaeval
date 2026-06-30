@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { BucketBadge, bucketClass } from './ui';
+import { sanitizeProductCopy } from '../lib/copy';
 
 const DIMENSION_LABELS = {
   technical_competency: 'Technical Competency',
@@ -44,14 +45,14 @@ function StarRow({ label, value }) {
   return (
     <div className="intelEvidenceRow">
       <span className="intelEvidenceLabel">{label}</span>
-      <span className="intelEvidenceStars" aria-label={`${value ?? '—'} out of 100`}>
+      <span className="intelEvidenceStars" aria-label={`${value ?? 'N/A'} out of 100`}>
         {Array.from({ length: 5 }, (_, i) => (
           <span key={i} className={i < stars ? 'on' : 'off'}>
             ★
           </span>
         ))}
       </span>
-      <span className="intelEvidenceScore">{value ?? '—'}</span>
+      <span className="intelEvidenceScore">{value ?? 'N/A'}</span>
     </div>
   );
 }
@@ -121,7 +122,7 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
   const dims = report.dimensions || {};
   const insights = report.insights || {};
   const behavioral = report.behavioral || {};
-  const headlineOverall = applicationScore?.overall ?? report.overall ?? '—';
+  const headlineOverall = applicationScore?.overall ?? report.overall ?? 'N/A';
   const headlineBucket = applicationScore?.bucket ?? report.bucket;
   const headlineTier = applicationScore?.tier ?? report.tier;
   const bucketTone = bucketClass(headlineBucket);
@@ -162,14 +163,18 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
 
         <section className="intelSection intelSummaryPanel">
           <h3>AI summary</h3>
-          <p className="intelAiSummary">{explain.ai_summary || report.recommendation || '—'}</p>
+          <p className="intelAiSummary">
+            {sanitizeProductCopy(explain.ai_summary || report.recommendation) || 'N/A'}
+          </p>
           <div className="intelConfidenceRow">
             <span>Confidence</span>
-            <strong>{explain.confidence_pct != null ? `${explain.confidence_pct}%` : report.confidence_level || '—'}</strong>
+            <strong>{explain.confidence_pct != null ? `${explain.confidence_pct}%` : report.confidence_level || 'N/A'}</strong>
           </div>
           <div className="intelRecInline">
             <span>Recommendation</span>
-            <strong>{report.recommendation || applicationScore?.recommendation || '—'}</strong>
+            <strong>
+              {sanitizeProductCopy(report.recommendation || applicationScore?.recommendation) || 'N/A'}
+            </strong>
           </div>
         </section>
 
@@ -262,11 +267,11 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
         </div>
         <div className="intelRecCard">
           <label>Evidence score</label>
-          <strong>{dims.authenticity ?? '—'}</strong>
+          <strong>{dims.authenticity ?? 'N/A'}</strong>
         </div>
         <div className="intelRecCard">
           <label>Integrity score</label>
-          <strong>{dims.behavioral_confidence ?? behavioral.behavioral_confidence ?? '—'}</strong>
+          <strong>{dims.behavioral_confidence ?? behavioral.behavioral_confidence ?? 'N/A'}</strong>
         </div>
       </div>
 
@@ -300,7 +305,7 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
             <Clock size={18} /> Behavioral observations
           </h3>
           <p className="muted intelBehaviorNote">
-            Tab switches and paste events are context signals only — they do not auto-reject candidates.
+            Tab switches and paste events are context signals only; they do not auto-reject candidates.
           </p>
           <div className="intelBehaviorStats">
             <span>Assessment time: {behavioral.total_assessment_seconds || 0}s</span>
@@ -323,7 +328,7 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
                   <span className="intelQNum">Q{i + 1}</span>
                   <span className="intelQType">{q.category_type}</span>
                   <strong className="intelQScore" title="Composite intelligence score (0–100)">
-                    {q.questionScore ?? '—'}
+                    {q.questionScore ?? 'N/A'}
                   </strong>
                 </div>
                 <p className="intelQText">{q.question}</p>

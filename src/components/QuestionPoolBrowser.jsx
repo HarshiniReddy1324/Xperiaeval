@@ -269,7 +269,7 @@ export function QuestionPoolBrowser({
       <p className="poolSelectionCount">
         <Sparkles size={14} /> {selected.size} selected
         {selected.size >= MIN_RUBRIC_QUESTIONS
-          ? ' — ready'
+          ? ': ready'
           : ` (select at least ${MIN_RUBRIC_QUESTIONS})`}
       </p>
 

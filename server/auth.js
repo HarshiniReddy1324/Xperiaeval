@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'xperieval-dev-secret-change-in-production';
+function getJwtSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in production');
+  }
+  return 'xperieval-dev-secret-change-in-production';
+}
+
+const JWT_SECRET = getJwtSecret();
 
 export function signToken(user) {
   return jwt.sign(

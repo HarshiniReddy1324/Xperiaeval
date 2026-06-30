@@ -43,7 +43,7 @@ export function filterNavByProductMode(navItems, productMode) {
     const base = item.path.split('?')[0];
     if (mode === 'intelligence') {
       if (HIRING_ONLY_PATHS.has(base)) return false;
-      if (item.path.includes('pipeline=shortlisted')) return false;
+      if (item.path.includes('pipeline=interviewing')) return false;
       if (item.path.includes('integrity=flagged')) return false;
       return true;
     }

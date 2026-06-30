@@ -11,6 +11,15 @@ export function setToken(token) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
+export class ApiError extends Error {
+  constructor(message, extra = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.pilot = extra.pilot;
+    this.code = extra.code;
+  }
+}
+
 export async function api(path, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (!(options.body instanceof FormData)) {
@@ -21,7 +30,7 @@ export async function api(path, options = {}) {
 
   const res = await fetch(apiUrl(`/api${path}`), { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText || 'Request failed');
+  if (!res.ok) throw new ApiError(data.error || res.statusText || 'Request failed', data);
   return data;
 }
 

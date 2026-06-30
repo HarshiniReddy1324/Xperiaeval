@@ -84,7 +84,7 @@ export function RubricBuilder() {
       <div className="pageHead">
         <h1>Create questionnaire</h1>
         <p>
-          Add as many questions as you need — points are split evenly to total 100. Saving creates a template and
+          Add as many questions as you need: points are split evenly to total 100. Saving creates a template and
           syncs new questions to your library.
         </p>
       </div>
@@ -122,7 +122,7 @@ export function RubricBuilder() {
         <p className="muted">
           {counts.total} question{counts.total === 1 ? '' : 's'} · {counts.mandatoryPts} required pts ·{' '}
           {counts.optionalPts} optional pts · 100 total
-          {!counts.valid && ' — complete every question name and text'}
+          {!counts.valid && ': complete every question name and text'}
         </p>
       </Card>
 

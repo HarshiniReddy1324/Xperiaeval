@@ -41,9 +41,9 @@ function wordCount(t) {
 
 function interviewReadiness(overall, confidence) {
   if (overall >= 80 && confidence === 'High') return 'Ready for interview';
-  if (overall >= 70) return 'Likely ready — confirm weak areas';
+  if (overall >= 70) return 'Likely ready, confirm weak areas';
   if (overall >= 60) return 'Review before scheduling';
-  return 'Not ready — significant gaps';
+  return 'Not ready, significant gaps';
 }
 
 /** Per-answer dimension heuristics (0–100). */
@@ -223,14 +223,14 @@ export function buildBehavioralProfile({ integrity, answers, categories }) {
     ? Math.round(((integrity?.hidden_time_seconds || 0) / integrity.total_time_seconds) * 100)
     : 0;
 
-  /** Context-only — does not auto-reject. */
+  /** Context-only, does not auto-reject. */
   let behavioralConfidence = 88;
   const observations = [];
   if (tabSwitches >= 5) {
     observations.push(`${tabSwitches} tab/focus changes during assessment (context only)`);
     behavioralConfidence -= Math.min(8, tabSwitches);
   } else if (tabSwitches > 0) {
-    observations.push(`${tabSwitches} tab switch(es) noted — not penalized automatically`);
+    observations.push(`${tabSwitches} tab switch(es) noted; not penalized automatically`);
   }
   if (totalPaste > 0) {
     observations.push(`${totalPaste} paste event(s) recorded`);
@@ -354,7 +354,7 @@ export function generateInsights({ dimensions, perQuestion, behavioral, resumeTe
       `Experience gap: ~${experienceFit.candidate_years ?? '?'} yrs resume vs ~${experienceFit.required_min_years}+ yrs role requirement`
     );
   }
-  if (dimensions.authenticity < 58) concerns.push('Answers lean generic — limited first-person evidence');
+  if (dimensions.authenticity < 58) concerns.push('Answers lean generic, limited first-person evidence');
   if (dimensions.problem_solving < 58) concerns.push('Problem-solving narratives lack structure');
 
   const weakQuestions = perQuestion
@@ -368,17 +368,17 @@ export function generateInsights({ dimensions, perQuestion, behavioral, resumeTe
 
   const resume_findings = [];
   if (resumeText?.trim()) {
-    resume_findings.push('Resume on file — cross-checked against assessment responses');
+    resume_findings.push('Resume on file, cross-checked against assessment responses');
     if (dimensions.resume_consistency >= 75) resume_findings.push('High consistency between resume and answers');
     else if (dimensions.resume_consistency < 60)
       resume_findings.push('Some assessment claims need resume verification');
   } else {
-    resume_findings.push('No resume text extracted — resume consistency scored conservatively');
+    resume_findings.push('No resume text extracted, resume consistency scored conservatively');
   }
 
   const project_findings = [];
   if (dimensions.project_ownership >= 70) project_findings.push('Multiple answers show end-to-end ownership signals');
-  else project_findings.push('Limited explicit ownership language — may be contributor vs owner');
+  else project_findings.push('Limited explicit ownership language, may be contributor vs owner');
 
   return {
     top_strengths: strengths.slice(0, 5),
@@ -559,7 +559,7 @@ export async function buildCandidateIntelligenceReport({
       }
       if (ai.dimensions) Object.assign(dimensions, ai.dimensions);
       if (ai.overall != null) {
-        // AI overall is authoritative — do not overwrite with a second heuristic pass
+        // AI overall is authoritative, do not overwrite with a second heuristic pass
         overall = clamp(ai.overall);
       } else {
         overall = computeOverallScore(dimensions, behavioral.behavioral_confidence, perQuestion);
@@ -656,7 +656,7 @@ export function parseIntelligenceReport(scoreRow) {
       typeof scoreRow.intelligence_json === 'string'
         ? JSON.parse(scoreRow.intelligence_json)
         : { ...scoreRow.intelligence_json };
-    // scores row is canonical — LLM re-score updates the row after the JSON blob is written
+    // scores row is canonical, LLM re-score updates the row after the JSON blob is written
     if (scoreRow.overall != null) report.overall = scoreRow.overall;
     if (scoreRow.bucket) report.bucket = scoreRow.bucket;
     if (scoreRow.recommendation) report.recommendation = scoreRow.recommendation;

@@ -30,7 +30,7 @@ function metricValue(c, key) {
 }
 
 function formatMetric(val) {
-  if (val == null || val === '') return '—';
+  if (val == null || val === '') return 'N/A';
   return val;
 }
 
@@ -106,7 +106,7 @@ export function CandidateCompare() {
             <GitCompare size={26} aria-hidden /> Compare candidates
           </h1>
           <p className="muted">
-            Side-by-side review for <strong>{jobTitle}</strong> — scores, recommendations, and intelligence
+            Side-by-side review for <strong>{jobTitle}</strong>: scores, recommendations, and intelligence
             dimensions. Use this to decide who to advance when two applicants are close.
           </p>
         </div>
@@ -127,7 +127,7 @@ export function CandidateCompare() {
                 <p className="muted">{c.id}</p>
               </div>
               <div className="compareScoreBlock">
-                <strong className="compareScore">{c.score?.overall ?? '—'}</strong>
+                <strong className="compareScore">{c.score?.overall ?? 'N/A'}</strong>
                 <span className="compareScoreSub">/ 100</span>
                 {c.score?.bucket && <BucketBadge bucket={c.score.bucket} />}
               </div>
@@ -135,15 +135,15 @@ export function CandidateCompare() {
             <dl className="compareSummaryDl">
               <div>
                 <dt>Recommendation</dt>
-                <dd>{c.intelligence?.recommendation || c.score?.recommendation || '—'}</dd>
+                <dd>{c.intelligence?.recommendation || c.score?.recommendation || 'N/A'}</dd>
               </div>
               <div>
                 <dt>Tier</dt>
-                <dd>{c.intelligence?.tier || c.score?.tier || '—'}</dd>
+                <dd>{c.intelligence?.tier || c.score?.tier || 'N/A'}</dd>
               </div>
               <div>
                 <dt>Risk note</dt>
-                <dd>{c.score?.risk || '—'}</dd>
+                <dd>{c.score?.risk || 'N/A'}</dd>
               </div>
             </dl>
             <Link to={`/candidates/${c.id}`} state={returnState(location)} className="compareProfileLink">

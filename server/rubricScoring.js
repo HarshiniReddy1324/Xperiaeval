@@ -54,7 +54,7 @@ export function scoreQuestionAnswer({ answer, category, timing: timingIn }) {
       max,
       keyword_hits: 0,
       notes: hasMedia
-        ? 'Audio/video saved — no transcript for auto-score (listen in candidate profile or add GROQ_API_KEY)'
+        ? 'Audio/video saved, no transcript for auto-score (listen in candidate profile or add GROQ_API_KEY)'
         : 'No substantive answer',
       has_media: hasMedia,
     };
@@ -136,7 +136,7 @@ export function scoreApplication({ answers, categories, greenThreshold = 80, amb
   } else if (bucket === 'Amber') {
     explanation = `Mixed fit (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Human review recommended before advancing.`;
   } else {
-    explanation = `Below threshold (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Still visible for human review — scores are advisory.`;
+    explanation = `Below threshold (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Still visible for human review, scores are advisory.`;
   }
 
   const mandatoryCount = categories.filter((c) => (c.priority || 'mandatory') !== 'optional').length;
@@ -182,12 +182,12 @@ export function getMethodology() {
     scoring_note:
       'Multi-dimensional evaluation per answer (not correct/incorrect). Groq AI refines scores when GROQ_API_KEY is set. Tab switches are context-only.',
     buckets: {
-      Green: '≥ 80 — strong fit for human review',
-      Amber: '60–79 — mixed; reviewer decision',
-      Red: '< 60 — low fit; still visible to humans',
+      Green: '≥ 80, strong fit for human review',
+      Amber: '60–79, mixed; reviewer decision',
+      Red: '< 60, low fit; still visible to humans',
     },
     integrity: {
-      description: 'Tab switches and session signals tracked silently — visible to recruiters and hiring managers only',
+      description: 'Tab switches and session signals tracked silently, visible to recruiters and hiring managers only',
     },
   };
 }

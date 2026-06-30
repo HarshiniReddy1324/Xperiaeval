@@ -98,7 +98,7 @@ export function DonutChart({
   );
 }
 
-/** Connected inverted-pyramid funnel — width narrows by stage index. */
+/** Connected inverted-pyramid funnel: width narrows by stage index. */
 export function FunnelChart({ stages, onStageClick }) {
   const palette = ['#2563eb', '#1d4ed8', '#0284c7', '#0ea5e9', '#14b8a6', '#22c55e'];
   const topWidths = [100, 86, 72, 58, 44, 30];

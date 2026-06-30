@@ -17,7 +17,7 @@ const EVENT_TYPES = [
 ];
 
 function formatWhen(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'N/A';
   try {
     return new Date(iso.replace(' ', 'T')).toLocaleString();
   } catch {
@@ -84,7 +84,7 @@ export function Audit() {
         <div>
           <h1>Compliance audit log</h1>
           <p>
-            Timestamped timeline of scoring, reviews, overrides, integrity events, and decisions — who did what and
+            Timestamped timeline of scoring, reviews, overrides, integrity events, and decisions: who did what and
             when.
           </p>
         </div>

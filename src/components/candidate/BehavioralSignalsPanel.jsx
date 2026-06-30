@@ -2,7 +2,7 @@ import React from 'react';
 import { Activity, Keyboard, Mic } from 'lucide-react';
 
 function RhythmBars({ bars = [] }) {
-  if (!bars.length) return <span className="muted">—</span>;
+  if (!bars.length) return <span className="muted">N/A</span>;
   return (
     <div className="keystrokeRhythm" title="Inter-key timing rhythm (taller = slower)">
       {bars.map((h, i) => (
@@ -13,7 +13,7 @@ function RhythmBars({ bars = [] }) {
 }
 
 /**
- * Keystroke + behavioral signals — recruiter-facing panel from session integrity data.
+ * Keystroke + behavioral signals: recruiter-facing panel from session integrity data.
  */
 export function BehavioralSignalsPanel({ behavioral }) {
   if (!behavioral) {
@@ -62,7 +62,7 @@ export function BehavioralSignalsPanel({ behavioral }) {
         <div className="behavioralPerQuestion">
           <h4>Per-question keystroke profile</h4>
           <p className="muted behavioralPerQuestionHint">
-            Keystrokes vs characters, typing speed, and inter-key rhythm — paste and bot-like timing are flagged.
+            Keystrokes vs characters, typing speed, and inter-key rhythm: paste and bot-like timing are flagged.
           </p>
           <table className="behavioralTable">
             <thead>
@@ -86,16 +86,16 @@ export function BehavioralSignalsPanel({ behavioral }) {
                     {q.keystrokes}
                     <small className="behavioralSub">{q.chars} chars</small>
                   </td>
-                  <td>{q.key_ratio_pct != null ? `${q.key_ratio_pct}%` : '—'}</td>
-                  <td>{q.typing_wpm ?? '—'}</td>
-                  <td>{q.interval_avg_ms != null ? `${q.interval_avg_ms}ms` : '—'}</td>
+                  <td>{q.key_ratio_pct != null ? `${q.key_ratio_pct}%` : 'N/A'}</td>
+                  <td>{q.typing_wpm ?? 'N/A'}</td>
+                  <td>{q.interval_avg_ms != null ? `${q.interval_avg_ms}ms` : 'N/A'}</td>
                   <td>
                     <RhythmBars bars={q.rhythm_bars} />
                   </td>
                   <td>
                     {q.keystroke_anomaly && <span className="behavioralFlag">Anomaly</span>}
                     {q.paste_blocked > 0 && <span className="behavioralFlag">Paste</span>}
-                    {!q.keystroke_anomaly && !q.paste_blocked && '—'}
+                    {!q.keystroke_anomaly && !q.paste_blocked && 'N/A'}
                   </td>
                 </tr>
               ))}

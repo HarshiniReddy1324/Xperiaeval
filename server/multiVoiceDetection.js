@@ -1,5 +1,5 @@
 /**
- * Multi-voice heuristic for audio answers — coaching / secondary speaker detection.
+ * Multi-voice heuristic for audio answers, coaching / secondary speaker detection.
  * Browser may pass client-side audio analysis; server applies transcript heuristics.
  */
 

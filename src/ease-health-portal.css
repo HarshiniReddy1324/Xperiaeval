@@ -309,16 +309,7 @@
   border-radius: var(--radius-nav);
 }
 
-[data-theme='light'] .portalMain .screeningHubTileIcon.blue,
-[data-theme='light'] .portalMain .screeningHubTileIcon.purple,
-[data-theme='light'] .portalMain .screeningHubTileIcon.green,
-[data-theme='light'] .portalMain .screeningHubTileIcon.amber,
-[data-theme='light'] .portalMain .candidateBucketTileIcon.green,
-[data-theme='light'] .portalMain .candidateBucketTileIcon.amber,
-[data-theme='light'] .portalMain .candidateBucketTileIcon.red {
-  background: var(--color-mist-blue) !important;
-  color: var(--color-forest-ink) !important;
-}
+/* Tile icon colors use portal.css per-tone light theme — do not override here. */
 
 /* —— Candidate hero —— */
 [data-theme='light'] .candidateHero {

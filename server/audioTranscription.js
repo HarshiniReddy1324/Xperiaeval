@@ -98,6 +98,6 @@ export async function transcribeUploadedMedia(mediaFile, { typedBody = '' } = {}
     warning:
       provider === 'none' && !process.env.GROQ_API_KEY
         ? `Audio saved (${durationHint}). Set GROQ_API_KEY for automatic transcription and scoring.`
-        : `Audio saved (${durationHint}). Transcription failed — recruiter can listen and score manually.`,
+        : `Audio saved (${durationHint}). Transcription failed, recruiter can listen and score manually.`,
   };
 }

@@ -1,5 +1,5 @@
 /**
- * Optional LLM layer — set GROQ_API_KEY (free tier at console.groq.com) for higher-quality scoring narratives.
+ * Optional LLM layer, set GROQ_API_KEY (free tier at console.groq.com) for higher-quality scoring narratives.
  * Falls back to null; callers use heuristics when LLM unavailable.
  */
 

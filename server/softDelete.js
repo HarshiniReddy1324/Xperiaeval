@@ -1,4 +1,4 @@
-/** Soft-delete helpers — delete moves to trash; restore brings data back. */
+/** Soft-delete helpers, delete moves to trash; restore brings data back. */
 
 export const SQL_JOB_ACTIVE = 'deleted_at IS NULL';
 export const SQL_JOB_ACTIVE_J = 'j.deleted_at IS NULL';

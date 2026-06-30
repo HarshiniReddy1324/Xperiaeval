@@ -9,6 +9,7 @@ export function NotificationBell() {
   const [flash, setFlash] = useState(null);
   const seenIds = useRef(new Set());
   const bootstrapped = useRef(false);
+  const wrapRef = useRef(null);
 
   const load = () =>
     api('/notifications')
@@ -49,6 +50,26 @@ export function NotificationBell() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const onPointerDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   const markAllRead = async () => {
     await api('/notifications/read-all', { method: 'PATCH' });
     load();
@@ -73,7 +94,7 @@ export function NotificationBell() {
           </button>
         </div>
       )}
-      <div className="notifBell">
+      <div className="notifBell" ref={wrapRef}>
         <button type="button" className="notifBtn" onClick={() => setOpen(!open)} aria-label="Notifications" aria-expanded={open}>
           <Bell size={18} />
           {data.unread > 0 && <span className="notifBadge">{data.unread}</span>}

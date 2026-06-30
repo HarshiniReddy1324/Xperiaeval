@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-/** Normalize ATS webhook payloads (Greenhouse, Lever, etc.) — demo stub. */
+/** Normalize ATS webhook payloads (Greenhouse, Lever, etc.); demo stub. */
 export function normalizeAtsPayload(provider, body) {
   const candidate = body.candidate || body.applicant || body;
   return {

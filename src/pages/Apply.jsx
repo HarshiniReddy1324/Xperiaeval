@@ -358,7 +358,7 @@ export function Apply() {
           <div className="applyFormCard">
             <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Your information</h2>
             <p className="muted" style={{ marginBottom: 20 }}>
-              We use this to identify your application. Next: screening questions — type, record audio, or both.
+              We use this to identify your application. Next: screening questions: type, record audio, or both.
             </p>
             <form
               onSubmit={(e) => {

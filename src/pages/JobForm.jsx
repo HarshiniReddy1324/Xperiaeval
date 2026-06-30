@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from '../components/ui';
+import { PilotUpgradeHint } from '../components/PilotProgram';
 import { FormSection, FormField, FormGrid } from '../components/forms/FormSection';
 import { EMPTY_POSTING_FIELDS, listToText, textToList } from '../lib/jobPostingForm';
 import { JOB_STAGES, JOB_STAGE_DESCRIPTIONS, JOB_STAGE_FILTER_HINT, POSITION_LEVELS } from '../lib/jobStages';
@@ -27,6 +28,7 @@ export function JobForm() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [slug, setSlug] = useState('');
   const [form, setForm] = useState({
@@ -101,6 +103,7 @@ export function JobForm() {
     e?.preventDefault();
     if (!form.title.trim()) return alert('Position title is required');
     setSaving(true);
+    setSaveError('');
     try {
       const payload = buildPayload();
       if (isEdit) {
@@ -111,7 +114,7 @@ export function JobForm() {
         navigate(`/jobs/${job.id}`);
       }
     } catch (err) {
-      alert(err.message);
+      setSaveError(err.message);
     } finally {
       setSaving(false);
     }
@@ -144,6 +147,7 @@ export function JobForm() {
   return (
     <div className="formPage">
       <div className="formPageTop">
+        <PilotUpgradeHint message={saveError} />
         <div className="formPageTitleRow">
           <div>
             <p className="eyebrow">Recruiter · Position</p>
@@ -173,7 +177,7 @@ export function JobForm() {
         <div className="formPageMain">
           <FormSection
             title="Role overview"
-            description="What applicants see in the header — title, location, compensation."
+            description="What applicants see in the header: title, location, compensation."
             icon={Briefcase}
           >
             <FormGrid cols={2}>

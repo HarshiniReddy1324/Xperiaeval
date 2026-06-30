@@ -51,6 +51,11 @@ export function runSchemaMigrations() {
   addColumn('organizations', 'proctoring_policy_json', 'TEXT');
   addColumn('organizations', 'product_mode', "TEXT DEFAULT 'both'");
   addColumn('organizations', 'embed_allowed_origins', "TEXT DEFAULT '*'");
+  addColumn('organizations', 'plan_tier', "TEXT DEFAULT 'pilot'");
+  addColumn('organizations', 'pilot_started_at', 'TEXT');
+  addColumn('organizations', 'pilot_ends_at', 'TEXT');
+  addColumn('organizations', 'pilot_limits_json', 'TEXT');
+  db.prepare(`UPDATE organizations SET plan_tier = 'enterprise' WHERE id = 'org-demo' AND plan_tier = 'pilot'`).run();
   addColumn('applications', 'submitter_ip', 'TEXT');
   addColumn('applications', 'proctoring_failed', 'INTEGER DEFAULT 0');
   addColumn('applications', 'proctoring_score', 'INTEGER');
@@ -59,6 +64,7 @@ export function runSchemaMigrations() {
   addColumn('applications', 'experience_mismatch', 'INTEGER DEFAULT 0');
   addColumn('applications', 'external_id', 'TEXT');
   addColumn('applications', 'external_provider', 'TEXT');
+  addColumn('applications', 'integrations_json', 'TEXT');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS question_pool (
@@ -343,6 +349,36 @@ export function runSchemaMigrations() {
   addColumn('ats_writeback_queue', 'response_code', 'INTEGER');
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS org_connectors (
+      id TEXT PRIMARY KEY,
+      org_id TEXT NOT NULL REFERENCES organizations(id),
+      provider TEXT NOT NULL,
+      config_json TEXT NOT NULL DEFAULT '{}',
+      enabled INTEGER DEFAULT 1,
+      status TEXT DEFAULT 'not_configured',
+      credential_hint TEXT,
+      last_tested_at TEXT,
+      last_error TEXT,
+      test_result_json TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(org_id, provider)
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS connector_events (
+      id TEXT PRIMARY KEY,
+      org_id TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      status TEXT DEFAULT 'success',
+      detail_json TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS interview_responses (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL REFERENCES interview_sessions(id) ON DELETE CASCADE,
@@ -362,7 +398,7 @@ export function runDataMigrations() {
     `UPDATE organizations SET candidate_notice = COALESCE(candidate_notice, ?),
      retention_policy = COALESCE(retention_policy, ?),
      scoring_policy = COALESCE(scoring_policy, ?) WHERE candidate_notice IS NULL OR retention_policy IS NULL`
-  ).run(DEFAULT_NOTICE, DEFAULT_RETENTION, 'Evidence-based heuristic scoring v1.0 — advisory only.');
+  ).run(DEFAULT_NOTICE, DEFAULT_RETENTION, 'Evidence-based heuristic scoring v1.0; advisory only.');
 
   seedDemoRoleUsers();
   seedInterviewRubricsForJobs();
@@ -379,6 +415,10 @@ export function runDataMigrations() {
   const pipelineReset = backfillDemoPipelineStages();
   if (pipelineReset > 0) {
     console.log(`[migrate] Reset demo pipeline_stage on ${pipelineReset} application(s) to application_review`);
+  }
+  const copyFixed = backfillEmDashProductCopy();
+  if (copyFixed > 0) {
+    console.log(`[migrate] Normalized em-dash copy on ${copyFixed} application field(s)`);
   }
   ensureRubricTemplatesTable(db);
   ensureQuestionPool(db, null);
@@ -524,12 +564,36 @@ function backfillScreeningDefaults() {
   ).run();
 }
 
+function backfillEmDashProductCopy() {
+  const sanitize = (text) => {
+    if (!text || typeof text !== 'string' || !text.includes('—')) return text;
+    return text.replace(/\s*—\s*/g, ', ').replace(/,\s*,/g, ',').trim();
+  };
+  let n = 0;
+  for (const col of ['authenticity_verdict', 'recommendation', 'status']) {
+    const rows = db.prepare(`SELECT id, ${col} as val FROM applications WHERE ${col} LIKE '%—%'`).all();
+    for (const row of rows) {
+      db.prepare(`UPDATE applications SET ${col} = ? WHERE id = ?`).run(sanitize(row.val), row.id);
+      n += 1;
+    }
+  }
+  return n;
+}
+
 function backfillDemoPipelineStages() {
-  /** Demo seeds used advanced pipeline stages — reset unless recruiter moved them via audit. */
+  /** Demo seeds used advanced pipeline stages, reset unless recruiter moved them via audit. */
   const moved = db
     .prepare(
       `SELECT DISTINCT application_id FROM audit_events
-       WHERE event_type IN ('Pipeline stage updated', 'Interview scheduled', 'Shortlisted for interview')`
+       WHERE event_type IN (
+         'Pipeline stage updated',
+         'Pipeline updated',
+         'Interview scheduled',
+         'Shortlisted for interview',
+         'Scheduling invite sent',
+         'Interview confirmed',
+         'Interview slot selected'
+       )`
     )
     .all()
     .map((r) => r.application_id);

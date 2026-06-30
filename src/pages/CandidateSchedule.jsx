@@ -90,7 +90,7 @@ export function CandidateSchedule() {
       <div className="authPage">
         <Card className="authCard wide schedulePage">
           <CheckCircle2 size={48} className="successIcon" />
-          <h1>Time selected — pending confirmation</h1>
+          <h1>Time selected: pending confirmation</h1>
           <p>Hi {candidate_name}, your preferred time was submitted:</p>
           <p className="scheduleTime">
             <Calendar size={18} /> {booked.selected_slot?.label}

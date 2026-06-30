@@ -1,4 +1,4 @@
-/** Simulated employment & identity verification (MVP — no paid Equifax/Checkr API) */
+/** Simulated employment & identity verification (MVP, no paid Equifax/Checkr API) */
 
 function extractYears(text) {
   const years = [...(text || '').matchAll(/\b(19|20)\d{2}\b/g)].map((m) => parseInt(m[0], 10));
@@ -25,7 +25,7 @@ export function runBackgroundCheck({ application, answers, job }) {
     status: identityMatch ? 'pass' : 'review',
     detail: identityMatch
       ? 'Candidate name appears consistently across resume and application answers.'
-      : 'Name on application does not clearly match resume/answer content — manual verification recommended.',
+      : 'Name on application does not clearly match resume/answer content, manual verification recommended.',
   });
 
   const emailDomain = (application.email || '').split('@')[1] || '';
@@ -36,7 +36,7 @@ export function runBackgroundCheck({ application, answers, job }) {
     label: 'Contact verification',
     status: emailOk ? 'pass' : 'fail',
     detail: emailOk
-      ? `Valid email format (${application.email}). ${personalDomains.includes(emailDomain) ? 'Personal email domain — confirm employment contact separately.' : 'Organizational or custom domain detected.'}`
+      ? `Valid email format (${application.email}). ${personalDomains.includes(emailDomain) ? 'Personal email domain, confirm employment contact separately.' : 'Organizational or custom domain detected.'}`
       : 'Invalid or missing email address.',
   });
 
@@ -63,7 +63,7 @@ export function runBackgroundCheck({ application, answers, job }) {
     status: resumeHasRole ? 'pass' : 'review',
     detail: resumeHasRole
       ? `Resume/answers reference role-relevant terms for "${job?.title || 'this position'}".`
-      : 'Submitted materials may not align with the target role title — verify experience claims.',
+      : 'Submitted materials may not align with the target role title, verify experience claims.',
   });
 
   const metricsInResume = /\d+%|\$\d+|\d+\s*(years|users|customers)/i.test(resumeText);
@@ -74,12 +74,12 @@ export function runBackgroundCheck({ application, answers, job }) {
     status: metricsInResume || metricsInAnswers ? 'pass' : 'review',
     detail:
       metricsInResume && metricsInAnswers
-        ? 'Measurable outcomes appear in both resume and written answers — supports credibility.'
+        ? 'Measurable outcomes appear in both resume and written answers, supports credibility.'
         : metricsInResume
           ? 'Metrics found in resume; answers could include more quantified outcomes.'
           : metricsInAnswers
             ? 'Metrics in answers; resume lacks matching quantified claims.'
-            : 'Few quantified outcomes — verify achievement claims during reference checks.',
+            : 'Few quantified outcomes, verify achievement claims during reference checks.',
   });
 
   const passCount = checks.filter((c) => c.status === 'pass').length;
@@ -87,14 +87,14 @@ export function runBackgroundCheck({ application, answers, job }) {
   const failCount = checks.filter((c) => c.status === 'fail').length;
 
   let overall_status = 'clear';
-  let summary = 'Preliminary verification clear — proceed with standard reference checks before offer.';
+  let summary = 'Preliminary verification clear, proceed with standard reference checks before offer.';
   if (failCount > 0 || passCount < 3) {
     overall_status = 'review';
     summary = 'Some verification items need human review before extending an offer.';
   }
   if (failCount >= 2 || passCount <= 2) {
     overall_status = 'fail';
-    summary = 'Multiple verification flags — do not proceed without manual investigation.';
+    summary = 'Multiple verification flags, do not proceed without manual investigation.';
   }
 
   const confidence = Math.round((passCount / checks.length) * 100);

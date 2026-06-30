@@ -1,4 +1,4 @@
-/** Display helper — stored source is already normalized on the server. */
+/** Display helper: stored source is already normalized on the server. */
 
 export function formatApplicationSource(source) {
   const trimmed = String(source || '').trim();

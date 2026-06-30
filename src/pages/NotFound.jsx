@@ -8,7 +8,7 @@ export function NotFound() {
       <Card className="authCard">
         <h1>Page not found</h1>
         <p className="muted">This URL does not match any route in the portal.</p>
-        <Link to="/">
+        <Link to="/dashboard">
           <Button>Go to dashboard</Button>
         </Link>
       </Card>

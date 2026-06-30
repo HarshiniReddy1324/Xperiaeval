@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const SAMPLE_MS = 1500;
 
 /**
- * Camera presence monitoring — face in frame & look-away signals only. No video is stored or uploaded.
+ * Camera presence monitoring: face in frame & look-away signals only. No video is stored or uploaded.
  */
 export function useCameraPresence(enabled) {
   const videoRef = useRef(null);

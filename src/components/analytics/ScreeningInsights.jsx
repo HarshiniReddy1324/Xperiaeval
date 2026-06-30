@@ -35,7 +35,7 @@ export function ScreeningInsights({ data }) {
         <Link to="/candidates">View candidates</Link>
       </div>
       <p className="muted insightsSubtitle">
-        Automated preliminary screening — completion, integrity flags, and routing buckets.
+        Automated preliminary screening: completion, integrity flags, and routing buckets.
       </p>
 
       <div className="insightsKpiRow">

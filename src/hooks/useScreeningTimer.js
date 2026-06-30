@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Silently tracks time on a screening question — no min/max UI or auto-advance.
+ * Silently tracks time on a screening question: no min/max UI or auto-advance.
  * Recruiters configure limits server-side; applicants take as long as they need.
  */
 export function useAnswerSessionMetrics(active) {
@@ -59,7 +59,7 @@ export function useAnswerSessionMetrics(active) {
   return { elapsed, getMetrics, focusLossCount: focusLoss.current };
 }
 
-/** @deprecated Use useAnswerSessionMetrics — kept for imports during transition */
+/** @deprecated Use useAnswerSessionMetrics: kept for imports during transition */
 export function useScreeningTimer(_minSeconds, _maxSeconds, _onExpire, active) {
   return useAnswerSessionMetrics(active);
 }

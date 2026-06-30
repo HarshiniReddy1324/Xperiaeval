@@ -129,9 +129,9 @@ export function analyzeIntegrity(integrityData, answerBodies = []) {
 
   score = Math.max(0, Math.min(100, Math.round(score)));
 
-  let verdict = 'Likely genuine — typed answers with normal session behavior';
-  if (score < 50) verdict = 'High risk — possible external AI assistance';
-  else if (score < 75) verdict = 'Review needed — suspicious session patterns';
+  let verdict = 'Likely genuine, typed answers with normal session behavior';
+  if (score < 50) verdict = 'High risk, possible external AI assistance';
+  else if (score < 75) verdict = 'Review needed, suspicious session patterns';
 
   return {
     authenticity_score: score,

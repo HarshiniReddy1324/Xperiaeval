@@ -1,7 +1,7 @@
 import { db } from './db.js';
 import { v4 as uuid } from 'uuid';
 
-/** Demo email channel — logs + stores outbox rows. Wire SendGrid/Resend via EMAIL_API_KEY in production. */
+/** Demo email channel, logs + stores outbox rows. Wire SendGrid/Resend via EMAIL_API_KEY in production. */
 export function queueEmail({ orgId, to, subject, body, meta = {} }) {
   const id = uuid();
   db.prepare(

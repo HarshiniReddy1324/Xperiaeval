@@ -78,7 +78,7 @@ export const CANDIDATE_SECTIONS = [
   {
     id: 'hidden-gem',
     label: 'Standout review',
-    description: 'Strong screening with weaker resume overlap — advisory only.',
+    description: 'Strong screening with weaker resume overlap: advisory only.',
     icon: Gem,
     tone: 'amber',
     group: 'Evaluation',

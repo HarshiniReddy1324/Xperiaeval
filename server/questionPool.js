@@ -15,7 +15,7 @@ export const SYSTEM_QUESTION_POOL = [
   { department: 'HR', experience_level: 'All', category_type: 'Behavioral', name: 'Feedback delivery', priority: 'mandatory', question: 'How do you give difficult feedback while maintaining trust?', expected_evidence: 'Framework, example, empathy, follow-up.', keywords: 'feedback,trust,communication,coach' },
   { department: 'HR', experience_level: 'Mid', category_type: 'Behavioral', name: 'Culture contribution', priority: 'optional', question: 'How have you shaped team culture or morale in a past role?', expected_evidence: 'Initiatives, behaviors, impact on retention or engagement.', keywords: 'culture,morale,team,engagement' },
   { department: 'HR', experience_level: 'Senior', category_type: 'Leadership', name: 'Performance management', priority: 'mandatory', question: 'Walk us through how you manage underperformance on your team.', expected_evidence: 'Process, documentation, support plan, results.', keywords: 'performance,PIP,coach,manage' },
-  { department: 'HR', experience_level: 'All', category_type: 'Motivation', name: 'Why this company', priority: 'optional', question: 'What attracts you to our organization and this role specifically?', expected_evidence: 'Research-backed, role-aligned, not generic.', keywords: 'motivation,mission,role,company' },
+  { department: 'HR', experience_level: 'All', category_type: 'Motivation', name: 'Why this company', priority: 'optional', question: 'What attracts you to our organization and this role specifically?', expected_evidence: 'Research-backed, role-aligned; not generic.', keywords: 'motivation,mission,role,company' },
 
   // —— Engineering ——
   { department: 'Engineering', experience_level: 'Entry', category_type: 'Technical', name: 'Fundamentals', priority: 'mandatory', question: 'Explain a technical concept you learned recently and how you applied it.', expected_evidence: 'Clear explanation, learning path, small project or exercise.', keywords: 'learn,apply,concept,code' },
@@ -137,7 +137,7 @@ export function listQuestionPool(db, { orgId, department, level, search }) {
   return db.prepare(sql).all(...params);
 }
 
-/** Build rubric rows from pool selections — uses all selected questions. */
+/** Build rubric rows from pool selections, uses all selected questions. */
 export function poolItemsToRubricCategories(items) {
   const questions = items.map((q) => {
     const sample = q.ideal_answer || q.expected_evidence || '';

@@ -105,7 +105,7 @@ export function analyzeProctoring(proctoringData, policy = DEFAULT_PROCTORING_PO
   }
 
   let verdict = 'Session within proctoring guidelines';
-  if (failed) verdict = 'Proctoring violation — session failed integrity requirements';
+  if (failed) verdict = 'Proctoring violation, session failed integrity requirements';
   else if (score < 50) verdict = 'High-risk proctoring signals';
   else if (score < 75) verdict = 'Review proctoring log';
 

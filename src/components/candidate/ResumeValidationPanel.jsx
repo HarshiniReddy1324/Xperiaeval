@@ -37,13 +37,13 @@ export function ResumeValidationPanel({ validation }) {
 
       <div className="validationMetaRow">
         <span>
-          Seniority: <strong>{seniority === 'Not detected' ? '—' : seniority}</strong>
+          Seniority: <strong>{seniority === 'Not detected' ? 'N/A' : seniority}</strong>
         </span>
         <span>
           Education: <strong>{education}</strong>
         </span>
         <span>
-          Experience: <strong>{yearsExperience != null ? `${yearsExperience} yrs` : '—'}</strong>
+          Experience: <strong>{yearsExperience != null ? `${yearsExperience} yrs` : 'N/A'}</strong>
         </span>
         {domainMatch?.hits?.length > 0 && (
           <span>

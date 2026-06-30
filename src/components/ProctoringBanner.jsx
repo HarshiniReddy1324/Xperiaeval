@@ -12,7 +12,7 @@ export function ProctoringBanner({ warnings, autoFailed, onEnterFullscreen, requ
         {autoFailed ? (
           <strong>Session integrity failed</strong>
         ) : (
-          <strong>Proctored session — stay in this window</strong>
+          <strong>Proctored session: stay in this window</strong>
         )}
         {warnings?.length > 0 && (
           <ul>

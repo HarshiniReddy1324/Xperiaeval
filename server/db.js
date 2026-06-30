@@ -247,7 +247,7 @@ function seedDemoApplications(orgId, rubricId) {
         'I led our B2B analytics launch end-to-end: discovery, beta, GA. I owned roadmap, pricing inputs, and cross-functional rituals.',
         'We reduced time-to-insight by 35% and added $4.2M ARR in year one with 92% enterprise retention on the new SKU.',
         'I prioritize by impact × urgency, document trade-offs, and align sales, legal, and eng in a single decision memo before committing.',
-        'When real-time alerts threatened stability, I chose event-driven architecture over batch — accepted ops complexity because NPS rose 12 points.',
+        'When real-time alerts threatened stability, I chose event-driven architecture over batch, accepted ops complexity because NPS rose 12 points.',
         'Daily: SQL, Amplitude, Figma, Jira, written PRDs, and executive-ready decision docs for leadership reviews.',
         'I want to scale product discipline in a growth-stage company where I have shipped both 0-to-1 and 1-to-N motions.',
         'Won internal “Operator of the Year” for running our incident review program that cut repeat outages 40%.',

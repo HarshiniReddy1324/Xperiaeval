@@ -30,21 +30,22 @@ import { Integrations } from './pages/Integrations';
 import { Trash } from './pages/Trash';
 import { CandidateCompare } from './pages/CandidateCompare';
 import { CandidateScorecard } from './pages/CandidateScorecard';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { Landing } from './pages/Landing';
 import { NotFound } from './pages/NotFound';
 
 function PrivateRoute({ children }) {
-  const { user, loading, authError } = useAuth();
+  const { user, loading } = useAuth();
   if (loading) return <div className="authPage">Loading workspace…</div>;
-  if (!user) {
-    return (
-      <div className="authPage">
-        <div className="authCard card">
-          <h1>Unable to load workspace</h1>
-          <p className="error">{authError || 'Check that the API is running and reachable.'}</p>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function PublicAuthRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="authPage">Loading…</div>;
+  if (user) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -62,21 +63,35 @@ export function App() {
       <AuthProvider>
         <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/register" element={<Navigate to="/" replace />} />
+          <Route
+            path="/login"
+            element={
+              <PublicAuthRoute>
+                <Login />
+              </PublicAuthRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicAuthRoute>
+                <Register />
+              </PublicAuthRoute>
+            }
+          />
+          <Route path="/" element={<Landing />} />
           <Route path="/apply/:slug" element={<Apply />} />
           <Route path="/embed/apply/:slug" element={<EmbedApply />} />
           <Route path="/careers/:slug" element={<JobPostingPublic />} />
           <Route path="/schedule/:token" element={<CandidateSchedule />} />
           <Route
-            path="/"
             element={
               <PrivateRoute>
                 <Layout />
               </PrivateRoute>
             }
           >
-            <Route index element={<HomeRouter />} />
+            <Route path="dashboard" element={<HomeRouter />} />
             <Route path="jobs" element={<H><Jobs /></H>} />
             <Route path="jobs/new" element={<H><JobForm /></H>} />
             <Route path="jobs/:id/edit" element={<H><JobForm /></H>} />
@@ -95,11 +110,13 @@ export function App() {
             <Route path="rubrics/jobs" element={<H><RubricJobs /></H>} />
             <Route path="audit" element={<Audit />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="reports/:section" element={<Reports />} />
             <Route path="recruiter-performance" element={<H><RecruiterPerformance /></H>} />
             <Route path="integrations" element={<I><Integrations /></I>} />
             <Route path="access" element={<Access />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="settings/:section" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

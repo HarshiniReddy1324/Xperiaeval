@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { sanitizeProductCopy } from '../../lib/copy';
 import {
   ShieldAlert,
   Clock,
@@ -129,7 +130,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
           <p className="muted scorecardIntro">
             Each screening question is scored internally from 0 to 10, then converted to its share of the 100-point
             total (split evenly across configured questions). Required and optional questions each contribute up to
-            their portion of 100. Scores are evaluated against hidden rubric criteria recruiters configure — not shown
+            their portion of 100. Scores are evaluated against hidden rubric criteria recruiters configure: not shown
             to applicants.
           </p>
           {appScore ? (
@@ -144,13 +145,13 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                 <div className="dimCard">
                   <span>Mandatory</span>
                   <strong>
-                    {appScore.mandatory_points ?? '—'}/{appScore.mandatory_max ?? '—'}
+                    {appScore.mandatory_points ?? 'N/A'}/{appScore.mandatory_max ?? 'N/A'}
                   </strong>
                 </div>
                 <div className="dimCard">
                   <span>Optional</span>
                   <strong>
-                    {appScore.optional_points ?? '—'}/{appScore.optional_max ?? '—'}
+                    {appScore.optional_points ?? 'N/A'}/{appScore.optional_max ?? 'N/A'}
                   </strong>
                 </div>
               </div>
@@ -163,7 +164,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                       const maxPts = q.max ?? q.weight ?? 10;
                       return (
                         <li key={q.category_id}>
-                          <b>{q.name}</b> — {pts ?? '—'} of {maxPts} points
+                          <b>{q.name}</b>: {pts ?? 'N/A'} of {maxPts} points
                           {q.notes ? <small>{q.notes}</small> : null}
                         </li>
                       );
@@ -186,12 +187,12 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
       return hiddenGem?.isHiddenGem ? (
         <div className="dashWidget hiddenGemPanel">
           <div className="widgetHead">
-            <h2>Standout candidate — second look recommended</h2>
+            <h2>Standout candidate: second look recommended</h2>
             <span className="hiddenGemBadge">Advisory only</span>
           </div>
           <p className="hiddenGemExplain">
             This candidate scored well on screening questions with an authentic session, but their resume shows weaker
-            keyword overlap with the role. They may be stronger than the resume suggests — worth a manual review
+            keyword overlap with the role. They may be stronger than the resume suggests: worth a manual review
             before dismissing. This does <em>not</em> auto-advance them.
           </p>
           <ul className="recList">
@@ -210,7 +211,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
       return activity?.length > 0 ? (
         <Card className="fullWidth auditTimelineCard">
           <h2>Audit timeline</h2>
-          <p className="muted">Who did what and when — scoring, reviews, overrides, and pipeline changes.</p>
+          <p className="muted">Who did what and when: scoring, reviews, overrides, and pipeline changes.</p>
           <ol className="auditTimelineList auditTimelineList--compact">
             {activity.map((ev, i) => (
               <li key={i} className="auditTimelineItem">
@@ -243,7 +244,10 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
             <h2>
               <Calendar size={18} /> Interview scheduling
             </h2>
-            <p className="muted">Send a booking link if you want the candidate to pick an interview time.</p>
+            <p className="muted">
+              Sends a booking link to the email address from their application. They pick a time; you confirm on their
+              profile.
+            </p>
             <div className="formGroup">
               <label>Video meeting URL</label>
               <input
@@ -270,9 +274,9 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
               )}
               {scheduling.status === 'awaiting_candidate' && scheduling.booking_url && (
                 <p>
-                  Booking link: <code>{scheduling.booking_url}</code>
+                  Booking link (also emailed to the candidate): <code>{scheduling.booking_url}</code>
                   <Button variant="outline" onClick={() => copyBookingLink(scheduling.booking_url)}>
-                    Copy for candidate
+                    Copy link
                   </Button>
                 </p>
               )}
@@ -282,7 +286,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                   <textarea
                     id="decline-reason"
                     rows={3}
-                    placeholder="e.g. Panel conflict — please pick another slot"
+                    placeholder="e.g. Panel conflict: please pick another slot"
                     value={declineReason}
                     onChange={(e) => setDeclineReason(e.target.value)}
                   />
@@ -307,9 +311,10 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
           {screening?.recommendation && (
             <Card className="fullWidth">
               <h2>AI recommendation</h2>
-              <p>{screening.recommendation}</p>
+              <p>{sanitizeProductCopy(screening.recommendation)}</p>
               <p className="muted">
-                Category: {screening.category} · Integrity: {integrity?.authenticity_verdict || '—'}
+                Category: {screening.category} · Integrity:{' '}
+                {sanitizeProductCopy(integrity?.authenticity_verdict) || 'N/A'}
               </p>
             </Card>
           )}
@@ -353,12 +358,12 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
         <Card>
           <h2>Application answers ({answers.length})</h2>
           {materialsMasked && (
-            <p className="anonBadge">Answer text partially hidden until identity unlock — scores still visible.</p>
+            <p className="anonBadge">Answer text partially hidden until identity unlock: scores still visible.</p>
           )}
           {answers.length ? (
             answers.map((a, i) => {
               const isPlaceholder = /^\[(audio|video).*recorded\]/i.test(a.body || '');
-              const showTranscript = Boolean(a.transcript_text?.trim());
+              const showTranscript = !materialsMasked && Boolean(a.transcript_text?.trim());
               return (
                 <div className="answerCard" key={a.id}>
                   <span className="answerNum">Q{i + 1}</span>
@@ -370,8 +375,11 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                     </div>
                   )}
                   {!isPlaceholder && a.body?.trim() && <p className="answerTypedBody">{a.body}</p>}
-                  {isPlaceholder && !showTranscript && (
-                    <p className="answerPlaceholder muted">Audio/video response — see recording below.</p>
+                  {isPlaceholder && !showTranscript && !materialsMasked && (
+                    <p className="answerPlaceholder muted">Audio/video response: see recording below.</p>
+                  )}
+                  {isPlaceholder && materialsMasked && (
+                    <p className="answerPlaceholder muted">Audio/video response hidden until identity unlock.</p>
                   )}
                   <small className="muted answerMeta">
                     {formatResponseType(a.response_type)}
@@ -400,7 +408,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                     {a.focus_loss_count > 0 && ` · ${a.focus_loss_count} tab switches`}
                     {a.score_points != null && ` · ${a.score_points} of 10 points`}
                   </small>
-                  {a.media_path && (
+                  {a.media_path && !materialsMasked && (
                     <div className="answerMedia">
                       {isAudioMedia(a.media_path, a.response_type) ? (
                         <audio src={assetUrl(a.media_path)} controls className="mediaPlayer" preload="metadata" />
@@ -426,7 +434,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
         <Card className="fullWidth">
           <h2>Proctoring &amp; session integrity</h2>
           <p className="muted">
-            Recruiter-only — clipboard, focus, fullscreen, and typing signals from the apply session.
+            Recruiter-only: clipboard, focus, fullscreen, and typing signals from the apply session.
           </p>
           {integrity?.authenticity_score != null ? (
             <>
@@ -435,9 +443,11 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
               >
                 <ShieldAlert size={22} />
                 <div>
-                  <strong>{integrity.authenticity_verdict}</strong>
+                  <strong>{sanitizeProductCopy(integrity.authenticity_verdict)}</strong>
                   <p>Authenticity: {integrity.authenticity_score}/100</p>
-                  {integrity.proctoring_verdict && <p>Proctoring: {integrity.proctoring_verdict}</p>}
+                  {integrity.proctoring_verdict && (
+                    <p>Proctoring: {sanitizeProductCopy(integrity.proctoring_verdict)}</p>
+                  )}
                   {integrity.proctoring_score != null && <p>Proctoring score: {integrity.proctoring_score}/100</p>}
                 </div>
               </div>
@@ -464,7 +474,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
                   {integrity.fullscreen_exit_count > 0 && `Fullscreen exit ×${integrity.fullscreen_exit_count} `}
                   {integrity.outside_boundary_clicks > 0 && `Outside clicks ×${integrity.outside_boundary_clicks}`}
                 </span>
-                {integrity.submitter_ip && <span>IP: {integrity.submitter_ip}</span>}
+                {integrity.submitter_ip && !materialsMasked && <span>IP: {integrity.submitter_ip}</span>}
                 {integrity.ip_duplicate && <span className="warn">Duplicate IP flagged</span>}
                 {integrity.proctoring_failed && <span className="risk">Proctoring failed</span>}
               </div>
@@ -496,7 +506,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
           <div className="formGroup">
             <label>New note</label>
             <textarea
-              placeholder="e.g. Strong PM background — schedule hiring manager screen…"
+              placeholder="e.g. Strong PM background: schedule hiring manager screen…"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={4}
@@ -542,10 +552,10 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
           <div className="formGroup">
             <label>New bucket</label>
             <select value={overrideBucket} onChange={(e) => setOverrideBucket(e.target.value)}>
-              <option value="">— Select bucket —</option>
-              <option value="Green">Green — Ready for interview pool</option>
-              <option value="Amber">Amber — Needs review</option>
-              <option value="Red">Red — Low match (still visible)</option>
+              <option value="">Select a bucket</option>
+              <option value="Green">Green: Ready for interview pool</option>
+              <option value="Amber">Amber: Needs review</option>
+              <option value="Red">Red: Low match (still visible)</option>
             </select>
           </div>
           <div className="formGroup">
@@ -582,7 +592,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
             <div className="lockedBox">
               <AlertTriangle size={32} />
               <p>
-                Application bucket is <BucketBadge bucket={appScore?.bucket || '—'} />. Move to Green before
+                Application bucket is <BucketBadge bucket={appScore?.bucket || 'N/A'} />. Move to Green before
                 verification.
               </p>
             </div>

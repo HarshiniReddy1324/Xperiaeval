@@ -10,7 +10,7 @@ export function RubricLibrary() {
       <div className="pageHead">
         <h1>Question library</h1>
         <p>
-          Curated questions by department and level. Select 10+ to build a template, or add your own — they stay in the
+          Curated questions by department and level. Select 10+ to build a template, or add your own: they stay in the
           library for reuse.
         </p>
       </div>

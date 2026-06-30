@@ -1,4 +1,4 @@
-/** Default starter rubric — companies can add or remove questions; weights always total 100. */
+/** Default starter rubric, companies can add or remove questions; weights always total 100. */
 
 import { normalizeRubricCategories, validateRubricQuestions } from './rubricWeights.js';
 
@@ -10,7 +10,7 @@ export const DEFAULT_RUBRIC_QUESTIONS = [
     priority: 'mandatory',
     question: 'Summarize your professional experience most relevant to this role.',
     ideal_answer:
-      'Over the past four years I have worked as a product analyst at NorthSquare Commerce, owning funnel analytics for the B2B checkout squad. Before that I spent two years as a business analyst at a regional bank, where I built SQL reporting for lending operations. My day-to-day work includes SQL, Amplitude, stakeholder interviews, and writing PRDs with engineering — which maps directly to this role’s need for someone who can translate business questions into measurable product decisions.',
+      'Over the past four years I have worked as a product analyst at NorthSquare Commerce, owning funnel analytics for the B2B checkout squad. Before that I spent two years as a business analyst at a regional bank, where I built SQL reporting for lending operations. My day-to-day work includes SQL, Amplitude, stakeholder interviews, and writing PRDs with engineering, which maps directly to this role’s need for someone who can translate business questions into measurable product decisions.',
     keywords: 'experience,role,responsibilities,scope,years,domain,shipped,owned,delivered',
   },
   {
@@ -70,7 +70,7 @@ export const DEFAULT_RUBRIC_QUESTIONS = [
     priority: 'mandatory',
     question: 'Why are you interested in this type of role at this point in your career?',
     ideal_answer:
-      'I want to move from analytics-heavy execution into a role where I own more of the discovery and roadmap narrative, not just reporting. This position sits at the intersection of hiring workflow, candidate experience, and measurable outcomes — areas where I have already delivered impact. I am specifically excited about building structured screening that helps hiring managers make faster, fairer decisions with better evidence.',
+      'I want to move from analytics-heavy execution into a role where I own more of the discovery and roadmap narrative; not just reporting. This position sits at the intersection of hiring workflow: candidate experience, and measurable outcomes, areas where I have already delivered impact. I am specifically excited about building structured screening that helps hiring managers make faster, fairer decisions with better evidence.',
     keywords: 'motivation,career,growth,impact,team,mission,role,why',
   },
   {
@@ -100,12 +100,12 @@ export const DEFAULT_RUBRIC_QUESTIONS = [
     priority: 'optional',
     question: 'What skill are you actively improving right now?',
     ideal_answer:
-      'I am deepening my experimentation statistics — especially power analysis and guardrail design — so I can run fewer false-positive launches. I am taking a structured course, pairing with our data science lead monthly, and applying the methods to our next two A/B tests on onboarding.',
+      'I am deepening my experimentation statistics, especially power analysis and guardrail design, so I can run fewer false-positive launches. I am taking a structured course, pairing with our data science lead monthly, and applying the methods to our next two A/B tests on onboarding.',
     keywords: 'learning,growth,improve,skill,development,feedback',
   },
 ];
 
-/** @deprecated Use ideal_answer — kept for DB backward compatibility on insert */
+/** @deprecated Use ideal_answer, kept for DB backward compatibility on insert */
 export function rubricRowFromQuestion(q) {
   return {
     ...q,

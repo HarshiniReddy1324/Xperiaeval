@@ -207,7 +207,7 @@ function insertCandidate(candidate, job, rubricId, categories) {
     integrityJson,
     integrityResult.authenticity_score ?? authenticity,
     integrityResult.authenticity_verdict ??
-      (authenticity >= 75 ? 'Likely genuine — typed answers with normal session behavior' : 'Review needed — suspicious session patterns'),
+      (authenticity >= 75 ? 'Likely genuine, typed answers with normal session behavior' : 'Review needed, suspicious session patterns'),
     `CAND-${candidate.id.slice(-4)}`,
     candidate.pipeline,
     '198.51.100.42',
@@ -256,7 +256,7 @@ async function seedPortfolioCandidates({ clearFirst = true } = {}) {
   for (const candidate of CANDIDATES) {
     const job = db.prepare('SELECT * FROM jobs WHERE id = ? AND deleted_at IS NULL').get(candidate.jobId);
     if (!job) {
-      console.warn(`[seed] Skipping ${candidate.id} — job ${candidate.jobId} not found`);
+      console.warn(`[seed] Skipping ${candidate.id}, job ${candidate.jobId} not found`);
       continue;
     }
 
@@ -272,7 +272,7 @@ async function seedPortfolioCandidates({ clearFirst = true } = {}) {
         .get(candidate.jobId)?.id;
 
     if (!rubricId) {
-      console.warn(`[seed] Skipping ${candidate.id} — no rubric for ${candidate.jobId}`);
+      console.warn(`[seed] Skipping ${candidate.id}, no rubric for ${candidate.jobId}`);
       continue;
     }
 
@@ -294,7 +294,7 @@ async function seedPortfolioCandidates({ clearFirst = true } = {}) {
 
   console.log(`[seed] Portfolio candidates: ${results.length} created`);
   for (const r of results) {
-    console.log(`  ${r.bucket.padEnd(5)} ${r.overall}/100 — ${r.name} (${r.job})`);
+    console.log(`  ${r.bucket.padEnd(5)} ${r.overall}/100, ${r.name} (${r.job})`);
   }
   return results;
 }

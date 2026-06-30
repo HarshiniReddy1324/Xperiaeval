@@ -1,5 +1,5 @@
 /**
- * Role-tier domain validation matrix — expandable checklists (100+ signals across tiers).
+ * Role-tier domain validation matrix, expandable checklists (100+ signals across tiers).
  * Returns the subset relevant to the job department / title.
  */
 

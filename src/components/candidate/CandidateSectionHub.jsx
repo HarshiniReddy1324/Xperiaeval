@@ -11,7 +11,7 @@ export function CandidateSectionHub({ candidateId, ctx, navState }) {
     <div className="candidateSectionHub">
       <div className="candidateSectionHubIntro">
         <h2>Profile sections</h2>
-        <p className="muted">Jump to any area — use the bar below or open a row.</p>
+        <p className="muted">Jump to any area: use the bar below or open a row.</p>
       </div>
 
       <nav className="candidateSectionQuickNav" aria-label="Profile sections">

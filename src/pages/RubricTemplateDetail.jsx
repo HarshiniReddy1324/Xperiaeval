@@ -76,7 +76,7 @@ export function RubricTemplateDetail() {
     setError('');
     try {
       await api(`/jobs/${applyJobId}/rubric/from-template/${id}`, { method: 'POST' });
-      setMsg('Template applied — open the position to review and approve screening.');
+      setMsg('Template applied: open the position to review and approve screening.');
       navigate(`/jobs/${applyJobId}`);
     } catch (e) {
       setError(e.message);
@@ -158,7 +158,7 @@ export function RubricTemplateDetail() {
                 {versions.map((v) => (
                   <li key={v.id}>
                     <Link to={`/rubrics/templates/${v.id}`}>
-                      v{v.version} — {v.name}
+                      v{v.version}: {v.name}
                     </Link>
                     <small className="muted">{v.created_at?.slice(0, 10)}</small>
                   </li>

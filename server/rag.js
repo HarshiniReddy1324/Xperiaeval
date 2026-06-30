@@ -1,9 +1,9 @@
-/** Lightweight RAG context builder — retrieves job rubric + candidate evidence from DB-shaped objects. */
+/** Lightweight RAG context builder, retrieves job rubric + candidate evidence from DB-shaped objects. */
 
 export function buildEvaluationContext({ job, categories, answers, resumeText, interviewRubric }) {
   const sections = [];
 
-  sections.push(`# Role\n${job?.title || 'Unknown'} — ${job?.team || ''} ${job?.location || ''}`);
+  sections.push(`# Role\n${job?.title || 'Unknown'}, ${job?.team || ''} ${job?.location || ''}`);
   if (job?.description) sections.push(job.description.slice(0, 1500));
 
   if (categories?.length) {
@@ -12,7 +12,7 @@ export function buildEvaluationContext({ job, categories, answers, resumeText, i
         categories
           .map(
             (c) =>
-              `- ${c.name} (${c.priority || 'mandatory'}, ${c.response_type || 'text'}): ${c.question}\n  Expected: ${c.expected_evidence || '—'}\n  Keywords: ${c.keywords || '—'}`
+              `- ${c.name} (${c.priority || 'mandatory'}, ${c.response_type || 'text'}): ${c.question}\n  Expected: ${c.expected_evidence || 'N/A'}\n  Keywords: ${c.keywords || 'N/A'}`
           )
           .join('\n')
     );
@@ -32,7 +32,7 @@ export function buildEvaluationContext({ job, categories, answers, resumeText, i
   if (interviewRubric?.length) {
     sections.push(
       '# Interview rubric\n' +
-        interviewRubric.map((q) => `- ${q.question}\n  Expected: ${q.expected_context || '—'}`).join('\n')
+        interviewRubric.map((q) => `- ${q.question}\n  Expected: ${q.expected_context || 'N/A'}`).join('\n')
     );
   }
 

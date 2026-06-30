@@ -1,5 +1,5 @@
 /**
- * Applicant Insights — resume-derived analytics for the Analytics page.
+ * Applicant Insights, resume-derived analytics for the Analytics page.
  * @typedef {Object} DistributionItem
  * @property {string} label
  * @property {number} count
@@ -237,11 +237,11 @@ function generateInsights({ total, last24Hours, avgResumeScore, seniority, educa
   }
 
   if (avgResumeScore >= 78) {
-    insights.push({ type: 'positive', text: 'Top 10% match — above-average resume scores in this pool' });
+    insights.push({ type: 'positive', text: 'Top 10% match, above-average resume scores in this pool' });
   } else if (avgResumeScore >= 65) {
-    insights.push({ type: 'neutral', text: 'Solid applicant quality — scores trending competitive' });
+    insights.push({ type: 'neutral', text: 'Solid applicant quality, scores trending competitive' });
   } else if (avgResumeScore > 0 && avgResumeScore < 50) {
-    insights.push({ type: 'alert', text: 'Below-average match scores — consider refining position requirements' });
+    insights.push({ type: 'alert', text: 'Below-average match scores, consider refining position requirements' });
   }
 
   const topSeniority = seniority[0];
@@ -259,7 +259,7 @@ function generateInsights({ total, last24Hours, avgResumeScore, seniority, educa
   }
 
   if (greenPct >= 40) {
-    insights.push({ type: 'positive', text: 'Strong fit rate — many Green-bucket candidates' });
+    insights.push({ type: 'positive', text: 'Strong fit rate, many Green-bucket candidates' });
   }
 
   if (last7Days >= 5 && total >= 8) {

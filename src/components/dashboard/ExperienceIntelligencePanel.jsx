@@ -21,7 +21,7 @@ function IntelStat({ label, value, tone, to, state }) {
 
 export function ExperienceIntelligencePanel({ data, qualityTrend = [], linkState, compact = false }) {
   if (!data) return null;
-  const avg = data.avg_experience_score ?? '—';
+  const avg = data.avg_experience_score ?? 'N/A';
   const trend = qualityTrend?.length ? qualityTrend : [];
   const lastTrend = trend.length ? trend[trend.length - 1] : null;
 
@@ -35,7 +35,7 @@ export function ExperienceIntelligencePanel({ data, qualityTrend = [], linkState
           <h2>{compact ? 'Experience Intelligence' : 'Experience Intelligence overview'}</h2>
           {!compact && (
             <p className="muted">
-              Explainable fit scores across your pipeline — before ATS status and pipeline metrics.
+              Explainable fit scores across your pipeline: before ATS status and pipeline metrics.
             </p>
           )}
         </div>
@@ -44,7 +44,7 @@ export function ExperienceIntelligencePanel({ data, qualityTrend = [], linkState
           <strong className="expIntelHeroValue">{avg}</strong>
           {lastTrend && (
             <span className="expIntelHeroMeta">
-              <TrendingUp size={12} /> {lastTrend.label}: {lastTrend.avg_score ?? '—'}
+              <TrendingUp size={12} /> {lastTrend.label}: {lastTrend.avg_score ?? 'N/A'}
             </span>
           )}
         </div>

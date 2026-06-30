@@ -101,7 +101,7 @@ export function QuestionnaireBuilder({ questions, onChange, compact = false }) {
             rows={2}
             placeholder="Question text"
           />
-          <label className="rubricFieldLabel">Sample answer (internal — for AI scoring)</label>
+          <label className="rubricFieldLabel">Sample answer (internal: for AI scoring)</label>
           <textarea
             value={q.ideal_answer || ''}
             onChange={(e) => update(i, 'ideal_answer', e.target.value)}

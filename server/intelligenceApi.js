@@ -1,5 +1,5 @@
 /**
- * Xperieval Intelligence API — evaluate candidates without full Hiring workflow.
+ * Xperieval Intelligence API, evaluate candidates without full Hiring workflow.
  */
 
 import { v4 as uuid } from 'uuid';

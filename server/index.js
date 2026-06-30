@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
 import { v4 as uuid } from 'uuid';
+import { randomBytes } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -43,6 +44,24 @@ import {
 } from './experienceAnalytics.js';
 import { ensureDemoPortfolio } from './ensureDemoPortfolio.js';
 import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
+import { assertPilotAction, getPilotSnapshot, pilotDatesForNewOrg } from './pilotProgram.js';
+import {
+  disconnectOrgConnector,
+  getOrgConnectorConfig,
+  listConnectorCatalog,
+  listConnectorEvents,
+  listOrgConnectors,
+  saveOrgConnector,
+  testOrgConnector,
+} from './connectors/service.js';
+import {
+  autoSyncWorkflowOnShortlist,
+  syncConfluenceForCandidate,
+  syncJiraForCandidate,
+  syncSlackForCandidate,
+} from './connectors/atlassianSync.js';
+import { getIntegrationHealth, listUnifiedIntegrationActivity } from './integrationsActivity.js';
+import { getOrgOnboardingStatus } from './onboarding.js';
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from './apiKeys.js';
 import { runIntelligenceEvaluation, listRecentEvaluations } from './intelligenceApi.js';
 import { resolveJobForAts, upsertApplicationFromAts } from './atsIngest.js';
@@ -71,6 +90,7 @@ import {
 } from './scheduleHandlers.js';
 import { createNotification, listNotifications, getUnreadCount } from './notifications.js';
 import { getIdentityPolicy, applyIdentityView, shouldMaskMaterials } from './identityAccess.js';
+import { signAssetPath, serveSignedAsset } from './assetAccess.js';
 import {
   getVoiceSampleForApplication,
   indexVoiceFromApplication,
@@ -152,7 +172,14 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 app.use(buildCorsMiddleware());
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads', express.static(uploadsDir));
+
+app.get('/api/assets', (req, res) => {
+  serveSignedAsset(db, req.query, res);
+});
+
+app.get('/uploads/*', (_req, res) => {
+  res.status(404).json({ error: 'Direct upload access is disabled. Use signed application asset links.' });
+});
 
 const storage = multer.diskStorage({
   destination: uploadsDir,
@@ -206,10 +233,11 @@ function queueAtsWriteback(applicationId) {
     .get(applicationId);
   if (!appRow) return;
   const integration = db
-    .prepare('SELECT id FROM ats_integrations WHERE org_id = ? AND enabled = 1 LIMIT 1')
+    .prepare('SELECT id, writeback_url FROM ats_integrations WHERE org_id = ? AND enabled = 1 LIMIT 1')
     .get(appRow.org_id);
   if (!integration) return;
   const score = db.prepare('SELECT * FROM scores WHERE application_id = ?').get(applicationId);
+  if (!score || score.overall == null) return;
   let experienceFit = null;
   let behavioralSignals = null;
   try {
@@ -236,10 +264,27 @@ function queueAtsWriteback(applicationId) {
     experienceFit,
     behavioralSignals,
   });
-  db.prepare(
-    `INSERT INTO ats_writeback_queue (id, org_id, application_id, payload_json) VALUES (?, ?, ?, ?)`
-  ).run(uuid(), appRow.org_id, applicationId, JSON.stringify(payload));
-  processWritebackQueue(db, { orgId: appRow.org_id, limit: 3 }).catch(() => {});
+
+  const payloadJson = JSON.stringify(payload);
+  const existing = db
+    .prepare(
+      `SELECT id FROM ats_writeback_queue
+       WHERE application_id = ? AND status IN ('pending', 'failed', 'queued')
+       ORDER BY created_at DESC LIMIT 1`
+    )
+    .get(applicationId);
+
+  if (existing) {
+    db.prepare(
+      `UPDATE ats_writeback_queue SET payload_json = ?, status = 'pending', last_error = NULL WHERE id = ?`
+    ).run(payloadJson, existing.id);
+  } else {
+    db.prepare(
+      `INSERT INTO ats_writeback_queue (id, org_id, application_id, payload_json) VALUES (?, ?, ?, ?)`
+    ).run(uuid(), appRow.org_id, applicationId, payloadJson);
+  }
+
+  processWritebackQueue(db, { orgId: appRow.org_id, limit: 5 }).catch(() => {});
 }
 
 function getApprovedRubric(jobId) {
@@ -467,13 +512,15 @@ async function runScoring(applicationId, actorName = 'System') {
 
   updateScreeningMeta(applicationId, categories);
 
+  queueAtsWriteback(applicationId);
+
   logAudit({
     orgId: job.org_id,
     jobId: job.id,
     applicationId,
     actorName,
     eventType: 'Candidate intelligence scored',
-    description: `${applicationId} intelligence ${overall}/100 (${intelligence.tier}) — ${intelligence.recommendation}`,
+    description: `${applicationId} intelligence ${overall}/100 (${intelligence.tier}), ${intelligence.recommendation}`,
   });
 
   logAudit({
@@ -488,6 +535,14 @@ async function runScoring(applicationId, actorName = 'System') {
   return { ...legacy, overall, bucket, intelligence };
 }
 
+function pilotBlocked(res, err) {
+  if (err?.code === 'PILOT_LIMIT') {
+    res.status(403).json({ error: err.message, pilot: err.pilot });
+    return true;
+  }
+  return false;
+}
+
 // ——— Auth ———
 app.post('/api/auth/register', (req, res) => {
   const { email, password, name, orgName, product_mode } = req.body;
@@ -500,18 +555,19 @@ app.post('/api/auth/register', (req, res) => {
   const orgId = uuid();
   const userId = uuid();
   const mode = normalizeProductMode(product_mode || 'both');
-  db.prepare('INSERT INTO organizations (id, name, product_mode) VALUES (?, ?, ?)').run(
-    orgId,
-    orgName || `${name}'s Organization`,
-    mode
-  );
+  const { pilot_started_at, pilot_ends_at } = pilotDatesForNewOrg();
+  db.prepare(
+    `INSERT INTO organizations (id, name, product_mode, plan_tier, pilot_started_at, pilot_ends_at)
+     VALUES (?, ?, ?, 'pilot', ?, ?)`
+  ).run(orgId, orgName || `${name}'s Organization`, mode, pilot_started_at, pilot_ends_at);
   db.prepare(
     `INSERT INTO users (id, org_id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?, 'Admin')`
   ).run(userId, orgId, email.toLowerCase(), hashPassword(password), name);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   const token = signToken(user);
-  logAudit({ orgId, actorId: userId, actorName: name, eventType: 'Organization created', description: `New workspace: ${orgName || name}` });
+  logAudit({ orgId, actorId: userId, actorName: name, eventType: 'Organization created', description: `New pilot workspace: ${orgName || name}` });
+  const pilot = getPilotSnapshot(db, db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId));
   res.json({
     token,
     user: {
@@ -523,6 +579,7 @@ app.post('/api/auth/register', (req, res) => {
       productMode: mode,
       hasHiring: hasHiringFeatures(mode),
       hasIntelligence: hasIntelligenceFeatures(mode),
+      pilot,
     },
   });
 });
@@ -534,8 +591,9 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   const token = signToken(user);
-  const org = db.prepare('SELECT product_mode FROM organizations WHERE id = ?').get(user.org_id);
+  const org = db.prepare('SELECT id, product_mode, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json FROM organizations WHERE id = ?').get(user.org_id);
   const productMode = normalizeProductMode(org?.product_mode);
+  const pilot = getPilotSnapshot(db, org);
   res.json({
     token,
     user: {
@@ -547,6 +605,7 @@ app.post('/api/auth/login', (req, res) => {
       productMode,
       hasHiring: hasHiringFeatures(productMode),
       hasIntelligence: hasIntelligenceFeatures(productMode),
+      pilot,
     },
   });
 });
@@ -555,9 +614,10 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   const user = db.prepare('SELECT id, email, name, role, org_id FROM users WHERE id = ?').get(req.user.sub);
   if (!user) return res.status(404).json({ error: 'User not found' });
   const org = db
-    .prepare('SELECT name, product_mode, embed_allowed_origins FROM organizations WHERE id = ?')
+    .prepare('SELECT id, name, product_mode, embed_allowed_origins, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json FROM organizations WHERE id = ?')
     .get(user.org_id);
   const productMode = normalizeProductMode(org?.product_mode);
+  const pilot = getPilotSnapshot(db, org);
   res.json({
     ...user,
     orgId: user.org_id,
@@ -566,6 +626,7 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
     hasHiring: hasHiringFeatures(productMode),
     hasIntelligence: hasIntelligenceFeatures(productMode),
     embedAllowedOrigins: org?.embed_allowed_origins || '*',
+    pilot,
   });
 });
 
@@ -611,12 +672,9 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
-         AND (
-           datetime(a.created_at) >= datetime('now', ?)
-           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
-         )`
+         AND datetime(a.created_at) >= datetime('now', ?)`
     )
-    .all(req.user.orgId, rangeModifier, rangeModifier);
+    .all(req.user.orgId, rangeModifier);
   const jobTable = buildJobTableRows(enriched, appsInRange);
   const recommendations = db
     .prepare(
@@ -626,14 +684,11 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND ${SQL_JOB_ACTIVE_J} AND ${SQL_APP_ACTIVE_A}
-         AND (
-           datetime(a.created_at) >= datetime('now', ?)
-           OR datetime(s.created_at) >= datetime('now', ?)
-         )
+         AND datetime(a.created_at) >= datetime('now', ?)
          AND a.screening_status = 'complete' AND s.overall IS NOT NULL
        ORDER BY a.hidden_gem DESC, s.overall DESC LIMIT 8`
     )
-    .all(req.user.orgId, rangeModifier, rangeModifier)
+    .all(req.user.orgId, rangeModifier)
     .map((r) => ({
       id: r.id,
       display_name: r.anonymized_code || r.id,
@@ -681,6 +736,7 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
     pendingSchedule,
     pendingScheduleList,
     trashCount: trashCount(db, req.user.orgId),
+    onboarding: getOrgOnboardingStatus(db, req.user.orgId),
   });
 });
 
@@ -701,7 +757,7 @@ app.post('/api/jobs/:id/restore', authMiddleware, (req, res) => {
     actorId: req.user.sub,
     actorName: req.user.name,
     eventType: 'Job restored',
-    description: `Restored job ${job.id} — ${job.title}`,
+    description: `Restored job ${job.id}, ${job.title}`,
   });
   res.json({ ok: true, message: 'Position and its applications restored' });
 });
@@ -716,7 +772,7 @@ app.post('/api/applications/:id/restore', authMiddleware, (req, res) => {
     .get(req.params.id, req.user.orgId);
   if (!appRow) return res.status(404).json({ error: 'Application not in trash' });
   if (appRow.job_deleted) {
-    return res.status(400).json({ error: 'Restore the position first — this application was removed with the position posting.' });
+    return res.status(400).json({ error: 'Restore the position first, this application was removed with the position posting.' });
   }
   restoreApplication(db, appRow.id);
   logAudit({
@@ -743,7 +799,7 @@ app.delete('/api/jobs/:id/permanent', authMiddleware, requireRole('Admin', 'Recr
     actorId: req.user.sub,
     actorName: req.user.name,
     eventType: 'Job permanently deleted',
-    description: `Purged job ${job.id} — ${job.title}`,
+    description: `Purged job ${job.id}, ${job.title}`,
   });
   res.json({ ok: true, message: 'Position permanently deleted' });
 });
@@ -799,6 +855,12 @@ app.post('/api/jobs', authMiddleware, requireHiring, (req, res) => {
   const { title, team, location, description, stage, position_level, posting, green_threshold, amber_threshold } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'create_position');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
   const th = thresholdsFromOrg(org);
   const id = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
   const slug = `${slugify(title)}-${id.toLowerCase()}`;
@@ -857,7 +919,7 @@ app.post('/api/jobs', authMiddleware, requireHiring, (req, res) => {
     actorId: req.user.sub,
     actorName: req.user.name,
     eventType: 'Job created',
-    description: `Job ${id} — ${title} created`,
+    description: `Job ${id}, ${title} created`,
   });
   const job = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
   res.status(201).json({ ...attachPosting(job, org), ...jobStats(id) });
@@ -918,7 +980,7 @@ app.delete('/api/jobs/:id', authMiddleware, requireHiring, (req, res) => {
     actorId: req.user.sub,
     actorName: req.user.name,
     eventType: 'Job moved to trash',
-    description: `Moved job ${job.id} — ${job.title} to trash`,
+    description: `Moved job ${job.id}, ${job.title} to trash`,
   });
   res.json({ ok: true, message: 'Position moved to trash. Recover it from Trash within your retention period.' });
 });
@@ -1331,7 +1393,7 @@ app.post('/api/jobs/:id/rubric/revise', authMiddleware, (req, res) => {
     return res.json({
       rubric: draft,
       categories: getRubricCategories(draft.id),
-      message: `Draft v${draft.version} already exists — continue editing`,
+      message: `Draft v${draft.version} already exists, continue editing`,
     });
   }
 
@@ -1546,6 +1608,12 @@ app.post('/api/public/jobs/:slug/apply', upload.any(), async (req, res) => {
     : '';
 
   const orgRow = db.prepare('SELECT * FROM organizations WHERE id = ?').get(job.org_id);
+  try {
+    assertPilotAction(db, orgRow, 'add_candidate');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
   const proctoringPolicy = parseProctoringPolicy(orgRow);
 
   let integrityData = null;
@@ -1724,7 +1792,7 @@ app.post('/api/public/jobs/:slug/apply', upload.any(), async (req, res) => {
     const storedBody =
       body && !/^\[(audio|video).*recorded/i.test(body)
         ? body
-        : transcriptText || (mediaPath ? '[Audio answer — see recording]' : '');
+        : transcriptText || (mediaPath ? '[Audio answer, see recording]' : '');
 
     insertAnswer.run(
       uuid(),
@@ -1850,7 +1918,14 @@ app.get('/api/applications', authMiddleware, (req, res) => {
     params.push(bucket);
   }
   if (pipeline === 'interviewing') {
-    sql += ` AND a.pipeline_stage IN ('interview_scheduled', 'interview_completed', 'interview_pending')`;
+    sql += ` AND (
+      a.pipeline_stage IN ('shortlisted_interview', 'interview_scheduled', 'interview_completed', 'interview_pending')
+      OR EXISTS (
+        SELECT 1 FROM interview_schedule_invites si2
+        WHERE si2.application_id = a.id
+          AND si2.status IN ('awaiting_candidate', 'awaiting_interviewer', 'confirmed')
+      )
+    )`;
   } else if (pipeline === 'selected') {
     sql += ` AND a.pipeline_stage IN ('offer_extended', 'hired', 'final_review')`;
   } else if (pipeline) {
@@ -2053,7 +2128,7 @@ function getApplicationPayload(applicationId, orgId, user = null) {
               a.resume_path, a.resume_text, a.stage, a.status, a.pipeline_stage, a.created_at,
               a.integrity_json, a.authenticity_score, a.authenticity_verdict,
               a.screening_status, a.screening_category, a.completion_pct, a.anonymized_code,
-              a.identity_revealed, a.recommendation, a.voice_fingerprint,
+              a.identity_revealed, a.recommendation, a.voice_fingerprint, a.integrations_json,
               j.title as job_title, j.org_id, j.team, j.description as job_description, j.posting_json
        FROM applications a
        JOIN jobs j ON j.id = a.job_id
@@ -2132,16 +2207,36 @@ function getApplicationPayload(applicationId, orgId, user = null) {
 
   const orgRow = db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId);
   const viewer = user || { role: 'Hiring Manager' };
-  const appView = applyIdentityView(viewer, appRow, orgRow);
+  let appView = applyIdentityView(viewer, appRow, orgRow);
   const maskMaterials = shouldMaskMaterials(viewer, appRow, orgRow);
+  if (!maskMaterials && appView.resume_path) {
+    appView = { ...appView, resume_path: signAssetPath(orgId, appView.resume_path) };
+  }
 
-  const voiceVerification = getVoiceSampleForApplication(appRow.id);
+  const voiceVerificationRaw = getVoiceSampleForApplication(appRow.id);
+  const voiceVerification = maskMaterials
+    ? voiceVerificationRaw
+      ? { ...voiceVerificationRaw, media_path: null, pending_media_path: null, fingerprint: null }
+      : null
+    : voiceVerificationRaw
+      ? {
+          ...voiceVerificationRaw,
+          fingerprint: null,
+          media_path: voiceVerificationRaw.media_path
+            ? signAssetPath(orgId, voiceVerificationRaw.media_path)
+            : null,
+          pending_media_path: voiceVerificationRaw.pending_media_path
+            ? signAssetPath(orgId, voiceVerificationRaw.pending_media_path)
+            : null,
+        }
+      : null;
 
   const schedulingInvite = getScheduleInviteForApplication(appRow.id);
-  const scheduling = formatInvitePayload(
+  const schedulingRaw = formatInvitePayload(
     schedulingInvite,
     process.env.PUBLIC_APP_URL || 'http://localhost:5173'
   );
+  const scheduling = schedulingRaw ? (({ token, ...safe }) => safe)(schedulingRaw) : null;
 
   const activity = db
     .prepare(
@@ -2152,6 +2247,15 @@ function getApplicationPayload(applicationId, orgId, user = null) {
 
   const pendingScheduleAction = scheduling?.status === 'awaiting_interviewer';
 
+  let connectorLinks = {};
+  if (appRow.integrations_json) {
+    try {
+      connectorLinks = JSON.parse(appRow.integrations_json);
+    } catch {
+      connectorLinks = {};
+    }
+  }
+
   const jobKeywords = rubricCategories.flatMap((c) => {
     try {
       return c.keywords ? String(c.keywords).split(/[,;]/).map((k) => k.trim()).filter(Boolean) : [];
@@ -2159,13 +2263,15 @@ function getApplicationPayload(applicationId, orgId, user = null) {
       return [];
     }
   });
-  const resumeValidation = buildResumeValidation({
-    resumeText: appRow.resume_text,
-    jobTitle: appRow.job_title,
-    jobKeywords,
-    job: { title: appRow.job_title, team: appRow.team, description: appRow.job_description },
-    posting: parsePostingJson(appRow.posting_json),
-  });
+  const resumeValidation = maskMaterials
+    ? null
+    : buildResumeValidation({
+        resumeText: appRow.resume_text,
+        jobTitle: appRow.job_title,
+        jobKeywords,
+        job: { title: appRow.job_title, team: appRow.team, description: appRow.job_description },
+        posting: parsePostingJson(appRow.posting_json),
+      });
 
   const integritySignals = buildIntegritySignals(integrity, appRow);
   const fieldLabels = {};
@@ -2199,9 +2305,27 @@ function getApplicationPayload(applicationId, orgId, user = null) {
     });
 
   const maskedAnswers = maskMaterials
-      ? answers.map((a) => ({ ...a, body: a.body?.length > 80 ? `${a.body.slice(0, 80)}… [hidden until identity unlock]` : a.body }))
-      : answers;
+    ? answers.map((a) => ({
+        ...a,
+        body: a.body?.length > 80 ? `${a.body.slice(0, 80)}… [hidden until identity unlock]` : a.body,
+        transcript_text: null,
+        media_path: null,
+      }))
+    : answers.map((a) => ({
+        ...a,
+        media_path: a.media_path ? signAssetPath(orgId, a.media_path) : null,
+      }));
   const answersWithTiming = enrichAnswersWithTiming(maskedAnswers, rubricCategories);
+
+  let integrityOut = integrity
+    ? { ...integrity, authenticity_score: appRow.authenticity_score, authenticity_verdict: appRow.authenticity_verdict }
+    : appRow.authenticity_score
+      ? { authenticity_score: appRow.authenticity_score, authenticity_verdict: appRow.authenticity_verdict }
+      : null;
+  if (maskMaterials && integrityOut) {
+    const { submitter_ip, ...rest } = integrityOut;
+    integrityOut = rest;
+  }
 
   return {
     application: appView,
@@ -2216,11 +2340,7 @@ function getApplicationPayload(applicationId, orgId, user = null) {
       recommendation: appRow.recommendation,
     },
     voiceVerification,
-    integrity: integrity
-      ? { ...integrity, authenticity_score: appRow.authenticity_score, authenticity_verdict: appRow.authenticity_verdict }
-      : appRow.authenticity_score
-        ? { authenticity_score: appRow.authenticity_score, authenticity_verdict: appRow.authenticity_verdict }
-        : null,
+    integrity: integrityOut,
     score: applicationScore,
     applicationScore,
     intelligenceReport,
@@ -2234,11 +2354,12 @@ function getApplicationPayload(applicationId, orgId, user = null) {
     scheduling,
     pendingScheduleAction,
     activity,
+    connectorLinks,
     llm_enabled: llmConfigured(),
   };
 }
 
-app.patch('/api/applications/:id', authMiddleware, (req, res) => {
+app.patch('/api/applications/:id', authMiddleware, async (req, res) => {
   const appRow = db
     .prepare(
       `SELECT a.*, j.org_id, j.id as job_id FROM applications a
@@ -2280,6 +2401,14 @@ app.patch('/api/applications/:id', authMiddleware, (req, res) => {
       eventType: 'Pipeline updated',
       description: `Pipeline stage → ${pipeline_stage}`,
     });
+
+    if (pipeline_stage === 'shortlisted_interview') {
+      try {
+        await autoSyncWorkflowOnShortlist(db, req.user.orgId, appRow.id);
+      } catch (err) {
+        console.warn('Atlassian shortlist sync:', err.message);
+      }
+    }
   }
   if (override_bucket) {
     if (!override_note?.trim()) {
@@ -2434,9 +2563,12 @@ app.post('/api/applications/:id/schedule/invite', authMiddleware, (req, res) => 
 
   const payload = getApplicationPayload(req.params.id, req.user.orgId, req.user);
   res.status(201).json({
-    message: 'Scheduling invite created — send the booking link to the candidate',
+    message: appRow.email
+      ? `Scheduling invite emailed to ${appRow.email}`
+      : 'Scheduling invite created, no applicant email on file',
     scheduling,
     candidate_email: appRow.email,
+    email_sent: Boolean(appRow.email),
     ...payload,
   });
 });
@@ -2666,7 +2798,7 @@ app.post('/api/applications/:id/reveal-identity', authMiddleware, requireRole('A
   });
 
   const payload = getApplicationPayload(req.params.id, req.user.orgId, req.user);
-  res.json({ message: 'Identity revealed — full profile now visible to authorized hiring team', ...payload });
+  res.json({ message: 'Identity revealed, full profile now visible to authorized hiring team', ...payload });
 });
 
 app.post('/api/applications/:id/voice-sample/index', authMiddleware, (req, res) => {
@@ -2725,7 +2857,7 @@ app.post('/api/applications/:id/voice-verify', authMiddleware, upload.single('au
     description: `${result.comparison.verdict} (${result.comparison.match_score}%)`,
   });
 
-  res.json({ comparison: result.comparison, stored_sample: result.stored, current_sample: result.current });
+  res.json({ comparison: result.comparison });
 });
 
 app.get('/api/integrations/ats', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
@@ -2746,36 +2878,126 @@ app.get('/api/integrations/ats', authMiddleware, requireIntelligence, requireRol
        WHERE w.org_id = ? ORDER BY w.created_at DESC LIMIT 20`
     )
     .all(req.user.orgId);
+  const base = (process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || '').replace(/\/$/, '') || '';
+  const webhookPath = '/api/integrations/ats/webhook';
   res.json({
-    architecture: [
-      'ATS (Greenhouse, Lever) → Webhooks',
-      'API Gateway (auth, rate limit)',
-      'Ingestion Adapter (normalize payload)',
-      'Event Bus / Queue',
-      'Evaluation Core (parser, AI scoring, rules)',
-      'Data Layer (scores, audit, config)',
-      'Egress Adapter (HTTP writeback — scores, tags, custom fields)',
-      'ATS system of record',
-    ],
+    webhook_url: base ? `${base}${webhookPath}` : webhookPath,
+    health: getIntegrationHealth(db, req.user.orgId),
     integrations: integrations.map((i) => ({
-      ...i,
+      id: i.id,
+      provider: i.provider,
+      api_key_hint: i.api_key_hint,
+      enabled: i.enabled,
+      created_at: i.created_at,
       writeback_url: i.writeback_url || null,
-      webhook_secret:
-        req.user.role === 'Admin' || req.user.role === 'Recruiter' ? i.webhook_secret : undefined,
+      has_webhook_secret: Boolean(i.webhook_secret),
     })),
     recent_events: events,
     writeback_queue: writeback,
   });
 });
 
+function publicWebhookUrl() {
+  const base = (process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || '').replace(/\/$/, '');
+  const path = '/api/integrations/ats/webhook';
+  return base ? `${base}${path}` : path;
+}
+
+app.post('/api/integrations/ats', authMiddleware, requireIntelligence, requireRole('Admin'), (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'integrations');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  const existing = db.prepare('SELECT id FROM ats_integrations WHERE org_id = ? LIMIT 1').get(req.user.orgId);
+  if (existing) {
+    return res.status(400).json({ error: 'An ATS connection already exists. Disconnect it first or edit the existing one.' });
+  }
+  const provider = String(req.body?.provider || 'generic').toLowerCase();
+  if (!['greenhouse', 'lever', 'generic'].includes(provider)) {
+    return res.status(400).json({ error: 'Provider must be greenhouse, lever, or generic' });
+  }
+  const id = uuid();
+  const webhookSecret = `xpr_${randomBytes(24).toString('hex')}`;
+  db.prepare(
+    `INSERT INTO ats_integrations (id, org_id, provider, webhook_secret, api_key_hint, enabled)
+     VALUES (?, ?, ?, ?, ?, 1)`
+  ).run(id, req.user.orgId, provider, webhookSecret, `${provider}_connection`);
+  logAudit({
+    orgId: req.user.orgId,
+    actorId: req.user.sub,
+    actorName: req.user.name,
+    eventType: 'ATS connected',
+    description: `Created ${provider} webhook integration`,
+  });
+  res.status(201).json({
+    id,
+    provider,
+    enabled: true,
+    webhook_secret: webhookSecret,
+    webhook_url: publicWebhookUrl(),
+  });
+});
+
+app.post('/api/integrations/ats/test', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const integration = db
+    .prepare('SELECT * FROM ats_integrations WHERE org_id = ? AND enabled = 1 LIMIT 1')
+    .get(req.user.orgId);
+  if (!integration) {
+    return res.status(404).json({ error: 'Create an ATS connection first.' });
+  }
+  const provider = integration.provider || 'generic';
+  const normalized = normalizeAtsPayload(provider, {
+    candidate: { id: `test-${Date.now()}`, name: 'Test Candidate', email: 'test@example.com' },
+    job_id: 'REQ-1001',
+    job_title: 'Senior Software Engineer',
+    stage: 'applied',
+  });
+  const eventId = uuid();
+  db.prepare(
+    `INSERT INTO ats_events (id, org_id, provider, event_type, payload_json, status)
+     VALUES (?, ?, ?, ?, ?, 'received')`
+  ).run(eventId, req.user.orgId, normalized.provider, normalized.stage || 'candidate.updated', JSON.stringify(normalized));
+
+  let ingest = null;
+  try {
+    const job = resolveJobForAts(db, req.user.orgId, {
+      job_external_id: normalized.job_external_id,
+      job_title: 'Senior Software Engineer',
+      provider: normalized.provider,
+    });
+    const baseUrl = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || 'http://localhost:5173';
+    ingest = upsertApplicationFromAts(db, req.user.orgId, job, normalized, baseUrl);
+    db.prepare(`UPDATE ats_events SET status = 'ingested' WHERE id = ?`).run(eventId);
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Test ingest failed' });
+  }
+
+  res.json({
+    ok: true,
+    ingest: ingest
+      ? { application_id: ingest.application.id, created: ingest.created }
+      : null,
+  });
+});
+
+app.get('/api/integrations/activity', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
+  res.json(listUnifiedIntegrationActivity(db, req.user.orgId, 40));
+});
+
 app.post('/api/integrations/ats/webhook', (req, res) => {
-  const secret = req.headers['x-webhook-secret'] || req.query.secret;
+  const secret = req.headers['x-webhook-secret'];
+  if (!secret) {
+    return res.status(401).json({ error: 'Missing X-Webhook-Secret header' });
+  }
   const provider = req.headers['x-ats-provider'] || req.body?.provider || 'generic';
   const integration = db
     .prepare('SELECT * FROM ats_integrations WHERE webhook_secret = ? AND enabled = 1')
     .get(secret);
   if (!integration) {
-    return res.status(401).json({ error: 'Invalid webhook secret — configure ATS integration in Xperieval' });
+    return res.status(401).json({ error: 'Invalid webhook secret, configure ATS integration in Xperieval' });
   }
   const orgId = integration.org_id;
   const normalized = normalizeAtsPayload(provider, req.body);
@@ -2871,6 +3093,163 @@ app.patch('/api/integrations/ats/:integrationId', authMiddleware, requireIntelli
   res.json({ ok: true });
 });
 
+// ——— Workplace connectors (Jira, Slack, GitHub, etc.) ———
+app.get('/api/connectors', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
+  res.json(listOrgConnectors(db, req.user.orgId));
+});
+
+app.get('/api/connectors/catalog', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (_req, res) => {
+  res.json(listConnectorCatalog());
+});
+
+app.get('/api/connectors/events/recent', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
+  res.json(listConnectorEvents(db, req.user.orgId));
+});
+
+app.get('/api/connectors/:provider', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const row = getOrgConnectorConfig(db, req.user.orgId, req.params.provider);
+  if (!row) return res.status(404).json({ error: 'Connector not configured' });
+  res.json(row);
+});
+
+app.put('/api/connectors/:provider', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'workflow_connectors');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  try {
+    const saved = await saveOrgConnector(db, req.user.orgId, req.params.provider, req.body?.config || req.body, {
+      actorId: req.user.sub,
+      actorName: req.user.name,
+    });
+    logAudit({
+      orgId: req.user.orgId,
+      actorId: req.user.sub,
+      actorName: req.user.name,
+      eventType: 'Connector connected',
+      description: `${req.params.provider} connected`,
+    });
+    res.json(saved);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, detail: err.detail });
+  }
+});
+
+app.post('/api/connectors/:provider/test', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'workflow_connectors');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  try {
+    const result = await testOrgConnector(db, req.user.orgId, req.params.provider, req.body?.config || null);
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, detail: err.detail });
+  }
+});
+
+app.delete('/api/connectors/:provider', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const result = disconnectOrgConnector(db, req.user.orgId, req.params.provider, {
+    actorId: req.user.sub,
+    actorName: req.user.name,
+  });
+  logAudit({
+    orgId: req.user.orgId,
+    actorId: req.user.sub,
+    actorName: req.user.name,
+    eventType: 'Connector disconnected',
+    description: `${req.params.provider} disconnected`,
+  });
+  res.json(result);
+});
+
+app.post('/api/connectors/jira/candidates/:applicationId', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'workflow_connectors');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  try {
+    const result = await syncJiraForCandidate(db, req.user.orgId, req.params.applicationId, {
+      force: !!req.body?.force,
+    });
+    logAudit({
+      orgId: req.user.orgId,
+      applicationId: req.params.applicationId,
+      actorId: req.user.sub,
+      actorName: req.user.name,
+      eventType: 'Jira issue created',
+      description: result.issue_key || result.skipped ? 'Linked existing Jira issue' : 'Jira sync',
+    });
+    const payload = getApplicationPayload(req.params.applicationId, req.user.orgId, req.user);
+    res.json({ ...result, ...payload });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, detail: err.detail });
+  }
+});
+
+app.post('/api/connectors/confluence/candidates/:applicationId', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'workflow_connectors');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  try {
+    const result = await syncConfluenceForCandidate(db, req.user.orgId, req.params.applicationId, {
+      force: !!req.body?.force,
+    });
+    logAudit({
+      orgId: req.user.orgId,
+      applicationId: req.params.applicationId,
+      actorId: req.user.sub,
+      actorName: req.user.name,
+      eventType: 'Confluence page published',
+      description: result.page_id || result.skipped ? 'Linked Confluence page' : 'Confluence sync',
+    });
+    const payload = getApplicationPayload(req.params.applicationId, req.user.orgId, req.user);
+    res.json({ ...result, ...payload });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, detail: err.detail });
+  }
+});
+
+app.post('/api/connectors/slack/candidates/:applicationId', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'workflow_connectors');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
+  try {
+    const result = await syncSlackForCandidate(db, req.user.orgId, req.params.applicationId, {
+      force: !!req.body?.force,
+    });
+    logAudit({
+      orgId: req.user.orgId,
+      applicationId: req.params.applicationId,
+      actorId: req.user.sub,
+      actorName: req.user.name,
+      eventType: 'Slack notification sent',
+      description: 'Shortlist notification posted to Slack',
+    });
+    const payload = getApplicationPayload(req.params.applicationId, req.user.orgId, req.user);
+    res.json({ ...result, ...payload });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message, detail: err.detail });
+  }
+});
+
 app.get('/api/methodology', authMiddleware, (_req, res) => {
   res.json(getMethodology());
 });
@@ -2933,6 +3312,13 @@ app.get('/api/intelligence/api-keys', authMiddleware, requireIntelligence, requi
 });
 
 app.post('/api/intelligence/api-keys', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'api_keys');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
+  }
   const { name, scopes } = req.body;
   const created = createApiKey(db, req.user.orgId, { name: name || 'Production', scopes });
   logAudit({
@@ -2960,18 +3346,44 @@ app.delete('/api/intelligence/api-keys/:id', authMiddleware, requireIntelligence
 
 app.post('/api/v1/evaluate', apiKeyAuth, requireIntelligence, async (req, res) => {
   try {
+    const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+    assertPilotAction(db, org, 'add_candidate');
     const result = await runIntelligenceEvaluation(db, req.user.orgId, req.body);
     logAudit({
       orgId: req.user.orgId,
       actorId: null,
       actorName: 'API Key',
       eventType: 'Intelligence evaluation',
-      description: `API evaluate ${result.experience_score ?? '—'} for ${req.body.candidate_name || 'candidate'}`,
+      description: `API evaluate ${result.experience_score ?? 'N/A'} for ${req.body.candidate_name || 'candidate'}`,
     });
     res.json(result);
   } catch (err) {
+    if (pilotBlocked(res, err)) return;
     res.status(400).json({ error: err.message || 'Evaluation failed' });
   }
+});
+
+// ——— Pilot program ———
+app.get('/api/pilot', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  res.json(getPilotSnapshot(db, org));
+});
+
+app.post('/api/pilot/request-upgrade', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const { target_plan, message } = req.body;
+  const plan = target_plan === 'enterprise' ? 'enterprise' : 'team';
+  logAudit({
+    orgId: req.user.orgId,
+    actorId: req.user.sub,
+    actorName: req.user.name,
+    eventType: 'Pilot upgrade requested',
+    description: `Requested upgrade to ${plan}${message ? `: ${message}` : ''}`,
+  });
+  res.json({
+    ok: true,
+    message: 'Upgrade request recorded. Our team will contact you within one business day.',
+    target_plan: plan,
+  });
 });
 
 // ——— Settings ———
@@ -3046,6 +3458,13 @@ app.post('/api/users', authMiddleware, requireRole('Admin'), (req, res) => {
   const { email, name, role, password } = req.body;
   if (!email || !name || !role || !password) {
     return res.status(400).json({ error: 'Email, name, role, and password required' });
+  }
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
+  try {
+    assertPilotAction(db, org, 'add_user');
+  } catch (err) {
+    if (pilotBlocked(res, err)) return;
+    throw err;
   }
   const validRoles = ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter', 'Compliance Auditor'];
   if (!validRoles.includes(role)) return res.status(400).json({ error: 'Invalid role' });
@@ -3248,7 +3667,7 @@ app.get('/', (req, res) => {
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
+    if (req.path.startsWith('/api')) return next();
     res.sendFile(join(distPath, 'index.html'));
   });
 }
@@ -3264,6 +3683,6 @@ app.listen(PORT, '0.0.0.0', () => {
   ensureRubricTemplatesTable(db);
   console.log(`Xperieval API running at http://localhost:${PORT}`);
   setInterval(() => {
-    processWritebackQueue(db, { limit: 5 }).catch(() => {});
-  }, 60000);
+    processWritebackQueue(db, { limit: 10 }).catch(() => {});
+  }, 30000);
 });

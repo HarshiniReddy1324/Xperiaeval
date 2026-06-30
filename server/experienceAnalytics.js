@@ -1,4 +1,4 @@
-/** Experience Intelligence aggregates — org, job, and analytics views. */
+/** Experience Intelligence aggregates, org, job, and analytics views. */
 
 function safeJson(raw) {
   if (!raw) return null;
@@ -36,17 +36,14 @@ const SCORED_APP_SELECT = `SELECT a.id, a.job_id, a.authenticity_score, s.overal
   LEFT JOIN scores s ON s.application_id = a.id
   WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL`;
 
-/** Dashboard widget — period filter first, then all scored apps if the period is empty. */
+/** Dashboard widget, period filter first, then all scored apps if the period is empty. */
 export function summarizeExperienceScoresForDashboard(db, orgId, rangeModifier) {
   const inRange = db
     .prepare(
       `${SCORED_APP_SELECT}
-         AND (
-           datetime(a.created_at) >= datetime('now', ?)
-           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
-         )`
+         AND datetime(a.created_at) >= datetime('now', ?)`
     )
-    .all(orgId, rangeModifier, rangeModifier);
+    .all(orgId, rangeModifier);
   const periodSummary = summarizeExperienceScores(inRange);
   if (periodSummary.scored_count > 0) return periodSummary;
 
@@ -86,7 +83,7 @@ export function buildQualityTrend(db, orgId, months = 6) {
 }
 
 function formatMonthLabel(ym) {
-  if (!ym) return '—';
+  if (!ym) return 'N/A';
   const [y, m] = ym.split('-');
   const d = new Date(Number(y), Number(m) - 1, 1);
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });

@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import { bucketClass } from '../components/ui';
 
 export function formatTime(sec) {
-  if (!sec && sec !== 0) return '—';
+  if (!sec && sec !== 0) return 'N/A';
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
@@ -33,9 +33,9 @@ export const PIPELINE_LABELS = {
 
 export const SCHEDULE_STATUS_LABELS = {
   awaiting_candidate: 'Waiting for candidate to pick time',
-  awaiting_interviewer: 'Candidate picked time — confirm required',
+  awaiting_interviewer: 'Candidate picked time: confirm required',
   confirmed: 'Interview confirmed',
-  declined: 'Time declined — resend invite',
+  declined: 'Time declined: resend invite',
   cancelled: 'Invite cancelled',
 };
 
@@ -95,7 +95,11 @@ export function useCandidateApplication(id, navState) {
         body: JSON.stringify({ pipeline_stage }),
       });
       applyPayload(res);
-      showToast(res.message || `Pipeline: ${PIPELINE_LABELS[pipeline_stage] || pipeline_stage}`);
+      showToast(
+        res.connectorLinks?.jira?.issue_key
+          ? `${res.message || 'Shortlisted'} · Jira issue created`
+          : res.message || `Pipeline: ${PIPELINE_LABELS[pipeline_stage] || pipeline_stage}`
+      );
     } catch (e) {
       showToast(e.message, 'error');
     }
@@ -113,11 +117,14 @@ export function useCandidateApplication(id, navState) {
       });
       applyPayload(res);
       const url = res.scheduling?.booking_url;
-      if (url && navigator.clipboard) {
+      const emailed = res.email_sent && res.candidate_email;
+      if (emailed) {
+        showToast(`Scheduling invite emailed to ${res.candidate_email}`);
+      } else if (url && navigator.clipboard) {
         await navigator.clipboard.writeText(url);
-        showToast('Invite created — booking link copied to clipboard');
+        showToast('Invite created: no applicant email on file; link copied to clipboard');
       } else {
-        showToast(url ? 'Invite created — copy the booking link below' : res.message || 'Scheduling invite sent');
+        showToast(res.message || (url ? 'Invite created: copy the booking link below' : 'Scheduling invite sent'));
       }
       navigate(`/candidates/${id}/scheduling`, { state: navState });
     } catch (e) {
@@ -149,7 +156,7 @@ export function useCandidateApplication(id, navState) {
       });
       applyPayload(res);
       setDeclineReason('');
-      showToast(res.message || 'Declined — send a new invite');
+      showToast(res.message || 'Declined: send a new invite');
     } catch (e) {
       showToast(e.message, 'error');
     } finally {
@@ -167,7 +174,7 @@ export function useCandidateApplication(id, navState) {
     if (!window.confirm('Move this application to trash? You can recover it from Trash.')) return;
     try {
       await api(`/applications/${id}`, { method: 'DELETE' });
-      showToast('Moved to trash — recover from Trash if needed');
+      showToast('Moved to trash: recover from Trash if needed');
       navigate('/candidates');
     } catch (e) {
       showToast(e.message, 'error');
@@ -222,7 +229,7 @@ export function useCandidateApplication(id, navState) {
       const res = await api(`/applications/${id}/rescore`, { method: 'POST' });
       applyPayload(res);
       const score = res.applicationScore || res.score;
-      showToast(`Re-scored: ${score?.overall ?? '—'}/100 (${score?.bucket ?? '—'})`);
+      showToast(`Re-scored: ${score?.overall ?? 'N/A'}/100 (${score?.bucket ?? 'N/A'})`);
     } catch (e) {
       showToast(e.message, 'error');
     } finally {

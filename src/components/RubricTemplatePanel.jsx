@@ -81,7 +81,7 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
         <Bookmark size={20} /> Screening templates
       </h2>
       <p className="muted">
-        Save this position&apos;s screening questions as a reusable template — new questions sync to the{' '}
+        Save this position&apos;s screening questions as a reusable template: new questions sync to the{' '}
         <a href="/rubrics/library">question library</a> automatically.
       </p>
 

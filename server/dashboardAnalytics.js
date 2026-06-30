@@ -16,7 +16,7 @@ export function daysFromRange(range) {
   return 30;
 }
 
-/** SQLite datetime('now', modifier) — keeps filters aligned with stored UTC timestamps. */
+/** SQLite datetime('now', modifier), keeps filters aligned with stored UTC timestamps. */
 export function sqliteRangeModifier(range) {
   if (range === '7d') return '-7 days';
   if (range === '90d') return '-90 days';
@@ -96,12 +96,9 @@ export function buildDashboardAnalytics(orgId, db, jobs = [], options = {}) {
        JOIN jobs j ON j.id = a.job_id
        LEFT JOIN scores s ON s.application_id = a.id
        WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
-         AND (
-           datetime(a.created_at) >= datetime('now', ?)
-           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
-         )`
+         AND datetime(a.created_at) >= datetime('now', ?)`
     )
-    .all(orgId, rangeModifier, rangeModifier);
+    .all(orgId, rangeModifier);
 
   const hiredJobIds = db
     .prepare(
@@ -274,7 +271,7 @@ export function buildJobTableRows(jobs, apps) {
       : 0;
 
     const statusMap = {
-      Draft: { label: 'Delayed', tone: 'purple', hint: 'Position posting is still in draft — not yet accepting applicants.' },
+      Draft: { label: 'Delayed', tone: 'purple', hint: 'Position posting is still in draft; not yet accepting applicants.' },
       Open: { label: 'About to Start', tone: 'amber', hint: 'Posting is live; screening has not started in earnest.' },
       Screening: { label: 'In Progress', tone: 'blue', hint: 'Active applicants are being screened for this role.' },
       'Hiring Team Review': { label: 'In Progress', tone: 'blue', hint: 'Hiring team is reviewing scored candidates.' },
@@ -303,7 +300,7 @@ export function buildJobTableRows(jobs, apps) {
             day: 'numeric',
             year: 'numeric',
           })
-        : '—',
+        : 'N/A',
     };
   });
 }
