@@ -92,6 +92,7 @@ export function runSchemaMigrations() {
     'JOB-SENIOR-001': 'senior',
     'JOB-STAFF-001': 'senior',
     'JOB-DIRECTOR-001': 'senior',
+    'JOB-QA-001': 'mid',
   };
   for (const [jobId, level] of Object.entries(demoLevelByJobId)) {
     db.prepare(`UPDATE jobs SET position_level = ? WHERE id = ?`).run(level, jobId);
@@ -399,12 +400,9 @@ export function runDataMigrations() {
       .catch((e) => console.error('[seed] scenario demos failed:', e.message));
   }
 
-  Promise.resolve()
-    .then(() => import('./ensureDemoPortfolio.js'))
-    .then((m) => m.ensureDemoPortfolio())
-    .then(() => import('./seedPortfolioCandidates.js'))
+  import('./seedPortfolioCandidates.js')
     .then((m) => m.enrichPortfolioCandidates({ onlyMissing: true }))
-    .catch((e) => console.error('[seed] demo portfolio failed:', e.message));
+    .catch((e) => console.error('[seed] portfolio enrich failed:', e.message));
 }
 
 export function runMigrations() {

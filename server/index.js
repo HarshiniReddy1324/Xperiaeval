@@ -36,10 +36,12 @@ import {
 import { buildDashboardAnalytics, buildJobTableRows, buildPositionKpis, sinceFromRange, daysFromRange, sqliteRangeModifier } from './dashboardAnalytics.js';
 import {
   summarizeExperienceScores,
+  summarizeExperienceScoresForDashboard,
   buildQualityTrend,
   buildJobExperienceIntelligence,
   buildReportsExperienceAnalytics,
 } from './experienceAnalytics.js';
+import { ensureDemoPortfolio } from './ensureDemoPortfolio.js';
 import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from './apiKeys.js';
 import { runIntelligenceEvaluation, listRecentEvaluations } from './intelligenceApi.js';
@@ -669,7 +671,7 @@ app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
     screening,
     analytics: {
       ...analytics,
-      experienceIntelligence: summarizeExperienceScores(appsInRange),
+      experienceIntelligence: summarizeExperienceScoresForDashboard(db, req.user.orgId, rangeModifier),
       qualityTrend: buildQualityTrend(db, req.user.orgId, 6),
     },
     kpiCards,
@@ -3250,6 +3252,8 @@ if (existsSync(distPath)) {
     res.sendFile(join(distPath, 'index.html'));
   });
 }
+
+ensureDemoPortfolio();
 
 app.listen(PORT, '0.0.0.0', () => {
   ensureQuestionPool(db, null);

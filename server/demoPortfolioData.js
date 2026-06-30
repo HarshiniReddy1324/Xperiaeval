@@ -1,4 +1,4 @@
-/** Shared demo portfolio jobs and candidates (6 roles × 3 applicants). */
+/** Shared demo portfolio jobs and candidates (7 roles × 3 applicants). */
 
 export const DEMO_PORTFOLIO_JOBS = [
   { id: 'JOB-INTERN-001', title: 'Software Engineering Intern', team: 'Engineering', location: 'Austin, TX', stage: 'Open', position_level: 'internship' },
@@ -7,6 +7,7 @@ export const DEMO_PORTFOLIO_JOBS = [
   { id: 'JOB-SENIOR-001', title: 'Senior Product Manager', team: 'Product', location: 'New York, NY', stage: 'Interviewing', position_level: 'senior' },
   { id: 'JOB-STAFF-001', title: 'Staff Data Engineer', team: 'Data Platform', location: 'Seattle, WA', stage: 'Screening', position_level: 'senior' },
   { id: 'JOB-DIRECTOR-001', title: 'Director, Talent Operations', team: 'People Ops', location: 'San Francisco, CA', stage: 'Draft', position_level: 'senior' },
+  { id: 'JOB-QA-001', title: 'QA Engineer', team: 'Engineering', location: 'Remote (US)', stage: 'Open', position_level: 'mid' },
 ];
 
 export const DEMO_PORTFOLIO_CANDIDATES = [
@@ -262,6 +263,48 @@ export const DEMO_PORTFOLIO_CANDIDATES = [
     resume:
       'Chloe Diaz | Recruiting coordinator and operations specialist (3 years). Good coordination skills and scheduler administration, but limited enterprise-level process ownership and analytics leadership.',
   },
+  {
+    id: 'APP-QA-3001',
+    jobId: 'JOB-QA-001',
+    name: 'Morgan Blake',
+    email: 'morgan.blake@example.com',
+    phone: '415-555-0301',
+    source: 'Sample data',
+    pipeline: 'shortlisted_interview',
+    quality: 'strong',
+    authenticity: 94,
+    integrity: { focus_loss_count: 0, paste_attempts: 0 },
+    resume:
+      'Morgan Blake | QA Engineer, 5 years. Built Cypress and Playwright automation for SaaS billing and onboarding flows; owned release regression gates and cut escaped defects 41%. Led API contract testing with Postman/Newman and partnered with backend on CI quality gates.',
+  },
+  {
+    id: 'APP-QA-3002',
+    jobId: 'JOB-QA-001',
+    name: 'Riley Chen',
+    email: 'riley.chen@example.com',
+    phone: '415-555-0302',
+    source: 'Sample data',
+    pipeline: 'application_review',
+    quality: 'average',
+    authenticity: 86,
+    integrity: { focus_loss_count: 1, paste_attempts: 0 },
+    resume:
+      'Riley Chen | QA Analyst, 3 years. Manual and automated testing for web apps, basic Selenium scripts, Jira bug triage, and smoke test checklists for sprint releases.',
+  },
+  {
+    id: 'APP-QA-3003',
+    jobId: 'JOB-QA-001',
+    name: 'Sam Ortiz',
+    email: 'sam.ortiz.qa@example.com',
+    phone: '415-555-0303',
+    source: 'Sample data',
+    pipeline: 'application_review',
+    quality: 'weak',
+    authenticity: 61,
+    integrity: { focus_loss_count: 5, paste_attempts: 2 },
+    resume:
+      'Sam Ortiz | Junior tester transitioning into QA. Completed online automation course and performed manual UAT on internal tools.',
+  },
 ];
 
-export const DEMO_PORTFOLIO_MARKER = 'demo-portfolio-v1';
+export const DEMO_PORTFOLIO_MARKER = 'demo-portfolio-v2';

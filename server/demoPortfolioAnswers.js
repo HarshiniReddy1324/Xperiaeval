@@ -73,6 +73,7 @@ const FAMILY_BY_JOB = {
   'JOB-SENIOR-001': 'product',
   'JOB-STAFF-001': 'dataEng',
   'JOB-DIRECTOR-001': 'peopleOps',
+  'JOB-QA-001': 'engineering',
 };
 
 export function getPortfolioAnswers(jobId, jobTitle, quality) {

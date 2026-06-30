@@ -30,6 +30,35 @@ export function summarizeExperienceScores(scoredApps = []) {
   };
 }
 
+const SCORED_APP_SELECT = `SELECT a.id, a.job_id, a.authenticity_score, s.overall, s.bucket
+  FROM applications a
+  JOIN jobs j ON j.id = a.job_id
+  LEFT JOIN scores s ON s.application_id = a.id
+  WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL`;
+
+/** Dashboard widget — period filter first, then all scored apps if the period is empty. */
+export function summarizeExperienceScoresForDashboard(db, orgId, rangeModifier) {
+  const inRange = db
+    .prepare(
+      `${SCORED_APP_SELECT}
+         AND (
+           datetime(a.created_at) >= datetime('now', ?)
+           OR (s.overall IS NOT NULL AND datetime(s.created_at) >= datetime('now', ?))
+         )`
+    )
+    .all(orgId, rangeModifier, rangeModifier);
+  const periodSummary = summarizeExperienceScores(inRange);
+  if (periodSummary.scored_count > 0) return periodSummary;
+
+  const allScored = db
+    .prepare(
+      `${SCORED_APP_SELECT}
+         AND s.overall IS NOT NULL`
+    )
+    .all(orgId);
+  return summarizeExperienceScores(allScored);
+}
+
 /** Monthly average experience score for trend charts (last N months). */
 export function buildQualityTrend(db, orgId, months = 6) {
   const rows = db

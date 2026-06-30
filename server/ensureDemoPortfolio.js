@@ -1,7 +1,6 @@
 /**
- * Idempotent demo portfolio seed — 6 jobs, 18 scored candidates.
- * Runs automatically on API startup when production DB is sparse.
- * Does not delete existing applications (safe on Oracle after minimal seed).
+ * Idempotent demo portfolio seed — 7 jobs, 21 scored candidates.
+ * Runs automatically on API startup; INSERT OR IGNORE keeps production DBs in sync.
  */
 
 import bcrypt from 'bcryptjs';
@@ -34,8 +33,14 @@ export function needsDemoPortfolioSeed() {
     .get();
   if (hasMeta) {
     const marker = db.prepare('SELECT value FROM app_meta WHERE key = ?').get('demo_portfolio_marker');
-    if (marker?.value === DEMO_PORTFOLIO_MARKER && portfolioApplicationCount() >= DEMO_PORTFOLIO_CANDIDATES.length) {
-      return false;
+    if (
+      marker?.value === DEMO_PORTFOLIO_MARKER &&
+      portfolioApplicationCount() >= DEMO_PORTFOLIO_CANDIDATES.length
+    ) {
+      const jobCount = db
+        .prepare(`SELECT COUNT(*) as c FROM jobs WHERE deleted_at IS NULL AND id LIKE 'JOB-%'`)
+        .get().c;
+      if (jobCount >= DEMO_PORTFOLIO_JOBS.length) return false;
     }
   }
   const jobCount = db
@@ -335,23 +340,21 @@ export function refreshStaleDemoTimestamps() {
 
 export function ensureDemoPortfolio() {
   ensureMetaTable();
-  let result = { skipped: true, jobsAdded: 0, candidatesAdded: 0 };
 
-  if (needsDemoPortfolioSeed()) {
-    result = { skipped: false, jobsAdded: 0, candidatesAdded: 0 };
+  let result = { skipped: false, jobsAdded: 0, candidatesAdded: 0 };
+  const run = db.transaction(() => {
+    ensureBaseOrg();
+    result = insertPortfolioData();
+    db.prepare(
+      `INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+    ).run('demo_portfolio_marker', DEMO_PORTFOLIO_MARKER);
+  });
+  run();
 
-    const run = db.transaction(() => {
-      ensureBaseOrg();
-      result = insertPortfolioData();
-      db.prepare(
-        `INSERT INTO app_meta (key, value, updated_at) VALUES (?, ?, datetime('now'))
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-      ).run('demo_portfolio_marker', DEMO_PORTFOLIO_MARKER);
-    });
-
-    run();
+  if (result.jobsAdded > 0 || result.candidatesAdded > 0) {
     console.log(
-      `[seed] Demo portfolio ensured — ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
+      `[seed] Demo portfolio synced — ${result.jobsAdded} job(s), ${result.candidatesAdded} candidate(s) added (${portfolioApplicationCount()} total portfolio apps)`
     );
   }
 
