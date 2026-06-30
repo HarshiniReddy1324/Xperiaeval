@@ -184,6 +184,17 @@ const PLANS = [
 
 const INTEGRATIONS = ['Greenhouse', 'Lever', 'Jira', 'Evaluate API', 'Webhook ingest'];
 
+const INTEREST_OPTIONS = [
+  { value: 'demo', label: 'Product demo' },
+  { value: 'pilot', label: 'Pilot program' },
+  { value: 'integrations', label: 'ATS integrations' },
+  { value: 'general', label: 'General question' },
+];
+
+function interestLabel(value) {
+  return INTEREST_OPTIONS.find((o) => o.value === value)?.label || 'General inquiry';
+}
+
 export function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -192,7 +203,7 @@ export function Landing() {
     name: '',
     email: '',
     company: '',
-    interest: 'demo',
+    interest: '',
     message: '',
   });
 
@@ -218,7 +229,7 @@ export function Landing() {
 
   const submitContact = (e) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Xperieval inquiry: ${contactForm.interest}`);
+    const subject = encodeURIComponent(`Xperieval inquiry: ${interestLabel(contactForm.interest)}`);
     const body = encodeURIComponent(
       `Name: ${contactForm.name}\nCompany: ${contactForm.company}\nEmail: ${contactForm.email}\n\n${contactForm.message}`
     );
@@ -609,12 +620,18 @@ export function Landing() {
               <label>
                 I am interested in
                 <select
+                  required
                   value={contactForm.interest}
                   onChange={(e) => setContactForm({ ...contactForm, interest: e.target.value })}
                 >
-                  <option value="demo">Product demo</option>
-                  <option value="integrations">ATS integrations</option>
-                  <option value="general">General question</option>
+                  <option value="" disabled>
+                    Select an option
+                  </option>
+                  {INTEREST_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label>
