@@ -41,6 +41,7 @@ import {
   buildJobExperienceIntelligence,
   buildReportsExperienceAnalytics,
 } from './experienceAnalytics.js';
+import { ensureDemoPortfolio } from './ensureDemoPortfolio.js';
 import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from './apiKeys.js';
 import { runIntelligenceEvaluation, listRecentEvaluations } from './intelligenceApi.js';
@@ -3250,6 +3251,12 @@ if (existsSync(distPath)) {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
     res.sendFile(join(distPath, 'index.html'));
   });
+}
+
+try {
+  ensureDemoPortfolio();
+} catch (e) {
+  console.error('[seed] demo portfolio failed:', e.message);
 }
 
 app.listen(PORT, '0.0.0.0', () => {
