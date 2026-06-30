@@ -301,21 +301,19 @@ function insertPortfolioData() {
   return { jobsAdded, candidatesAdded };
 }
 
-/** Keep demo portfolio activity inside dashboard date ranges on long-lived production DBs. */
+/** Spread demo portfolio activity across the last 28 days so dashboard date filters always match. */
 export function refreshStaleDemoTimestamps() {
   if (process.env.XPERIEVAL_SKIP_DEMO_PORTFOLIO === '1') return 0;
 
-  const stale = db
+  const apps = db
     .prepare(
       `SELECT a.id FROM applications a
-       JOIN jobs j ON j.id = a.job_id
-       WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
-         AND datetime(a.created_at) < datetime('now', '-30 days')
+       WHERE a.deleted_at IS NULL AND a.id LIKE 'APP-%'
        ORDER BY a.id`
     )
-    .all(ORG_ID);
+    .all();
 
-  if (!stale.length) return 0;
+  if (!apps.length) return 0;
 
   const updateApp = db.prepare(`UPDATE applications SET created_at = datetime('now', ?) WHERE id = ?`);
   const updateScore = db.prepare(
@@ -323,19 +321,19 @@ export function refreshStaleDemoTimestamps() {
   );
 
   const run = db.transaction(() => {
-    stale.forEach((row, i) => {
+    apps.forEach((row, i) => {
       const offset = `-${1 + (i % 28)} days`;
       updateApp.run(offset, row.id);
       updateScore.run(offset, row.id);
     });
     db.prepare(
       `UPDATE jobs SET created_at = datetime('now', '-14 days')
-       WHERE org_id = ? AND deleted_at IS NULL AND datetime(created_at) < datetime('now', '-30 days')`
+       WHERE org_id = ? AND deleted_at IS NULL AND id LIKE 'JOB-%'`
     ).run(ORG_ID);
   });
 
   run();
-  return stale.length;
+  return apps.length;
 }
 
 export function ensureDemoPortfolio() {

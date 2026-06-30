@@ -331,4 +331,11 @@ runSchemaMigrations();
 seedIfEmpty();
 runDataMigrations();
 
+try {
+  const { ensureDemoPortfolio } = await import('./ensureDemoPortfolio.js');
+  ensureDemoPortfolio();
+} catch (e) {
+  console.error('[seed] demo portfolio sync failed:', e.message);
+}
+
 export { db, slugify, DEFAULT_NOTICE, DEFAULT_RETENTION };

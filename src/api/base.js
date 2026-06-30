@@ -1,8 +1,9 @@
 /**
- * API base URL for production (Vercel frontend + Render API).
- * Leave unset in local dev — Vite proxies /api to localhost:3001.
+ * API base URL. In production on Vercel we use same-origin /api (rewritten to Render).
+ * Local dev leaves base empty — Vite proxies /api to localhost:3001.
  */
 export function apiBase() {
+  if (import.meta.env.PROD) return '';
   return (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
 }
 

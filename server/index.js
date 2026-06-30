@@ -41,7 +41,6 @@ import {
   buildJobExperienceIntelligence,
   buildReportsExperienceAnalytics,
 } from './experienceAnalytics.js';
-import { ensureDemoPortfolio } from './ensureDemoPortfolio.js';
 import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from './apiKeys.js';
 import { runIntelligenceEvaluation, listRecentEvaluations } from './intelligenceApi.js';
@@ -3201,7 +3200,33 @@ app.get('/api/roles', (_req, res) => {
   ]);
 });
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) => {
+  let demo_marker = null;
+  let demo_jobs = 0;
+  let demo_scored = 0;
+  try {
+    const hasMeta = db
+      .prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_meta'`)
+      .get();
+    if (hasMeta) {
+      demo_marker = db.prepare(`SELECT value FROM app_meta WHERE key = 'demo_portfolio_marker'`).get()?.value || null;
+    }
+    demo_jobs = db
+      .prepare(`SELECT COUNT(*) as c FROM jobs WHERE org_id = 'org-demo' AND deleted_at IS NULL`)
+      .get().c;
+    demo_scored = db
+      .prepare(
+        `SELECT COUNT(*) as c FROM applications a
+         JOIN jobs j ON j.id = a.job_id
+         JOIN scores s ON s.application_id = a.id
+         WHERE j.org_id = 'org-demo' AND j.deleted_at IS NULL AND a.deleted_at IS NULL`
+      )
+      .get().c;
+  } catch {
+    /* ignore on empty DB */
+  }
+  res.json({ ok: true, demo_marker, demo_jobs, demo_scored });
+});
 
 // Serve Vite build in production
 const distPath = join(__dirname, '..', 'dist');
@@ -3252,8 +3277,6 @@ if (existsSync(distPath)) {
     res.sendFile(join(distPath, 'index.html'));
   });
 }
-
-ensureDemoPortfolio();
 
 app.listen(PORT, '0.0.0.0', () => {
   ensureQuestionPool(db, null);

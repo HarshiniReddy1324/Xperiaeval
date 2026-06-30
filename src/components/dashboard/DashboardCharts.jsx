@@ -37,8 +37,8 @@ export function DonutChart({
 
   return (
     <div className={`chartDonut${legendClassName ? ` ${legendClassName}` : ''}`}>
-      <div className="chartDonutSvgWrap">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="chartDonutSvg">
+      <div className="chartDonutSvgWrap" style={{ width: size, height: size, flexShrink: 0 }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="chartDonutSvg" style={{ display: 'block' }}>
         {!hideTrack && (
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
         )}
