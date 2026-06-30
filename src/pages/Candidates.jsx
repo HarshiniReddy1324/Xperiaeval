@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, Trash2, GitCompare, CircleCheck, CircleAlert, CircleX, Sparkles } from 'lucide-react';
 import { api } from '../api/client';
-import { returnState } from '../lib/navigation';
+import { formatApplicationSource } from '../lib/applicationSource';
+import { useAuth } from '../context/AuthContext';
+import { normalizeProductMode } from '../lib/productMode';
+import { returnState, rememberCandidatesList } from '../lib/navigation';
 import {
   BUCKET_TILES,
   buildCandidatesUrl,
@@ -44,6 +47,8 @@ function bucketOf(candidate) {
 export function Candidates() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const isIntelOnly = normalizeProductMode(user?.productMode) === 'intelligence';
   const [searchParams, setSearchParams] = useSearchParams();
   const filters = readCandidateFilters(searchParams);
   const [compareIds, setCompareIds] = useState([]);
@@ -58,13 +63,20 @@ export function Candidates() {
   const showListView = !showBucketPicker;
   const bucketMeta = BUCKET_TILES.find((b) => b.key === filters.bucket);
 
+  useEffect(() => {
+    if (!showListView) return;
+    rememberCandidatesList(location.pathname, location.search);
+  }, [showListView, location.pathname, location.search]);
+
   const updateFilters = (patch) => {
     setSearchParams(filtersToQuery({ ...filters, ...patch }), { replace: true });
   };
 
   useEffect(() => {
-    api('/jobs').then(setJobs).catch((e) => setLoadError(e.message));
-  }, []);
+    if (!isIntelOnly) {
+      api('/jobs').then(setJobs).catch((e) => setLoadError(e.message));
+    }
+  }, [isIntelOnly]);
 
   useEffect(() => {
     if (!showBucketPicker) return;
@@ -95,6 +107,13 @@ export function Candidates() {
 
   const hasActiveFilters = filters.bucket || hasNonBucketFilters(filters);
 
+  const compareSelection = useMemo(
+    () => compareIds.map((id) => candidates.find((c) => c.id === id)).filter(Boolean),
+    [compareIds, candidates],
+  );
+
+  const compareJobTitle = compareSelection[0]?.job_title;
+
   const toggleCompare = (id) => {
     setCompareError('');
     const candidate = candidates.find((c) => c.id === id);
@@ -104,7 +123,7 @@ export function Candidates() {
       if (prev.length === 1 && candidate?.job_id) {
         const first = candidates.find((c) => c.id === prev[0]);
         if (first?.job_id && first.job_id !== candidate.job_id) {
-          setCompareError('Select candidates from the same job to compare.');
+          setCompareError('Select candidates from the same position to compare.');
           return prev;
         }
       }
@@ -117,7 +136,7 @@ export function Candidates() {
     const selected = candidates.filter((c) => compareIds.includes(c.id));
     const jobIds = new Set(selected.map((c) => c.job_id).filter(Boolean));
     if (jobIds.size > 1) {
-      setCompareError('Select candidates from the same job to compare.');
+      setCompareError('Select candidates from the same position to compare.');
       return;
     }
     navigate(`/candidates/compare?ids=${compareIds.join(',')}`, { state: returnState(location) });
@@ -138,21 +157,32 @@ export function Candidates() {
   };
 
   const pageTitle = showBucketPicker
-    ? 'Candidates'
-    : filters.bucket
-      ? `${filters.bucket} candidates`
-      : 'Candidates';
+    ? filters.integrity === 'flagged'
+      ? 'Experience Verification'
+      : 'Candidates'
+    : filters.integrity === 'flagged'
+      ? 'Experience Verification'
+      : filters.bucket
+        ? `${filters.bucket} candidates`
+        : 'Candidates';
 
   return (
     <>
       <div className="pageHead">
         <h1>{pageTitle}</h1>
         <p>
-          {showBucketPicker && 'Choose a score bucket to view applicants ranked by fit and integrity signals.'}
-          {showListView && filters.bucket && bucketMeta?.description}
-          {showListView && !filters.bucket && hasNonBucketFilters(filters) && (
+          {isIntelOnly &&
+            'Candidates synced from your ATS or scored via the Intelligence API — review experience scores and explainability.'}
+          {!isIntelOnly && filters.integrity === 'flagged' &&
+            'Candidates with integrity, authenticity, or experience verification flags — review before advancing.'}
+          {!isIntelOnly && showBucketPicker && filters.integrity !== 'flagged' &&
+            'Choose a score bucket to view applicants ranked by fit and integrity signals.'}
+          {!isIntelOnly && showListView && filters.bucket && bucketMeta?.description}
+          {!isIntelOnly && showListView && !filters.bucket && hasNonBucketFilters(filters) && (
             <>Filtered applicant list across all buckets. Use screening and pipeline filters to narrow results.</>
           )}
+          {isIntelOnly && showBucketPicker && 'Choose a score bucket to review candidates by experience fit.'}
+          {isIntelOnly && showListView && filters.bucket && bucketMeta?.description}
         </p>
       </div>
 
@@ -190,6 +220,7 @@ export function Candidates() {
         </div>
       ) : (
         <Card>
+          {!isIntelOnly && (
           <div className="screeningChipRow">
             {SCREENING_CHIPS.map((chip) => {
               const active = filters.screening === chip.key && !filters.hiddenGem;
@@ -219,20 +250,24 @@ export function Candidates() {
               );
             })}
           </div>
+          )}
 
           <div className="filters">
+            {!isIntelOnly && (
             <select
               value={filters.jobId}
-              aria-label="Filter by job"
+              aria-label="Filter by position"
               onChange={(e) => updateFilters({ jobId: e.target.value })}
             >
-              <option value="">All jobs</option>
+              <option value="">All positions</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title}
                 </option>
               ))}
             </select>
+            )}
+            {!isIntelOnly && (
             <select
               value={filters.pipeline}
               aria-label="Filter by pipeline stage"
@@ -244,27 +279,66 @@ export function Candidates() {
                 </option>
               ))}
             </select>
+            )}
+            {!isIntelOnly && (
             <select
               value={filters.integrity}
               aria-label="Filter by integrity"
               onChange={(e) => updateFilters({ integrity: e.target.value })}
             >
-              <option value="">All integrity</option>
-              <option value="flagged">Integrity flagged</option>
+              <option value="">All verification status</option>
+              <option value="flagged">Flags only</option>
             </select>
-            <Button variant="outline" disabled={compareIds.length < 2} onClick={startCompare}>
-              <GitCompare size={16} /> Compare ({compareIds.length}/2)
-            </Button>
+            )}
           </div>
 
-          {(compareIds.length > 0 || compareError) && (
-            <p className={`muted compareHint${compareError ? ' error' : ''}`}>
-              {compareError || (
-                <>
-                  Select two candidates for the same job, then Compare.{' '}
-                  {compareIds.length < 2 ? 'Pick one more.' : 'Ready.'}
-                </>
+          {!isIntelOnly && (
+            <div className="compareToolbar">
+              <div className="compareToolbarMain">
+                <GitCompare size={18} aria-hidden />
+                <div>
+                  <strong>Compare two candidates for the same position</strong>
+                  <p className="muted">
+                    {compareIds.length === 0 &&
+                      'Check two rows below to open a side-by-side score breakdown.'}
+                    {compareIds.length === 1 &&
+                      compareJobTitle &&
+                      `Selected one — pick another candidate for ${compareJobTitle}.`}
+                    {compareIds.length === 1 && !compareJobTitle && 'Selected one — pick one more for the same position.'}
+                    {compareIds.length >= 2 && 'Ready — open the comparison view.'}
+                  </p>
+                </div>
+              </div>
+              {compareSelection.length > 0 && (
+                <div className="compareChips" aria-label="Selected for comparison">
+                  {compareSelection.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className="compareChip"
+                      onClick={() => toggleCompare(c.id)}
+                      title="Remove from comparison"
+                    >
+                      {c.name}
+                      <span aria-hidden>×</span>
+                    </button>
+                  ))}
+                </div>
               )}
+              <Button
+                variant="outline"
+                className="compareGoBtn"
+                disabled={compareIds.length < 2}
+                onClick={startCompare}
+              >
+                <GitCompare size={16} /> Compare side-by-side
+              </Button>
+            </div>
+          )}
+
+          {compareError && !isIntelOnly && (
+            <p className="error compareError" role="alert">
+              {compareError}
             </p>
           )}
 
@@ -272,32 +346,37 @@ export function Candidates() {
             <table>
               <thead>
                 <tr>
-                  <th scope="col" aria-label="Compare" />
+                  {!isIntelOnly && <th scope="col" aria-label="Compare" />}
                   <th scope="col">Candidate</th>
                   <th scope="col">Score /100</th>
                   <th scope="col">Recommendation</th>
                   {!filters.bucket && <th scope="col">Bucket</th>}
-                  <th scope="col">Schedule</th>
-                  <th scope="col">Screening</th>
-                  <th scope="col">Completion</th>
-                  <th scope="col">Pipeline</th>
+                  {!isIntelOnly && <th scope="col">Schedule</th>}
+                  {!isIntelOnly && <th scope="col">Screening</th>}
+                  {!isIntelOnly && <th scope="col">Completion</th>}
+                  {!isIntelOnly && <th scope="col">Pipeline</th>}
                   <th scope="col">Source</th>
-                  <th scope="col">Authenticity</th>
-                  <th scope="col">Job</th>
+                  {!isIntelOnly && <th scope="col">Authenticity</th>}
+                  <th scope="col">Role</th>
                   <th scope="col" aria-label="Actions" />
                 </tr>
               </thead>
               <tbody>
                 {candidates.map((c) => (
                   <tr key={c.id} className={compareIds.includes(c.id) ? 'compareSelected' : ''}>
+                    {!isIntelOnly && (
                     <td>
-                      <input
-                        type="checkbox"
-                        checked={compareIds.includes(c.id)}
-                        onChange={() => toggleCompare(c.id)}
-                        aria-label={`Add ${c.name} to comparison`}
-                      />
+                      <label className="compareCheck">
+                        <input
+                          type="checkbox"
+                          checked={compareIds.includes(c.id)}
+                          onChange={() => toggleCompare(c.id)}
+                          aria-label={`Add ${c.name} to comparison`}
+                        />
+                        <span className="compareCheckBox" aria-hidden />
+                      </label>
                     </td>
+                    )}
                     <td>
                       <b>{c.name}</b>
                       {c.hidden_gem === 1 && <span className="hiddenGemBadge small">Hidden gem</span>}
@@ -314,6 +393,7 @@ export function Candidates() {
                         {bucketOf(c) ? <BucketBadge bucket={bucketOf(c)} /> : '—'}
                       </td>
                     )}
+                    {!isIntelOnly && (
                     <td>
                       {c.schedule_status ? (
                         <span className={`scheduleBadge ${c.schedule_status}`}>
@@ -323,14 +403,18 @@ export function Candidates() {
                         '—'
                       )}
                     </td>
+                    )}
+                    {!isIntelOnly && (
                     <td>
                       <span className={`screenTag ${c.screening_status || ''}`}>
                         {c.screening_category || c.screening_status || '—'}
                       </span>
                     </td>
-                    <td>{c.completion_pct != null ? `${c.completion_pct}%` : '—'}</td>
-                    <td>{PIPELINE_LABELS[c.pipeline_stage] || c.pipeline_stage || '—'}</td>
-                    <td>{c.source}</td>
+                    )}
+                    {!isIntelOnly && <td>{c.completion_pct != null ? `${c.completion_pct}%` : '—'}</td>}
+                    {!isIntelOnly && <td>{PIPELINE_LABELS[c.pipeline_stage] || c.pipeline_stage || '—'}</td>}
+                    <td>{formatApplicationSource(c.source)}</td>
+                    {!isIntelOnly && (
                     <td>
                       {c.authenticity_score != null ? (
                         <span
@@ -344,6 +428,7 @@ export function Candidates() {
                         '—'
                       )}
                     </td>
+                    )}
                     <td>{c.job_title}</td>
                     <td>
                       <div className="row tight">
@@ -352,6 +437,7 @@ export function Candidates() {
                             <Eye size={15} /> View
                           </Button>
                         </Link>
+                        {!isIntelOnly && (
                         <Button
                           variant="outline"
                           className="small danger"
@@ -361,16 +447,19 @@ export function Candidates() {
                         >
                           <Trash2 size={14} />
                         </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))}
                 {!candidates.length && (
                   <tr>
-                    <td colSpan={filters.bucket ? 13 : 14} className="empty">
+                    <td colSpan={isIntelOnly ? (filters.bucket ? 6 : 7) : (filters.bucket ? 13 : 14)} className="empty">
                       {hasActiveFilters
                         ? 'No candidates match the current filters.'
-                        : 'No applications yet. Share a job apply link to collect candidates.'}
+                        : isIntelOnly
+                          ? 'No candidates yet — ingest via ATS webhook or evaluate via API.'
+                          : 'No applications yet. Share a position apply link to collect candidates.'}
                     </td>
                   </tr>
                 )}

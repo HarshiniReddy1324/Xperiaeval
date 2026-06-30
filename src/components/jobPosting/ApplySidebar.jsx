@@ -46,7 +46,7 @@ export function ApplySidebar({ job, posting, applyUrl }) {
         <div className="jp-btnRow">
           <button type="button" className={`jp-btnSecondary ${saved ? 'saved' : ''}`} onClick={toggleSave}>
             <Bookmark size={16} fill={saved ? 'currentColor' : 'none'} />
-            {saved ? 'Saved' : 'Save job'}
+            {saved ? 'Saved' : 'Save position'}
           </button>
           <button type="button" className="jp-btnSecondary" onClick={shareJob}>
             <Share2 size={16} /> Share

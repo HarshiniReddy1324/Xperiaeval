@@ -30,7 +30,7 @@
   --portal-bg: #0b1120;
   --portal-surface: #111827;
   --portal-surface-2: #1e293b;
-  --portal-border: #1e293b;
+  --portal-border: #334155;
   --portal-text: #f1f5f9;
   --portal-muted: #94a3b8;
   --portal-accent: #3b82f6;
@@ -53,6 +53,7 @@
 .portalApp {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   max-width: 100vw;
   overflow-x: hidden;
   background: var(--portal-bg);
@@ -109,6 +110,11 @@
   font-size: 15px;
   letter-spacing: 0.06em;
   color: #f1f5f9;
+}
+
+.portalBrandText {
+  min-width: 0;
+  overflow: hidden;
 }
 
 [data-theme='light'] .portalBrand b {
@@ -306,6 +312,48 @@
   width: min(calc(100% - 248px), 1500px);
   background: var(--portal-bg);
   color: var(--portal-text);
+  transition: margin-left 0.2s ease, width 0.2s ease;
+}
+
+.portalSidebar {
+  transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease, transform 0.2s ease;
+}
+
+.portalSidebar.collapsed {
+  width: 72px;
+  min-width: 72px;
+  padding: 18px 10px 16px;
+}
+
+.portalSidebar.collapsed .portalBrand {
+  justify-content: center;
+  padding: 0;
+}
+
+.portalSidebar.collapsed .portalBrandText,
+.portalSidebar.collapsed .portalPlan,
+.portalSidebar.collapsed .portalUser > div,
+.portalSidebar.collapsed .navLabel {
+  display: none;
+}
+
+.portalSidebar.collapsed .portalNav a {
+  justify-content: center;
+  padding: 10px;
+}
+
+.portalSidebar.collapsed .portalThemeBtn {
+  justify-content: center;
+  padding: 9px;
+}
+
+.portalSidebar.collapsed .portalUser {
+  justify-content: center;
+}
+
+.portalApp.sidebar-collapsed .portalMain {
+  margin-left: 72px;
+  width: min(calc(100% - 72px), 1500px);
 }
 
 .portalTopBar {
@@ -322,6 +370,27 @@
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.portalMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  margin-right: auto;
+  border-radius: 10px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+  color: var(--portal-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.portalMenuBtn:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .portalTopBarTitle {
@@ -391,7 +460,6 @@
   outline: 2px solid var(--portal-accent);
   outline-offset: 2px;
 }
-.portalMenuBtn { display: none; margin-right: auto; }
 .portalNavClose { display: none; }
 .skipLink {
   position: absolute;
@@ -495,6 +563,212 @@
 .enterpriseDash {
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.portalMain:has(.enterpriseDash) {
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
+.portalMain:has(.enterpriseDash) .portalTopBar--withTitle {
+  margin-bottom: 10px;
+}
+
+.portalMain:has(.enterpriseDash) .portalTopBarTitle h1 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.portalMain:has(.enterpriseDash) .portalTopBarTitle p {
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+/* Dashboard density — shared by light and dark (matches light Ease Health spacing) */
+.enterpriseDash .kpiGrid {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.enterpriseDash .dashRow3 {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.enterpriseDash .dashRowBottom {
+  gap: 12px;
+}
+
+.enterpriseDash .dashSideCol {
+  gap: 10px;
+}
+
+.enterpriseDash .kpiTile {
+  padding: 18px 20px;
+  border-radius: 14px;
+}
+
+.enterpriseDash .kpiTile strong {
+  font-size: 24px;
+}
+
+.enterpriseDash .kpiTile small {
+  margin-top: 5px;
+  font-size: 11px;
+}
+
+.enterpriseDash .kpiTileIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.enterpriseDash .dashKpiPair {
+  gap: 10px;
+}
+
+.enterpriseDash .dashKpiPair .kpiTile {
+  padding: 14px 16px;
+}
+
+.enterpriseDash .dashKpiPair .kpiTile strong {
+  font-size: 22px;
+}
+
+.enterpriseDash .dashWidget {
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.enterpriseDash .dashWidgetTable,
+.enterpriseDash .dashWidgetSide {
+  padding: 14px 16px;
+}
+
+.enterpriseDash .widgetHead {
+  margin-bottom: 14px;
+}
+
+.enterpriseDash .widgetHead--tight {
+  margin-bottom: 8px;
+}
+
+.enterpriseDash .widgetHead h2 {
+  font-size: 14px;
+}
+
+.enterpriseDash .dashWidget--quality .widgetHead {
+  margin-bottom: 10px;
+}
+
+/* Fixed chart sizes — do not stretch with viewport */
+.enterpriseDash .chartDonut.chartDonut--quality {
+  min-height: 168px;
+  flex: none;
+}
+
+.enterpriseDash .chartDonut--quality .chartDonutSvg {
+  max-width: 188px;
+  max-height: 188px;
+}
+
+.enterpriseDash .funnelRow {
+  grid-template-columns: 72px 1fr;
+}
+
+.enterpriseDash .funnelBar {
+  height: 34px;
+}
+
+.enterpriseDash .funnelMeta {
+  margin-top: 8px;
+  padding-top: 8px;
+  font-size: 11px;
+}
+
+.enterpriseDash .dashWidget--health .chartGauge--large .gaugeSvg {
+  max-width: 210px;
+  max-height: 200px;
+}
+
+.enterpriseDash .chartGauge--large .gaugeScore {
+  font-size: 22px;
+}
+
+.enterpriseDash .chartGauge--large .gaugeLabel {
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+
+.enterpriseDash .chartGauge--large .gaugeBreakdown {
+  font-size: 10px;
+  gap: 4px 12px;
+}
+
+.enterpriseDash .riskAlertChart {
+  padding: 8px;
+}
+
+.enterpriseDash .riskAlertCircles--3 {
+  min-height: 110px;
+  padding: 8px 4px 12px;
+}
+
+.enterpriseDash .riskAlertBubble {
+  width: 72px;
+  height: 72px;
+}
+
+.enterpriseDash .riskAlertBubble strong {
+  font-size: 22px;
+}
+
+.enterpriseDash .riskAlertLegend {
+  padding: 6px 4px 0;
+  gap: 4px 8px;
+}
+
+.enterpriseDash .riskAlertLegend li {
+  font-size: 10px;
+}
+
+.enterpriseDash .posTable--five th {
+  padding: 6px 10px;
+  font-size: 10px;
+}
+
+.enterpriseDash .posTable--five td {
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.enterpriseDash .posTable--five td b {
+  font-size: 12px;
+}
+
+.enterpriseDash .posTableEmpty {
+  padding: 10px !important;
+}
+
+[data-theme='dark'] .portalMain:has(.enterpriseDash) {
+  background: var(--portal-bg);
+  padding: 14px 21px 16px;
+}
+
+/* Dark mode: match light dashboard card padding (Ease Health uses 21px in light) */
+[data-theme='dark'] .enterpriseDash .kpiTile,
+[data-theme='dark'] .enterpriseDash .dashWidget {
+  padding: 21px;
+}
+
+[data-theme='dark'] .enterpriseDash .dashWidgetTable,
+[data-theme='dark'] .enterpriseDash .dashWidgetSide {
+  padding: 16px 18px;
+}
+
+[data-theme='dark'] .enterpriseDash .dashKpiPair .kpiTile {
+  padding: 16px 18px;
 }
 
 .enterpriseHead {
@@ -1207,7 +1481,7 @@
 
 .chartDonut--quality .chartDonutSvgWrap {
   position: absolute;
-  inset: 0 36% 0 0;
+  inset: 0 11.5rem 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1225,7 +1499,8 @@
   right: 0;
   bottom: 0;
   flex: none;
-  min-width: 7.5rem;
+  min-width: 10.5rem;
+  width: 10.5rem;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1241,7 +1516,7 @@
 
 .chartDonut--quality .chartLegendBtn {
   display: grid;
-  grid-template-columns: 8px 3.25rem 1.5rem;
+  grid-template-columns: 8px 1fr auto;
   gap: 6px;
   align-items: center;
   padding: 3px 4px;
@@ -1273,6 +1548,8 @@
   color: var(--portal-muted);
   font-weight: 600;
   font-size: 12px;
+  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .chartDonut--quality .chartDonutCenter {
@@ -1551,35 +1828,63 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   align-items: center;
 }
 
-.portalMain .poolFilters select,
-.portalMain .poolSearch input {
-  background: var(--portal-surface-2);
+.portalMain .poolFiltersSelects {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.portalMain .poolFiltersSelects select {
+  width: auto;
+  min-width: 132px;
+  max-width: 168px;
+  background: var(--portal-surface);
   color: var(--portal-text);
   border: 1px solid var(--portal-border);
   border-radius: 10px;
-  padding: 10px 12px;
-  width: 100%;
+  padding: 9px 32px 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .portalMain .poolSearch {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--portal-surface-2);
+  flex: 1 1 200px;
+  min-width: 180px;
+  background: var(--portal-surface);
   border: 1px solid var(--portal-border);
   border-radius: 10px;
   padding: 0 12px;
   color: var(--portal-muted);
+  box-shadow: inset 0 1px 2px #00000018;
 }
 
 .portalMain .poolSearch input {
   border: 0;
   background: transparent;
   padding: 10px 0;
+  width: 100%;
+  color: var(--portal-text);
+  font-size: 14px;
+}
+
+.portalMain .poolSearch input::placeholder {
+  color: var(--portal-muted);
+}
+
+.portalMain .poolFiltersActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .portalMain .poolSelectionCount {
@@ -1590,6 +1895,26 @@
   font-weight: 600;
   color: var(--portal-muted);
   margin: 0 0 12px;
+  padding: 8px 12px;
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.portalMain .poolList {
+  list-style: none;
+  padding: 4px;
+  margin: 0 0 16px;
+  max-height: 460px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portalMain .poolList > li {
+  margin: 0;
 }
 
 .portalMain .poolItem {
@@ -1597,35 +1922,44 @@
   text-align: left;
   border: 1px solid var(--portal-border);
   border-radius: 12px;
-  padding: 12px 14px;
-  background: var(--portal-surface-2);
+  padding: 14px 16px;
+  background: var(--portal-surface);
   color: var(--portal-text);
   cursor: pointer;
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .portalMain .poolItem:hover {
   border-color: var(--portal-accent-soft);
-  background: var(--portal-surface);
+  background: var(--portal-surface-2);
+  box-shadow: 0 2px 8px #00000022;
 }
 
 .portalMain .poolItem.selected {
   border-color: var(--portal-accent);
-  background: #3b82f614;
-  box-shadow: 0 0 0 2px #3b82f622;
+  background: #3b82f618;
+  box-shadow: 0 0 0 2px #3b82f633, 0 2px 8px #00000028;
+}
+
+.portalMain .poolItem:focus-visible {
+  outline: 2px solid var(--portal-accent);
+  outline-offset: 2px;
 }
 
 .portalMain .poolCheck {
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  border: 1px solid var(--portal-border);
+  border: 2px solid var(--portal-muted);
+  background: var(--portal-bg);
   display: grid;
   place-items: center;
   flex-shrink: 0;
   margin-top: 2px;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .portalMain .poolItem.selected .poolCheck {
@@ -1668,7 +2002,59 @@
   margin: 0;
   font-size: 13px;
   color: var(--portal-muted);
-  line-height: 1.45;
+  line-height: 1.5;
+}
+
+[data-theme='dark'] .portalMain .poolFiltersSelects select,
+[data-theme='dark'] .portalMain .poolSearch {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+[data-theme='dark'] .portalMain .poolSelectionCount {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .portalMain .poolItem {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme='dark'] .portalMain .poolItem:hover {
+  background: #111827;
+  border-color: #64748b;
+}
+
+[data-theme='dark'] .portalMain .poolItem.selected {
+  background: #1e3a5f55;
+  border-color: var(--portal-accent);
+}
+
+[data-theme='dark'] .portalMain .poolCheck {
+  border-color: #94a3b8;
+  background: #0b1120;
+}
+
+[data-theme='dark'] .portalMain .poolItem.selected .poolCheck {
+  border-color: var(--portal-accent);
+}
+
+@media (max-width: 720px) {
+  .portalMain .poolFiltersActions {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .portalMain .poolFiltersSelects,
+  .portalMain .poolSearch {
+    width: 100%;
+  }
+
+  .portalMain .poolFiltersSelects select {
+    flex: 1;
+    max-width: none;
+  }
 }
 
 .portalMain .rubricEdit {
@@ -1771,24 +2157,31 @@
 [data-theme='light'] .screeningHubTileIcon.amber { background: #fffbeb; color: #d97706; }
 
 .screeningHubTileLabel {
+  display: block;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--portal-text);
 }
 
-.screeningHubTileBody small {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--portal-muted);
+.screeningHubTileBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .screeningHubTileBody p {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--portal-muted);
+}
+
+.screeningHubTile:hover .screeningHubTileLabel,
+.screeningHubTile:hover .screeningHubTileBody p {
+  color: var(--portal-text);
 }
 
 .templateGallery {
@@ -1899,7 +2292,24 @@
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--portal-border);
+}
+
+.poolTemplateBuild .formInput {
+  flex: 1 1 220px;
+  min-width: 180px;
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--portal-text);
+}
+
+[data-theme='dark'] .poolTemplateBuild .formInput {
+  background: #0f172a;
+  border-color: #475569;
 }
 
 .poolImportBtn {
@@ -2328,7 +2738,6 @@
 .portalMain .integrationRow,
 .portalMain .webhookResult,
 .portalMain .poolApprovedNotice,
-.portalMain .poolItem,
 .portalMain .validationCheckList,
 .portalMain .validationCheckList li,
 .portalMain .voiceResult,
@@ -2603,13 +3012,226 @@
 
 .portalMain .candidateHero {
   margin-bottom: 14px;
+  margin-top: -2px;
+}
+
+.portalMain .candidateHero--compact {
+  margin-bottom: 10px;
+}
+
+.portalMain .candidateHero--compact .candidateHeroMain {
+  margin-top: 0;
+}
+
+.portalMain .candidateHero--compact h1 {
+  font-size: 22px;
+}
+
+.portalMain .candidateHero--compact .heroScoreCluster {
+  flex-basis: 260px;
+  width: 260px;
+}
+
+.portalMain .candidateSectionHub {
+  margin-top: 8px;
+}
+
+.portalMain .candidateSectionHubIntro {
+  margin-bottom: 12px;
+}
+
+.portalMain .candidateSectionHubIntro h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.portalMain .candidateSectionQuickNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+  position: sticky;
+  top: 8px;
+  z-index: 4;
+}
+
+.portalMain .candidateSectionPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  color: var(--portal-text);
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface-2);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.portalMain .candidateSectionPill:hover {
+  border-color: var(--portal-accent);
+  background: #3b82f614;
+  color: var(--portal-text);
+}
+
+.portalMain .candidateSectionPill--blue:hover { border-color: #3b82f6; }
+.portalMain .candidateSectionPill--purple:hover { border-color: #a855f7; }
+.portalMain .candidateSectionPill--green:hover { border-color: #22c55e; }
+.portalMain .candidateSectionPill--amber:hover { border-color: #f59e0b; }
+
+.portalMain .candidateSectionGroup {
+  margin-bottom: 18px;
+}
+
+.portalMain .candidateSectionGroupTitle {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--portal-muted);
+}
+
+.portalMain .candidateSectionList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .portalMain .candidateSectionList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.portalMain .candidateSectionRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+  text-decoration: none;
+  color: inherit;
+  min-height: 0;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.portalMain .candidateSectionRow:hover {
+  border-color: var(--portal-accent-soft);
+  background: var(--portal-surface-2);
+  box-shadow: 0 2px 8px #00000014;
+}
+
+.portalMain .candidateSectionRowIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.portalMain .candidateSectionRowIcon.blue { background: #1e3a5f; color: #93c5fd; }
+.portalMain .candidateSectionRowIcon.purple { background: #581c87; color: #e9d5ff; }
+.portalMain .candidateSectionRowIcon.green { background: #14532d; color: #4ade80; }
+.portalMain .candidateSectionRowIcon.amber { background: #78350f; color: #fcd34d; }
+
+[data-theme='light'] .portalMain .candidateSectionRowIcon.blue { background: #eff6ff; color: #2563eb; }
+[data-theme='light'] .portalMain .candidateSectionRowIcon.purple { background: #faf5ff; color: #7e22ce; }
+[data-theme='light'] .portalMain .candidateSectionRowIcon.green { background: #ecfdf5; color: #059669; }
+[data-theme='light'] .portalMain .candidateSectionRowIcon.amber { background: #fffbeb; color: #d97706; }
+
+.portalMain .candidateSectionRowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.portalMain .candidateSectionRowLabel {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--portal-text);
+}
+
+.portalMain .candidateSectionRowBody small {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--portal-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.portalMain .candidateSectionRowChevron {
+  flex-shrink: 0;
+  color: var(--portal-muted);
+  opacity: 0.7;
+}
+
+.portalMain .candidateSectionRow:hover .candidateSectionRowChevron {
+  color: var(--portal-accent);
+  opacity: 1;
+}
+
+.portalMain .candidateSectionGrid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.portalMain .candidateSectionPage {
+  margin-top: 4px;
+}
+
+.portalMain .candidateSectionPageHead {
+  margin-bottom: 14px;
+}
+
+.portalMain .candidateSectionPageHead h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.portalMain .candidateSectionStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .portalMain .candidateHeroMain {
   display: flex;
   align-items: flex-start;
-  gap: 28px;
-  margin-top: 12px;
+  gap: 24px;
+  margin-top: 0;
+}
+
+.portalMain .candidateHeroIdentity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.portalMain .candidateHeroBack {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.portalMain .candidateHeroInfo {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .portalMain .candidateHeroMain > div:first-child {
@@ -2628,6 +3250,15 @@
   line-height: 1.45;
 }
 
+.portalMain .candidateHero .candidateMeta,
+.portalMain .candidateHero .muted {
+  color: #cbd5e1;
+}
+
+.portalMain .candidateSectionHubIntro p.muted {
+  color: var(--portal-muted);
+}
+
 .portalMain .candidateBadges {
   display: flex;
   flex-wrap: wrap;
@@ -2637,12 +3268,12 @@
 }
 
 .portalMain .heroScoreCluster {
-  flex: 0 0 340px;
-  width: 340px;
+  flex: 0 0 280px;
+  width: 280px;
   max-width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .portalMain .heroScorePair {
@@ -2661,11 +3292,70 @@
   flex-direction: column;
   justify-content: flex-start;
   gap: 8px;
-  padding: 16px 18px;
-  min-height: 118px;
+  padding: 14px 16px;
+  min-height: 96px;
   border-radius: 14px;
   border: 1px solid var(--portal-border);
   background: var(--portal-surface-2);
+}
+
+.portalMain .heroScoreExtras {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portalMain .heroScoreExtra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+}
+
+.portalMain .heroScoreExtra > span:first-child {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--portal-muted);
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.portalMain .heroScoreExtra--auth strong {
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 800;
+  color: #86efac;
+}
+
+[data-theme='light'] .portalMain .heroScoreExtra--auth strong {
+  color: #047857;
+}
+
+.portalMain .heroScoreExtra--rec {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.portalMain .heroScoreExtra--rec p {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--portal-text);
+}
+
+.portalMain .heroScoreExtraFoot {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--portal-muted);
 }
 
 .portalMain .heroMetricLabel {
@@ -3347,6 +4037,7 @@
 .portalMain .btn {
   border-radius: 10px;
   font-weight: 600;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .portalMain .btn.outline {
@@ -3355,7 +4046,108 @@
   color: var(--portal-text);
 }
 
-.portalMain .filters select,
+.portalMain .btn.outline:hover:not(:disabled) {
+  background: var(--portal-surface-2);
+  border-color: var(--portal-accent);
+  color: var(--portal-text);
+}
+
+.portalMain .btn.ghost {
+  background: transparent;
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text);
+}
+
+.portalMain .btn.ghost:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--portal-accent);
+  color: var(--portal-text);
+}
+
+.portalMain .btn.danger.outline,
+.portalMain .btn.small.danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+}
+
+.portalMain .btn.danger.outline:hover:not(:disabled),
+.portalMain .btn.small.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #f87171;
+  color: #fee2e2;
+}
+
+[data-theme='light'] .portalMain .btn.danger.outline,
+[data-theme='light'] .portalMain .btn.small.danger {
+  background: #fff;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+[data-theme='light'] .portalMain .btn.danger.outline:hover:not(:disabled),
+[data-theme='light'] .portalMain .btn.small.danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+/* Candidate hero action bar — always on dark gradient */
+.portalMain .candidateHero .pipelineBar .btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #f8fafc;
+}
+
+.portalMain .candidateHero .pipelineBar .btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+}
+
+.portalMain .candidateHero .pipelineBar .btn.ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #e2e8f0;
+}
+
+.portalMain .candidateHero .pipelineBar .btn.ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+}
+
+.portalMain .candidateHero .pipelineBar .btn.danger.outline,
+.portalMain .candidateHero .pipelineBar .btn.small.danger {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(252, 165, 165, 0.45);
+  color: #fecaca;
+}
+
+.portalMain .candidateHero .pipelineBar .btn.danger.outline:hover:not(:disabled),
+.portalMain .candidateHero .pipelineBar .btn.small.danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.35);
+  border-color: #fca5a5;
+  color: #ffffff;
+}
+
+.portalMain .candidateHero .pipelineBar .btn svg {
+  flex-shrink: 0;
+}
+
+.portalMain .linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--portal-accent);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.portalMain .linkBtn:hover {
+  color: var(--portal-accent-soft);
+}
 .portalMain .formGroup input,
 .portalMain .formGroup textarea,
 .portalMain .formGroup select {
@@ -3927,27 +4719,44 @@
   margin: 0 0 16px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: var(--portal-surface-2);
-  border: 1px solid var(--portal-border);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 13px;
   line-height: 1.55;
-  color: var(--portal-muted);
+  color: #cbd5e1;
 }
 
 .portalMain .scoreExplainBox strong {
-  color: var(--portal-text);
+  color: #f1f5f9;
 }
 
 .portalMain .scoreExplainBox em {
-  color: var(--portal-accent-soft);
+  color: #93c5fd;
   font-style: normal;
   font-weight: 600;
+}
+
+[data-theme='light'] .portalMain .scoreExplainBox {
+  background: var(--portal-surface-2);
+  border-color: var(--portal-border);
+  color: var(--portal-muted);
+}
+
+[data-theme='light'] .portalMain .scoreExplainBox strong {
+  color: var(--portal-text);
+}
+
+[data-theme='light'] .portalMain .scoreExplainBox em {
+  color: #2563eb;
 }
 
 @media (max-width: 900px) {
   .portalMain .candidateHeroMain {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
+  }
+  .portalMain .candidateHeroIdentity {
+    width: 100%;
   }
   .portalMain .heroScoreCluster,
   .portalMain .heroScoresGrid {
@@ -3957,6 +4766,16 @@
   }
   .portalMain .heroScorePair {
     grid-template-columns: 1fr 1fr;
+  }
+  .portalMain .heroScoreExtras {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .portalMain .heroScoreExtra {
+    flex: 1 1 140px;
+  }
+  .portalMain .heroScoreExtra--rec {
+    flex: 1 1 100%;
   }
 }
 
@@ -4253,18 +5072,6 @@
 }
 
 @media (max-width: 700px) {
-  .portalMenuBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    border: 1px solid var(--portal-border);
-    background: var(--portal-surface);
-    color: var(--portal-text);
-    cursor: pointer;
-  }
   .portalNavClose {
     display: inline-flex;
     margin-left: auto;
@@ -4282,13 +5089,34 @@
     cursor: pointer;
   }
   .portalSidebar {
+    width: 248px;
+    min-width: 248px;
+    padding: 18px 14px 16px;
     transform: translateX(-110%);
     transition: transform 0.2s ease;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   }
+  .portalSidebar.collapsed .portalBrandText,
+  .portalSidebar.collapsed .portalPlan,
+  .portalSidebar.collapsed .portalUser > div,
+  .portalSidebar.collapsed .navLabel {
+    display: block;
+  }
+  .portalSidebar.collapsed .portalNav a {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+  .portalSidebar.collapsed .portalThemeBtn {
+    justify-content: center;
+    padding: 9px;
+  }
   .portalSidebar.open {
     display: flex;
     transform: translateX(0);
+  }
+  .portalApp.sidebar-collapsed .portalMain {
+    margin-left: 0;
+    width: 100%;
   }
   .portalMain { margin-left: 0; width: 100%; padding: 14px; }
   .kpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -4298,8 +5126,1148 @@
 }
 
 @media (min-width: 701px) {
-  .portalMenuBtn,
   .portalNavClose,
   .portalNavBackdrop { display: none; }
   .portalSidebar { transform: none; }
+}
+
+.portalMain .demoEnvBanner {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--portal-muted);
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+}
+
+/* —— Experience Intelligence (dashboard, jobs, analytics, candidate report) —— */
+.portalMain .expIntelPanel {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.06));
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  border-radius: 16px;
+  padding: 22px 24px 20px;
+  margin-bottom: 18px;
+}
+
+.portalMain .expIntelPanel--job {
+  margin-bottom: 20px;
+}
+
+.portalMain .expIntelPanelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.portalMain .expIntelPanelHead h2 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-top: 8px;
+  color: var(--portal-text);
+}
+
+.portalMain .expIntelTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--portal-accent-soft);
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.portalMain .expIntelHeroScore {
+  text-align: right;
+  min-width: 120px;
+}
+
+.portalMain .expIntelHeroLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--portal-muted);
+}
+
+.portalMain .expIntelHeroValue {
+  display: block;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--portal-text);
+}
+
+.portalMain .expIntelHeroMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--portal-muted);
+  margin-top: 4px;
+}
+
+.portalMain .expIntelGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portalMain .expIntelGrid--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.portalMain .expIntelStatLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.portalMain .expIntelStat {
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.portalMain .expIntelStatLink:hover .expIntelStat {
+  border-color: var(--portal-accent);
+  transform: translateY(-1px);
+}
+
+.portalMain .expIntelStatLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--portal-muted);
+}
+
+.portalMain .expIntelStatValue {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 4px;
+  letter-spacing: -0.03em;
+}
+
+.portalMain .expIntelStat--elite .expIntelStatValue { color: #14532d; }
+[data-theme='light'] .portalMain .expIntelStat--elite .expIntelStatValue { color: #166534; }
+.portalMain .expIntelStat--purple .expIntelStatValue { color: #7c3aed; }
+.portalMain .expIntelStat--slate .expIntelStatValue { color: #64748b; }
+.portalMain .expIntelStat--green .expIntelStatValue { color: #4ade80; }
+.portalMain .expIntelStat--amber .expIntelStatValue { color: #fbbf24; }
+.portalMain .expIntelStat--red .expIntelStatValue { color: #f87171; }
+.portalMain .expIntelStat--blue .expIntelStatValue { color: var(--portal-accent-soft); }
+
+.portalMain .expIntelTrend {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--portal-border);
+}
+
+.portalMain .expIntelTrendLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--portal-muted);
+  margin-bottom: 10px;
+}
+
+.portalMain .expIntelTrendBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-height: 88px;
+}
+
+.portalMain .expIntelTrendBar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.portalMain .expIntelTrendFill {
+  width: 100%;
+  max-width: 36px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--portal-accent), var(--portal-accent-soft));
+  min-height: 8px;
+}
+
+.portalMain .expIntelTrendScore {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--portal-text);
+}
+
+.portalMain .expIntelTrendBar small {
+  font-size: 10px;
+  color: var(--portal-muted);
+  text-align: center;
+}
+
+.portalMain .expIntelWidgetAvg {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--portal-muted);
+}
+
+.portalMain .expIntelWidgetAvg strong {
+  font-size: 22px;
+  color: var(--portal-text);
+  margin-left: 6px;
+}
+
+.portalMain .dashWidget--expIntel .chartDonut {
+  margin-top: 0;
+}
+
+.portalMain .expIntelFoot {
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.portalMain .expIntelTierLegend {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.portalMain .screeningProgressStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.portalMain .screeningProgressStat {
+  text-align: center;
+}
+
+.portalMain .screeningProgressStat strong {
+  display: block;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.portalMain .screeningProgressStat span {
+  font-size: 12px;
+  color: var(--portal-muted);
+}
+
+.portalMain .screeningProgressBar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--portal-border);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.portalMain .screeningProgressFill {
+  height: 100%;
+  background: var(--portal-accent);
+  border-radius: 999px;
+}
+
+.portalMain .screeningProgressFoot {
+  font-size: 13px;
+  margin: 0;
+}
+
+.portalMain .expIntelJobActions {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.portalMain .expIntelJobActions a {
+  color: var(--portal-accent);
+}
+
+.portalMain .expAnalyticsSection {
+  margin-bottom: 20px;
+}
+
+.portalMain .expAnalyticsCard {
+  margin-bottom: 14px;
+}
+
+.portalMain .expAnalyticsTableWrap {
+  overflow-x: auto;
+}
+
+.portalMain .expAnalyticsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.portalMain .expAnalyticsTable th,
+.portalMain .expAnalyticsTable td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--portal-border);
+}
+
+.portalMain .expAnalyticsTable th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--portal-muted);
+}
+
+/* Candidate Experience Intelligence report */
+.portalMain .intelHero--experience {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), transparent);
+  border: 1px solid var(--portal-border);
+}
+
+.portalMain .intelExperienceScoreBlock {
+  text-align: right;
+}
+
+.portalMain .intelExperienceLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--portal-muted);
+}
+
+.portalMain .intelExperienceValue {
+  display: block;
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--portal-text);
+}
+
+.portalMain .intelExperienceMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.portalMain .intelPrimaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.portalMain .intelEvidencePanel h3,
+.portalMain .intelSummaryPanel h3,
+.portalMain .intelRiskPanel h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.portalMain .intelEvidenceRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--portal-border);
+  font-size: 13px;
+}
+
+.portalMain .intelEvidenceStars .on { color: #fbbf24; }
+.portalMain .intelEvidenceStars .off { color: var(--chart-track); }
+.portalMain .intelEvidenceScore {
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  min-width: 28px;
+  text-align: right;
+}
+
+.portalMain .intelAiSummary {
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.portalMain .intelConfidenceRow,
+.portalMain .intelRecInline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  padding: 8px 0;
+  border-top: 1px solid var(--portal-border);
+}
+
+.portalMain .intelRiskList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portalMain .intelRiskItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+}
+
+.portalMain .intelRiskDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: var(--portal-muted);
+}
+
+.portalMain .intelRiskItem--clear .intelRiskDot { background: #4ade80; }
+.portalMain .intelRiskItem--flagged .intelRiskDot { background: #f87171; }
+.portalMain .intelRiskItem--review .intelRiskDot { background: #fbbf24; }
+
+.portalMain .intelRiskItem small {
+  display: block;
+  color: var(--portal-muted);
+  margin-top: 2px;
+}
+
+.portalMain .intelWhyPanel {
+  background: var(--portal-surface-2);
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.portalMain .intelWhyBecause {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.portalMain .intelWhyRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--portal-surface);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.portalMain .intelWhyCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.portalMain .intelWhyCols h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--portal-muted);
+  margin-bottom: 8px;
+}
+
+/* Audit timeline */
+.portalMain .auditFilters {
+  margin-bottom: 14px;
+}
+
+.portalMain .auditFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.portalMain .auditFilterRow label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--portal-muted);
+  min-width: 180px;
+}
+
+.portalMain .auditTimeline {
+  margin-top: 8px;
+}
+
+.portalMain .auditTimelineDay + .auditTimelineDay {
+  margin-top: 24px;
+}
+
+.portalMain .auditTimelineDate {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--portal-muted);
+  margin-bottom: 12px;
+}
+
+.portalMain .auditTimelineList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portalMain .auditTimelineItem {
+  display: flex;
+  gap: 14px;
+  padding-bottom: 18px;
+  position: relative;
+}
+
+.portalMain .auditTimelineItem:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--portal-border);
+}
+
+.portalMain .auditTimelineDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  flex-shrink: 0;
+  margin-top: 4px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.portalMain .auditTimelineHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.portalMain .auditTimelineHead time {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--portal-muted);
+}
+
+.portalMain .auditTimelineBody p {
+  font-size: 14px;
+  margin: 0 0 4px;
+}
+
+.portalMain .auditTimelineBody small {
+  font-size: 12px;
+  color: var(--portal-muted);
+}
+
+.portalMain .auditTimelineList--compact .auditTimelineItem {
+  padding-bottom: 14px;
+}
+
+@media (max-width: 900px) {
+  .portalMain .expIntelGrid,
+  .portalMain .expIntelGrid--5,
+  .portalMain .intelPrimaryGrid,
+  .portalMain .intelWhyCols {
+    grid-template-columns: 1fr;
+  }
+  .portalMain .intelExperienceValue {
+    font-size: 48px;
+  }
+}
+
+/* ——— Product mode & Intelligence dashboard ——— */
+.portalMain .productModePicker {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.portalMain .productModeOption {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.portalMain .productModeOption.active {
+  border-color: var(--portal-accent);
+  background: color-mix(in srgb, var(--portal-accent) 8%, transparent);
+}
+
+.portalMain .productModeOption input {
+  margin-right: 8px;
+}
+
+.portalMain .intelligenceDashboard .intelKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.portalMain .intelKpi {
+  display: grid;
+  gap: 8px;
+}
+
+.portalMain .intelKpi strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.portalMain .intelKpi span {
+  color: var(--portal-muted);
+  font-size: 13px;
+}
+
+.portalMain .intelKpi a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--portal-accent);
+}
+
+.portalMain .intelKpi small {
+  display: block;
+  color: var(--portal-muted);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.portalMain .intelWorkflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.portalMain .intelWorkflowStep {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 12px;
+  align-items: start;
+  position: relative;
+}
+
+.portalMain .intelWorkflowNum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portalMain .intelWorkflowStep strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.portalMain .intelWorkflowStep p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--portal-muted);
+}
+
+.portalMain .intelWorkflowLink {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.portalMain .intelTierCard {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  text-align: center;
+}
+
+.portalMain .intelTierCard strong {
+  display: block;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.portalMain .intelTierCard span {
+  display: block;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.portalMain .intelTierCard small {
+  color: var(--portal-muted);
+  font-size: 12px;
+}
+
+.portalMain .intelTierCard--elite { border-color: #14532d66; }
+.portalMain .intelTierCard--strong { border-color: #3b82f666; }
+.portalMain .intelTierCard--review { border-color: #7c3aed66; }
+.portalMain .intelTierCard--risk { border-color: #64748b66; }
+
+.portalMain .intelEmptyState {
+  margin-bottom: 24px;
+  text-align: center;
+  padding: 32px;
+}
+
+.portalMain .intelEmptyState .row {
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.portalMain .intelActivityList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.portalMain .intelActivityItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--portal-border);
+  font-size: 13px;
+}
+
+.portalMain .intelActivityItem strong {
+  display: block;
+}
+
+.portalMain .intelActivityItem span {
+  color: var(--portal-muted);
+  font-size: 12px;
+}
+
+.portalMain .intelActivityItem time {
+  color: var(--portal-muted);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.portalMain .intelActivityItem--empty {
+  color: var(--portal-muted);
+  justify-content: center;
+  border: none;
+}
+
+@media (max-width: 900px) {
+  .portalMain .intelWorkflow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portalMain .intelTierRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.portalMain .intelTierRow strong {
+  display: block;
+  font-size: 24px;
+}
+
+.portalMain .codeBlock {
+  background: var(--portal-surface-2);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.portalMain .apiKeyReveal {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  border: 1px solid #22c55e44;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.portalMain .apiKeyReveal code {
+  word-break: break-all;
+}
+
+.embedApplyPage {
+  min-height: 100vh;
+  background: var(--portal-bg, #0b1120);
+  padding: 16px;
+}
+
+.embedApplyHeader {
+  max-width: 720px;
+  margin: 0 auto 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--portal-muted, #94a3b8);
+}
+
+.embedApplyHeader strong {
+  color: var(--portal-text, #f8fafc);
+  font-size: 18px;
+}
+
+@media (max-width: 900px) {
+  .portalMain .intelligenceDashboard .intelKpiGrid,
+  .portalMain .intelTierRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* —— Candidate compare (list selection + compare page) —— */
+.portalMain .compareToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin: 14px 0 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface-2);
+}
+
+.portalMain .compareToolbarMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.portalMain .compareToolbarMain svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--portal-accent);
+}
+
+.portalMain .compareToolbarMain strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.portalMain .compareToolbarMain p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.portalMain .compareChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portalMain .compareChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--portal-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.portalMain .compareChip:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--portal-accent);
+}
+
+.portalMain .compareChip span {
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.portalMain .compareGoBtn {
+  flex-shrink: 0;
+}
+
+.portalMain .compareError {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.portalMain .compareCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.portalMain .compareCheck input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.portalMain .compareCheckBox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--portal-border);
+  background: var(--portal-surface);
+  display: grid;
+  place-items: center;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.portalMain .compareCheck input:checked + .compareCheckBox {
+  border-color: var(--portal-accent);
+  background: rgba(59, 130, 246, 0.2);
+  box-shadow: inset 0 0 0 2px var(--portal-accent);
+}
+
+.portalMain .compareCheck input:focus-visible + .compareCheckBox {
+  outline: 2px solid var(--portal-accent);
+  outline-offset: 2px;
+}
+
+.portalMain tr.compareSelected td {
+  background: rgba(59, 130, 246, 0.07);
+}
+
+.portalMain tr.compareSelected td:first-child {
+  box-shadow: inset 3px 0 0 var(--portal-accent);
+}
+
+.portalMain tr.compareSelected td,
+.portalMain tr.compareSelected td b,
+.portalMain tr.compareSelected td small,
+.portalMain tr.compareSelected td .score {
+  color: var(--portal-text);
+}
+
+[data-theme='light'] .portalMain tr.compareSelected td {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.portalMain .comparePageHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.portalMain .compareSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.portalMain .compareSummaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portalMain .compareSummaryCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.portalMain .compareSummaryCard h2 {
+  margin: 4px 0 2px;
+  font-size: 18px;
+}
+
+.portalMain .compareCandidateTag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tag-color, var(--portal-accent));
+}
+
+.portalMain .compareScoreBlock {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.portalMain .compareScore {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--portal-text);
+}
+
+.portalMain .compareScoreSub {
+  font-size: 12px;
+  color: var(--portal-muted);
+  margin-right: 4px;
+}
+
+.portalMain .compareSummaryDl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.portalMain .compareSummaryDl div {
+  display: grid;
+  gap: 2px;
+}
+
+.portalMain .compareSummaryDl dt {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--portal-muted);
+}
+
+.portalMain .compareSummaryDl dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+.portalMain .compareProfileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--portal-accent);
+  text-decoration: none;
+  margin-top: auto;
+}
+
+.portalMain .compareProfileLink:hover {
+  text-decoration: underline;
+}
+
+.portalMain .compareTableCard h3,
+.portalMain .compareRadarCard h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.portalMain .compareTableIntro {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.portalMain .compareMetricsTable th,
+.portalMain .compareMetricsTable td {
+  font-size: 13px;
+}
+
+.portalMain .compareMetricsTable th[scope='row'] {
+  font-weight: 600;
+  color: var(--portal-muted);
+  white-space: nowrap;
+}
+
+.portalMain .compareThName {
+  display: inline-block;
+  padding-top: 2px;
+  border-top: 3px solid var(--tag-color, var(--portal-accent));
+}
+
+.portalMain .compareCell--best {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.portalMain .compareCell--best strong {
+  color: #4ade80;
+}
+
+[data-theme='light'] .portalMain .compareCell--best {
+  background: rgba(34, 197, 94, 0.08);
+}
+
+[data-theme='light'] .portalMain .compareCell--best strong {
+  color: #15803d;
+}
+
+.portalMain .compareRadarGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.portalMain .compareRadarItem {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface-2);
+}
+
+.portalMain .radarAxis {
+  fill: var(--portal-muted);
+}
+
+.portalMain .radarSvg polygon,
+.portalMain .radarSvg line {
+  stroke: var(--portal-border);
+}
+
+@media (max-width: 800px) {
+  .portalMain .compareSummaryGrid,
+  .portalMain .compareRadarGrid {
+    grid-template-columns: 1fr;
+  }
 }

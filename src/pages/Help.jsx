@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { normalizeProductMode } from '../lib/productMode';
 import { Card } from '../components/ui';
 
 const DIMENSIONS = [
-  { name: 'Technical competency', weight: '30%', detail: 'Skills, tools, and depth aligned to the job posting and rubric' },
+  { name: 'Technical competency', weight: '30%', detail: 'Skills, tools, and depth aligned to the position posting and screening criteria' },
   { name: 'Problem solving', weight: '20%', detail: 'Structured thinking, trade-offs, and debugging approach in answers' },
   { name: 'Communication', weight: '10%', detail: 'Clarity, structure, and appropriate length (typed or transcribed audio)' },
   { name: 'Project ownership', weight: '10%', detail: 'End-to-end delivery, scope, and accountability signals' },
@@ -22,6 +24,8 @@ const TIERS = [
 ];
 
 export function Help() {
+  const { user } = useAuth();
+  const isIntelOnly = normalizeProductMode(user?.productMode) === 'intelligence';
   const [methodology, setMethodology] = useState(null);
 
   useEffect(() => {
@@ -33,10 +37,30 @@ export function Help() {
       <div className="pageHead">
         <h1>Documentation</h1>
         <p>
-          How the portal works today — jobs, screening rubrics, candidate intelligence scoring, blind review, and
-          reviewer workflows.
+          {isIntelOnly
+            ? 'How Xperieval Intelligence works — ATS webhooks, API evaluation, score writeback, and explainability.'
+            : 'How the portal works — positions, screening, candidate intelligence scoring, blind review, and reviewer workflows.'}
         </p>
       </div>
+
+      {isIntelOnly && (
+        <Card className="helpIntelCard">
+          <h2>Xperieval Intelligence quick start</h2>
+          <ol>
+            <li>
+              Open <Link to="/integrations">Integrations</Link> and create an API key (<code>xpi_…</code>).
+            </li>
+            <li>
+              POST candidate payloads to <code>/api/v1/evaluate</code> with your key, or configure your ATS to send
+              webhooks to <code>/api/integrations/ats/webhook</code>.
+            </li>
+            <li>
+              Scores and explainability write back to your ATS. Review results under{' '}
+              <Link to="/candidates">Candidates</Link> and <Link to="/reports">Analytics</Link>.
+            </li>
+          </ol>
+        </Card>
+      )}
 
       <Card id="platform">
         <h2>Platform pillars</h2>
@@ -57,7 +81,7 @@ export function Help() {
         </p>
         <ul>
           <li>
-            <strong>Jobs</strong> — create postings, build or import a 10-question screening rubric, approve it, then
+            <strong>Positions</strong> — create postings, configure screening questions, approve the questionnaire, then
             share the public apply link (<code>/apply/&#123;slug&#125;</code>) or careers page.
           </li>
           <li>
@@ -72,7 +96,7 @@ export function Help() {
             <strong>No auto-reject</strong> — Red means low fit signal; recruiters still review and can advance anyone.
           </li>
           <li>
-            <strong>Audit</strong> — rubric approval, scoring, notes, overrides, and key actions are logged.
+            <strong>Audit</strong> — screening approval, scoring, notes, overrides, and key actions are logged.
           </li>
         </ul>
       </Card>
@@ -81,15 +105,15 @@ export function Help() {
         <h2>Typical workflow</h2>
         <ol>
           <li>
-            <strong>Jobs → New job</strong> (or edit existing) — set title, team, location, and posting details.
+            <strong>Positions → New position</strong> (or edit existing) — set title, team, location, and posting details.
           </li>
           <li>
-            <strong>Job detail → Question library</strong> — pick 10+ questions by department/level, or edit manually.
-            Save draft, then <strong>Approve rubric</strong> (requires 7 mandatory + 3 optional, 10 points each).
+            <strong>Position detail → Question library</strong> — pick questions by department/level, or edit manually.
+            Save draft, then <strong>Approve screening</strong> (at least one question; points always total 100).
           </li>
           <li>
-            <strong>Optional:</strong> save the rubric as a <strong>template</strong> (e.g. Senior Backend v2) and apply
-            it to other jobs from <strong>Rubrics</strong> or the job page.
+            <strong>Optional:</strong> save the questionnaire as a <strong>template</strong> (e.g. Senior Backend v2) and apply
+            it to other positions from <strong>Screening</strong> or the position page.
           </li>
           <li>
             Share <strong>Careers page</strong> or <strong>Apply link</strong> — candidates submit resume + answers (text,
@@ -114,7 +138,7 @@ export function Help() {
           current UI.
         </p>
         <p>
-          The engine evaluates each rubric answer (including audio transcripts when provided), resume text, job posting
+          The engine evaluates each screening answer (including audio transcripts when provided), resume text, position posting
           skills, and session integrity context, then aggregates into seven dimensions:
         </p>
         <table className="docTable">
@@ -142,7 +166,7 @@ export function Help() {
         </p>
         <p className="muted">
           {methodology?.scoring_note ||
-            'Per-question rubric scoring compares applicant answers to internal sample answers and AI evaluation keywords (7×10 mandatory + 3×10 optional). Groq can refine scores when GROQ_API_KEY is configured.'}
+            'Per-question rubric scoring compares applicant answers to internal sample answers and AI evaluation keywords. Points are split evenly across configured questions to total 100. Groq can refine scores when GROQ_API_KEY is configured.'}
         </p>
         <h3>Tiers &amp; recommendations</h3>
         <table className="docTable">
@@ -191,16 +215,17 @@ export function Help() {
         </div>
         <p className="muted">
           <strong>Settings → Scoring thresholds</strong> — adjust Green/Amber cutoffs, tier boundaries, and recommendation
-          labels. Jobs can inherit org defaults.
+          labels. Positions can inherit org defaults.
         </p>
       </Card>
 
       <Card id="rubrics">
-        <h2>Screening rubrics &amp; question library</h2>
+        <h2>Screening &amp; question library</h2>
         <ul>
           <li>
-            <strong>10 questions per job</strong> — 7 mandatory + 3 optional, 10 points each (100 total). Candidates see
-            questions only; sample answers, AI keywords, and time limits stay internal for scoring.
+            <strong>Flexible question count</strong> — configure as many screening questions as you need (up to 40).
+            Mark each as required or optional; points split evenly to 100 total. Candidates see questions only; sample
+            answers, AI keywords, and time limits stay internal for scoring.
           </li>
           <li>
             <strong>Response types</strong> — text, audio, or video per question. Audio is transcribed for scoring when
@@ -213,14 +238,14 @@ export function Help() {
           </li>
           <li>
             <strong>Question library</strong> — filter by department and level (HR, Engineering · Mid, General, etc.),
-            select 10+, apply to the job.
+            select questions, apply to the position.
           </li>
           <li>
-            <strong>Rubric templates</strong> — save an approved set as a named template; one-click apply on new jobs.
+            <strong>Screening templates</strong> — save an approved set as a named template; one-click apply on new positions.
           </li>
           <li>
-            <strong>Careers + apply</strong> — public pages per job slug; candidates must complete screening after rubric
-            is approved.
+            <strong>Careers + apply</strong> — public pages per position; candidates must complete screening after it is
+            approved.
           </li>
         </ul>
       </Card>
@@ -253,7 +278,7 @@ export function Help() {
       <Card id="compare">
         <h2>Compare candidates</h2>
         <p>
-          On <strong>Candidates</strong>, select two rows (filter by job first), then <strong>Compare</strong>. Side-by-side
+          On <strong>Candidates</strong>, select two rows (filter by position first), then <strong>Compare</strong>. Side-by-side
           dimension radar charts help review fit for the same role.
         </p>
       </Card>
@@ -288,7 +313,7 @@ export function Help() {
           <li>No backtrack — cannot return to previous questions when enabled</li>
           <li>Question shuffle — random order per candidate session</li>
           <li>Keystroke dynamics — flags answers typed with too few keystrokes or robotic timing</li>
-          <li>Duplicate IP — server flags if the same IP applied to the same job recently</li>
+          <li>Duplicate IP — server flags if the same IP applied to the same position recently</li>
           <li>
             Camera presence (optional) — after one-time consent, face-in-frame and look-away signals are sampled in the
             browser; <strong>no video is recorded or uploaded</strong>
@@ -366,7 +391,7 @@ export function Help() {
       <Card id="trash">
         <h2>Trash &amp; recovery</h2>
         <p>
-          Deleting a job or candidate moves it to <strong>Trash</strong> in the sidebar. Restore from Trash or
+          Deleting a position or candidate moves it to <strong>Trash</strong> in the sidebar. Restore from Trash or
           permanently delete from there.
         </p>
       </Card>
@@ -387,7 +412,7 @@ export function Help() {
             <strong>Admin</strong> — settings, thresholds, DEI, users, full access
           </li>
           <li>
-            <strong>Recruiter / Hiring Manager</strong> — jobs, candidates, rubrics, scorecards, notes, scheduling
+            <strong>Recruiter / Hiring Manager</strong> — positions, candidates, screening, scorecards, notes, scheduling
           </li>
           <li>
             <strong>Compliance Auditor</strong> — audit, reports, anonymized candidate view

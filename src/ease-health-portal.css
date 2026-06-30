@@ -1,0 +1,509 @@
+/**
+ * Ease Health — portal overrides (light mode only).
+ */
+
+/* —— Typography —— */
+[data-theme='light'] .portalApp,
+[data-theme='light'] .portalMain {
+  font-family: var(--font-ui);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-body-sm);
+  color: var(--color-true-black);
+}
+
+[data-theme='light'] .portalMain h1,
+[data-theme='light'] .portalMain .pageHead h1,
+[data-theme='light'] .portalMain .portalTopBarTitle h1,
+[data-theme='light'] .portalMain .candidateHero h1 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.4px;
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalMain .pageHead h1 {
+  font-size: var(--text-heading-sm);
+  line-height: 1.3;
+}
+
+[data-theme='light'] .portalMain h2,
+[data-theme='light'] .portalMain h3 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-light);
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalMain .muted {
+  color: var(--color-charcoal);
+}
+
+/* —— No shadows —— */
+[data-theme='light'] .portalMain .card,
+[data-theme='light'] .portalMain .dashWidget,
+[data-theme='light'] .portalMain .kpiTile,
+[data-theme='light'] .portalMain .screeningHubTile,
+[data-theme='light'] .portalMain .candidateBucketTile,
+[data-theme='light'] .portalMain .jobCard,
+[data-theme='light'] .portalMain table {
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .portalMain .kpiTile:hover,
+[data-theme='light'] .portalMain .screeningHubTile:hover,
+[data-theme='light'] .portalMain .candidateBucketTile:hover {
+  box-shadow: none !important;
+  transform: none;
+}
+
+/* —— Sidebar —— */
+[data-theme='light'] .portalSidebar {
+  background: var(--color-linen-white) !important;
+  border-right: 1px solid var(--color-hairline-gray) !important;
+  padding: var(--spacing-21) var(--spacing-14) var(--spacing-18);
+}
+
+[data-theme='light'] .portalBrandLogo {
+  background: var(--color-forest-ink) !important;
+  border-radius: var(--radius-nav);
+  color: var(--color-linen-white) !important;
+}
+
+[data-theme='light'] .portalBrand b {
+  color: var(--color-forest-ink) !important;
+  font-family: var(--font-ui);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-body-sm);
+  font-size: var(--text-body-sm);
+}
+
+[data-theme='light'] .portalBrand span {
+  color: var(--color-charcoal);
+  font-size: var(--text-caption);
+}
+
+[data-theme='light'] .portalSidebarBottom {
+  border-top-color: var(--color-hairline-gray) !important;
+}
+
+[data-theme='light'] .portalNav a {
+  border-radius: var(--radius-nav);
+  color: var(--color-charcoal) !important;
+  font-weight: var(--font-weight-regular);
+  font-size: var(--text-body-sm);
+  padding: var(--spacing-11) var(--spacing-14);
+}
+
+[data-theme='light'] .portalNav a:hover {
+  background: var(--color-linen) !important;
+  color: var(--color-forest-ink) !important;
+}
+
+[data-theme='light'] .portalNav a.active {
+  background: var(--color-linen) !important;
+  color: var(--color-forest-ink) !important;
+  border-left: 3px solid var(--color-forest-ink);
+  padding-left: calc(var(--spacing-14) - 3px);
+}
+
+[data-theme='light'] .portalPlan {
+  background: var(--color-mint-veil) !important;
+  border: 1px solid var(--color-hairline-gray) !important;
+  border-radius: var(--radius-cards);
+}
+
+[data-theme='light'] .portalPlan label,
+[data-theme='light'] .portalPlan small {
+  color: var(--color-charcoal);
+}
+
+[data-theme='light'] .portalPlan strong {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalUser strong {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalAvatar {
+  background: var(--color-forest-ink) !important;
+  color: var(--color-linen-white) !important;
+}
+
+/* —— Main layout —— */
+[data-theme='light'] .portalMain {
+  background: var(--color-linen-white);
+  padding: var(--spacing-14) var(--spacing-21);
+  max-width: calc(var(--page-max-width) + 280px);
+}
+
+[data-theme='light'] .portalMenuBtn {
+  border-radius: var(--radius-nav);
+  border-color: var(--color-hairline-gray);
+  background: var(--color-linen-white);
+  box-shadow: none;
+}
+
+[data-theme='light'] .portalMenuBtn:hover {
+  border-color: var(--color-forest-ink);
+  background: var(--color-linen);
+}
+
+[data-theme='light'] .portalAccountBtn {
+  background: var(--color-forest-ink) !important;
+  color: var(--color-linen-white) !important;
+  border-radius: var(--radius-nav);
+}
+
+/* —— Cards & widgets —— */
+[data-theme='light'] .portalMain .card,
+[data-theme='light'] .portalMain .dashWidget,
+[data-theme='light'] .portalMain .kpiTile {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-cards);
+  padding: var(--card-padding);
+}
+
+[data-theme='light'] .portalMain .kpiTile:hover {
+  border-color: var(--color-forest-ink);
+  background: var(--color-linen);
+}
+
+[data-theme='light'] .portalMain .kpiLabel {
+  color: var(--color-charcoal);
+  font-weight: var(--font-weight-regular);
+}
+
+[data-theme='light'] .portalMain .kpiTileIcon,
+[data-theme='light'] .portalMain .kpiTileIcon.blue,
+[data-theme='light'] .portalMain .kpiTileIcon.green,
+[data-theme='light'] .portalMain .kpiTileIcon.amber,
+[data-theme='light'] .portalMain .kpiTileIcon.purple,
+[data-theme='light'] .portalMain .kpiTileIcon.red {
+  border-radius: var(--radius-nav);
+  background: var(--color-mist-blue) !important;
+  color: var(--color-forest-ink) !important;
+}
+
+/* —— Buttons —— */
+[data-theme='light'] .btn {
+  border-radius: var(--radius-buttons);
+  font-weight: var(--font-weight-regular);
+  font-size: var(--text-body-sm);
+  letter-spacing: var(--tracking-body-sm);
+  box-shadow: none !important;
+  border: 1px solid transparent;
+  background: var(--color-forest-ink);
+  color: var(--color-linen-white);
+}
+
+[data-theme='light'] .btn:hover:not(:disabled) {
+  background: #0a3211;
+  color: var(--color-linen-white);
+}
+
+[data-theme='light'] .btn.outline,
+[data-theme='light'] .btn.ghost {
+  background: transparent;
+  border: 1px solid var(--color-hairline-gray);
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .btn.outline:hover:not(:disabled),
+[data-theme='light'] .btn.ghost:hover:not(:disabled) {
+  background: var(--color-linen);
+  border-color: var(--color-forest-ink);
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .btn.danger.outline,
+[data-theme='light'] .btn.small.danger {
+  background: var(--color-linen-white);
+  border-color: #d4a5a5;
+  color: #8b2e2e;
+}
+
+[data-theme='light'] .btn.danger.outline:hover:not(:disabled),
+[data-theme='light'] .btn.small.danger:hover:not(:disabled) {
+  background: #fdf2f2;
+  border-color: #c44;
+  color: #7f1d1d;
+}
+
+/* —— Tables —— */
+[data-theme='light'] .portalMain table {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-cards);
+}
+
+[data-theme='light'] .portalMain th {
+  background: var(--color-linen);
+  color: var(--color-charcoal);
+  font-weight: var(--font-weight-regular);
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-theme='light'] .portalMain td {
+  border-bottom-color: var(--color-hairline-gray);
+}
+
+[data-theme='light'] .portalMain tr.compareSelected td {
+  background: var(--color-mint-veil) !important;
+}
+
+[data-theme='light'] .portalMain tr.compareSelected td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-forest-ink);
+}
+
+/* —— Chips & badges —— */
+[data-theme='light'] .portalMain .screeningChip,
+[data-theme='light'] .portalMain .compareChip,
+[data-theme='light'] .portalMain .pipelineStage,
+[data-theme='light'] .portalMain .hiddenGemBadge {
+  border-radius: var(--radius-badges);
+  font-weight: var(--font-weight-regular);
+}
+
+[data-theme='light'] .portalMain .screeningChip {
+  background: var(--color-linen-white);
+  border-color: var(--color-hairline-gray);
+  color: var(--color-charcoal);
+}
+
+[data-theme='light'] .portalMain .screeningChip.active {
+  background: var(--color-mist-blue);
+  border-color: var(--color-mist-blue);
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalMain .compareToolbar {
+  background: var(--color-mint-veil);
+  border-color: var(--color-hairline-gray);
+}
+
+[data-theme='light'] .portalMain .compareChip {
+  background: var(--color-mist-blue);
+  border-color: var(--color-hairline-gray);
+  color: var(--color-forest-ink);
+}
+
+/* —— Hub tiles —— */
+[data-theme='light'] .portalMain .screeningHubTile,
+[data-theme='light'] .portalMain .candidateBucketTile {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-cards);
+}
+
+[data-theme='light'] .portalMain .screeningHubTile:hover,
+[data-theme='light'] .portalMain .candidateBucketTile:hover {
+  border-color: var(--color-forest-ink);
+  background: var(--color-linen);
+}
+
+[data-theme='light'] .portalMain .screeningHubTileIcon {
+  border-radius: var(--radius-nav);
+}
+
+[data-theme='light'] .portalMain .screeningHubTileIcon.blue,
+[data-theme='light'] .portalMain .screeningHubTileIcon.purple,
+[data-theme='light'] .portalMain .screeningHubTileIcon.green,
+[data-theme='light'] .portalMain .screeningHubTileIcon.amber,
+[data-theme='light'] .portalMain .candidateBucketTileIcon.green,
+[data-theme='light'] .portalMain .candidateBucketTileIcon.amber,
+[data-theme='light'] .portalMain .candidateBucketTileIcon.red {
+  background: var(--color-mist-blue) !important;
+  color: var(--color-forest-ink) !important;
+}
+
+/* —— Candidate hero —— */
+[data-theme='light'] .candidateHero {
+  background: var(--color-sage-wash) !important;
+  color: var(--color-forest-ink) !important;
+  border-radius: var(--radius-cards);
+  border: 1px solid var(--color-hairline-gray);
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .candidateHero h1,
+[data-theme='light'] .candidateHero .candidateMeta,
+[data-theme='light'] .candidateHero .muted {
+  color: var(--color-forest-ink) !important;
+}
+
+[data-theme='light'] .candidateHero .backLink {
+  color: var(--color-charcoal);
+}
+
+[data-theme='light'] .candidateHero .backLink:hover {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .candidateHero .scoreExplainBox {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  color: var(--color-charcoal);
+}
+
+[data-theme='light'] .candidateHero .scoreExplainBox strong,
+[data-theme='light'] .candidateHero .scoreExplainBox em {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .candidateHero .pipelineBar {
+  border-top-color: rgba(15, 62, 23, 0.15);
+}
+
+[data-theme='light'] .candidateHero .pipelineBar .btn {
+  background: var(--color-forest-ink) !important;
+  border: 1px solid var(--color-forest-ink) !important;
+  color: var(--color-linen-white) !important;
+}
+
+[data-theme='light'] .candidateHero .pipelineBar .btn.outline,
+[data-theme='light'] .candidateHero .pipelineBar .btn.ghost {
+  background: transparent !important;
+  border: 1px solid var(--color-forest-ink) !important;
+  color: var(--color-forest-ink) !important;
+}
+
+[data-theme='light'] .candidateHero .pipelineBar .btn:hover:not(:disabled) {
+  background: #0a3211 !important;
+  color: var(--color-linen-white) !important;
+}
+
+[data-theme='light'] .candidateHero .pipelineBar .btn.outline:hover:not(:disabled),
+[data-theme='light'] .candidateHero .pipelineBar .btn.ghost:hover:not(:disabled) {
+  background: var(--color-linen-white) !important;
+  color: var(--color-forest-ink) !important;
+}
+
+[data-theme='light'] .candidateHero .pipelineBar .btn.danger.outline {
+  background: transparent !important;
+  border-color: #a33 !important;
+  color: #8b2e2e !important;
+}
+
+[data-theme='light'] .heroMetric {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-cards);
+}
+
+[data-theme='light'] .heroMetricLabel {
+  color: var(--color-charcoal);
+}
+
+[data-theme='light'] .heroMetricValue,
+[data-theme='light'] .heroRecText {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .heroScore {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+}
+
+[data-theme='light'] .heroScore span {
+  color: var(--color-charcoal);
+}
+
+/* —— Dashboard —— */
+[data-theme='light'] .portalMain .widgetHead a {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .portalMain .funnelMeta strong,
+[data-theme='light'] .portalMain .chartDonutCenter {
+  color: var(--color-forest-ink);
+}
+
+/* —— Forms —— */
+[data-theme='light'] .portalMain .formGroup input,
+[data-theme='light'] .portalMain .formGroup textarea,
+[data-theme='light'] .portalMain .formGroup select,
+[data-theme='light'] .portalMain .filters select {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-nav);
+  color: var(--color-true-black);
+}
+
+[data-theme='light'] .portalMain .formGroup input:focus,
+[data-theme='light'] .portalMain .formGroup textarea:focus,
+[data-theme='light'] .portalMain .formGroup select:focus {
+  outline: 2px solid var(--color-forest-ink);
+  outline-offset: 1px;
+  border-color: var(--color-forest-ink);
+}
+
+/* —— Tags —— */
+[data-theme='light'] .portalMain .expIntelTag,
+[data-theme='light'] .portalMain .widgetHead .expIntelTag {
+  display: inline-block;
+  background: var(--color-mist-blue);
+  color: var(--color-forest-ink);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-regular);
+  padding: var(--spacing-7) var(--spacing-14);
+  border-radius: var(--radius-badges);
+  margin-bottom: var(--spacing-14);
+}
+
+/* —— Intelligence panels —— */
+[data-theme='light'] .portalMain .expIntelPanel {
+  background: var(--color-mint-veil) !important;
+  border: 1px solid var(--color-hairline-gray) !important;
+  box-shadow: none !important;
+}
+
+[data-theme='light'] .portalMain .intelReport,
+[data-theme='light'] .portalMain .dashWidget--expIntel {
+  border-color: var(--color-hairline-gray);
+}
+
+/* —— Links —— */
+[data-theme='light'] .portalMain .linkBtn,
+[data-theme='light'] .portalMain a {
+  color: var(--color-forest-ink);
+}
+
+/* —— Compare —— */
+[data-theme='light'] .portalMain .compareCell--best {
+  background: var(--color-mint-veil) !important;
+}
+
+[data-theme='light'] .portalMain .compareCell--best strong {
+  color: var(--color-forest-ink) !important;
+}
+
+[data-theme='light'] .compareScore {
+  color: var(--color-forest-ink);
+}
+
+[data-theme='light'] .compareSelected {
+  background: var(--color-mint-veil);
+}
+
+/* —— Global card (outside portal shell) —— */
+[data-theme='light'] .card {
+  background: var(--color-linen-white);
+  border: 1px solid var(--color-hairline-gray);
+  border-radius: var(--radius-cards);
+  box-shadow: none;
+}
+
+/* —— Auth —— */
+[data-theme='light'] .authPage {
+  background: var(--color-linen-white) !important;
+}
+
+[data-theme='light'] .authCard {
+  background: var(--color-linen-white) !important;
+  border: 1px solid var(--color-hairline-gray);
+  box-shadow: none !important;
+}

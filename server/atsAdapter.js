@@ -9,6 +9,7 @@ export function normalizeAtsPayload(provider, body) {
     name: candidate.name || `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim(),
     email: candidate.email || candidate.email_addresses?.[0]?.value,
     job_external_id: body.job_id || body.requisition_id || candidate.job_id,
+    source: candidate.source || body.source || body.application?.source,
     stage: body.stage || candidate.stage || 'applied',
     raw: body,
   };

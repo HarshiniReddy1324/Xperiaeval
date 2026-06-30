@@ -84,7 +84,8 @@ export function RubricBuilder() {
       <div className="pageHead">
         <h1>Create questionnaire</h1>
         <p>
-          Build 7 required + 3 optional questions. Saving creates a template and adds new questions to your library.
+          Add as many questions as you need — points are split evenly to total 100. Saving creates a template and
+          syncs new questions to your library.
         </p>
       </div>
 
@@ -119,8 +120,9 @@ export function RubricBuilder() {
           rows={2}
         />
         <p className="muted">
-          Progress: {counts.mandatory}/7 required · {counts.optional}/3 optional
-          {!counts.valid && ' — adjust priorities to match'}
+          {counts.total} question{counts.total === 1 ? '' : 's'} · {counts.mandatoryPts} required pts ·{' '}
+          {counts.optionalPts} optional pts · 100 total
+          {!counts.valid && ' — complete every question name and text'}
         </p>
       </Card>
 
@@ -129,9 +131,9 @@ export function RubricBuilder() {
       </Card>
 
       <Card className="mb">
-        <h2>Attach to job (optional)</h2>
+        <h2>Attach to position (optional)</h2>
         <p className="muted">Apply this questionnaire to a position immediately after saving.</p>
-        <select value={attachJobId} onChange={(e) => setAttachJobId(e.target.value)} aria-label="Attach to job">
+        <select value={attachJobId} onChange={(e) => setAttachJobId(e.target.value)} aria-label="Attach to position">
           <option value="">Save template only</option>
           {jobs.map((j) => (
             <option key={j.id} value={j.id}>
@@ -150,7 +152,7 @@ export function RubricBuilder() {
         </Button>
         {attachJobId && (
           <Button variant="outline" onClick={() => save(true)} disabled={saving}>
-            Save & apply to job
+            Save & apply to position
           </Button>
         )}
         <Link to="/rubrics/library">

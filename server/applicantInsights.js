@@ -241,7 +241,7 @@ function generateInsights({ total, last24Hours, avgResumeScore, seniority, educa
   } else if (avgResumeScore >= 65) {
     insights.push({ type: 'neutral', text: 'Solid applicant quality — scores trending competitive' });
   } else if (avgResumeScore > 0 && avgResumeScore < 50) {
-    insights.push({ type: 'alert', text: 'Below-average match scores — consider refining job requirements' });
+    insights.push({ type: 'alert', text: 'Below-average match scores — consider refining position requirements' });
   }
 
   const topSeniority = seniority[0];
@@ -304,7 +304,7 @@ export function buildApplicantInsights(db, orgId, jobId) {
       seniority: [],
       education: [],
       topSkills: [],
-      insights: [{ type: 'neutral', text: 'Create a job posting to start collecting applicant insights' }],
+      insights: [{ type: 'neutral', text: 'Create a position posting to start collecting candidate insights' }],
       greenPct: 0,
     };
   }

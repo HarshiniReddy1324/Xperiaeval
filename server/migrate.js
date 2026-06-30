@@ -10,6 +10,8 @@ import { DEFAULT_INTELLIGENCE_THRESHOLDS } from './scoringThresholds.js';
 import { DEFAULT_PROCTORING_POLICY } from './proctoring.js';
 import { patchIntelligenceJsonScores } from './candidateIntelligence.js';
 import { backfillApplicationKeystrokes } from './keystrokeProfile.js';
+import { ensureApiKeysTable } from './apiKeys.js';
+import { ensureIntelligenceEvaluationsTable } from './intelligenceApi.js';
 
 const DEFAULT_NOTICE =
   'Your application will be evaluated using structured rubrics. Automated scores are advisory only; a human reviewer makes all hiring decisions.';
@@ -47,12 +49,16 @@ export function runSchemaMigrations() {
   addColumn('organizations', 'intelligence_thresholds_json', 'TEXT');
   addColumn('organizations', 'dei_blind_until_shortlist', 'INTEGER DEFAULT 1');
   addColumn('organizations', 'proctoring_policy_json', 'TEXT');
+  addColumn('organizations', 'product_mode', "TEXT DEFAULT 'both'");
+  addColumn('organizations', 'embed_allowed_origins', "TEXT DEFAULT '*'");
   addColumn('applications', 'submitter_ip', 'TEXT');
   addColumn('applications', 'proctoring_failed', 'INTEGER DEFAULT 0');
   addColumn('applications', 'proctoring_score', 'INTEGER');
   addColumn('applications', 'hidden_gem', 'INTEGER DEFAULT 0');
   addColumn('applications', 'follow_up_json', 'TEXT');
   addColumn('applications', 'experience_mismatch', 'INTEGER DEFAULT 0');
+  addColumn('applications', 'external_id', 'TEXT');
+  addColumn('applications', 'external_provider', 'TEXT');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS question_pool (
@@ -76,6 +82,8 @@ export function runSchemaMigrations() {
   addColumn('jobs', 'posting_json', 'TEXT');
   addColumn('jobs', 'deleted_at', 'TEXT');
   addColumn('jobs', 'position_level', "TEXT DEFAULT 'entry'");
+  addColumn('jobs', 'external_id', 'TEXT');
+  addColumn('jobs', 'external_provider', 'TEXT');
 
   const demoLevelByJobId = {
     'JOB-INTERN-001': 'internship',
@@ -343,6 +351,9 @@ export function runSchemaMigrations() {
       sort_order INTEGER DEFAULT 0
     );
   `);
+
+  ensureApiKeysTable(db);
+  ensureIntelligenceEvaluationsTable(db);
 }
 
 export function runDataMigrations() {
@@ -550,6 +561,7 @@ function seedAtsIntegrationStub() {
   db.prepare(
     `UPDATE ats_integrations SET writeback_url = COALESCE(writeback_url, ?) WHERE id = 'ats-demo'`
   ).run('http://127.0.0.1:3001/api/integrations/ats/writeback-receiver');
+  db.prepare(`UPDATE organizations SET product_mode = 'both' WHERE product_mode IS NULL OR product_mode = ''`).run();
 }
 
 function seedInterviewRubricsForJobs() {

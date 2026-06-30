@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Library, Search, Check, Sparkles, Plus, Download, Upload } from 'lucide-react';
 import { api } from '../api/client';
 import { Button, Card } from './ui';
-import { CATEGORY_TYPES } from '../lib/rubricConstants';
+import { CATEGORY_TYPES, MIN_RUBRIC_QUESTIONS } from '../lib/rubricConstants';
 
 export function QuestionPoolBrowser({
   mode = 'browse',
@@ -68,13 +68,13 @@ export function QuestionPoolBrowser({
   };
 
   const applyToJob = async () => {
-    if (!jobId || selected.size < 10) {
-      setError('Select at least 10 questions');
+    if (!jobId || selected.size < MIN_RUBRIC_QUESTIONS) {
+      setError(`Select at least ${MIN_RUBRIC_QUESTIONS} question`);
       return;
     }
     if (rubricApproved) {
       const ok = window.confirm(
-        `Rubric v${rubricVersion} is approved and live. Applying creates a new draft. Continue?`
+        `Screening v${rubricVersion} is approved and live. Applying creates a new draft. Continue?`
       );
       if (!ok) return;
     }
@@ -87,7 +87,7 @@ export function QuestionPoolBrowser({
       });
       onApplied?.(res);
       setSelected(new Set());
-      setMsg('Questions applied to job');
+      setMsg('Questions applied to position');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -96,8 +96,8 @@ export function QuestionPoolBrowser({
   };
 
   const buildTemplate = async () => {
-    if (selected.size < 10) {
-      setError('Select at least 10 questions to build a template');
+    if (selected.size < MIN_RUBRIC_QUESTIONS) {
+      setError(`Select at least ${MIN_RUBRIC_QUESTIONS} question to build a template`);
       return;
     }
     if (!templateName.trim()) {
@@ -173,50 +173,59 @@ export function QuestionPoolBrowser({
           <Library size={20} /> Question library
         </h2>
         <p className="muted">
-          Browse questions by department. Select 10+ to apply to a job or save as a template.
+          Browse questions by department. Select one or more to apply to a position or save as a template.
         </p>
       </div>
 
       {rubricApproved && jobId && (
         <div className="poolApprovedNotice">
-          <strong>Rubric v{rubricVersion} is approved and live.</strong>
+          <strong>Screening v{rubricVersion} is approved and live.</strong>
           <p>Applying selection creates a new draft version.</p>
         </div>
       )}
 
       <div className="poolFilters">
-        <select value={department} onChange={(e) => setDepartment(e.target.value)}>
-          {(meta.departments || []).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <select value={level} onChange={(e) => setLevel(e.target.value)}>
-          {(meta.levels || []).map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </select>
-        <div className="poolSearch">
-          <Search size={16} />
-          <input placeholder="Search questions…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <div className="poolFiltersSelects">
+          <select value={department} onChange={(e) => setDepartment(e.target.value)} aria-label="Department">
+            {(meta.departments || []).map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+          <select value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Experience level">
+            {(meta.levels || []).map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
         </div>
-        <Button variant="outline" className="small" onClick={() => setShowAdd((v) => !v)}>
-          <Plus size={14} /> Add question
-        </Button>
-        {showImportExport && (
-          <>
-            <Button variant="outline" className="small" onClick={exportLibrary}>
-              <Download size={14} /> Export
-            </Button>
-            <label className="btn outline small poolImportBtn">
-              <Upload size={14} /> Import
-              <input type="file" accept=".json" onChange={importLibrary} hidden />
-            </label>
-          </>
-        )}
+        <div className="poolSearch">
+          <Search size={16} aria-hidden />
+          <input
+            placeholder="Search questions…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search questions"
+          />
+        </div>
+        <div className="poolFiltersActions">
+          <Button variant="outline" className="small" onClick={() => setShowAdd((v) => !v)}>
+            <Plus size={14} /> Add question
+          </Button>
+          {showImportExport && (
+            <>
+              <Button variant="outline" className="small" onClick={exportLibrary}>
+                <Download size={14} /> Export
+              </Button>
+              <label className="btn outline small poolImportBtn">
+                <Upload size={14} /> Import
+                <input type="file" accept=".json" onChange={importLibrary} hidden />
+              </label>
+            </>
+          )}
+        </div>
       </div>
 
       {showAdd && (
@@ -259,7 +268,9 @@ export function QuestionPoolBrowser({
 
       <p className="poolSelectionCount">
         <Sparkles size={14} /> {selected.size} selected
-        {selected.size >= 10 ? ' — ready' : ` (need ${10 - selected.size} more for template/apply)`}
+        {selected.size >= MIN_RUBRIC_QUESTIONS
+          ? ' — ready'
+          : ` (select at least ${MIN_RUBRIC_QUESTIONS})`}
       </p>
 
       {loading ? (
@@ -301,8 +312,8 @@ export function QuestionPoolBrowser({
       )}
 
       {mode === 'job' && jobId && (
-        <Button onClick={applyToJob} disabled={applying || selected.size < 10}>
-          {applying ? 'Applying…' : `Apply ${selected.size} questions to this job`}
+        <Button onClick={applyToJob} disabled={applying || selected.size < MIN_RUBRIC_QUESTIONS}>
+          {applying ? 'Applying…' : `Apply ${selected.size} questions to this position`}
         </Button>
       )}
 
@@ -314,7 +325,7 @@ export function QuestionPoolBrowser({
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
           />
-          <Button onClick={buildTemplate} disabled={applying || selected.size < 10}>
+          <Button onClick={buildTemplate} disabled={applying || selected.size < MIN_RUBRIC_QUESTIONS}>
             {applying ? 'Saving…' : 'Build template from selection'}
           </Button>
         </div>

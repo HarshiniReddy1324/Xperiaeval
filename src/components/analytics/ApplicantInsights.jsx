@@ -18,13 +18,13 @@ function InsightsEmpty({ onJobChange, jobs }) {
     <div className="insightsEmpty">
       <Users size={32} strokeWidth={1.5} />
       <h3>No applicants yet</h3>
-      <p>Share your job apply link to populate seniority, education, and skill insights.</p>
+      <p>Share your position apply link to populate seniority, education, and skill insights.</p>
       {jobs?.length > 0 && (
         <label className="insightsJobSelect">
           <span>Position</span>
           <select onChange={(e) => onJobChange(e.target.value)} defaultValue="">
             <option value="" disabled>
-              Select a job
+              Select a position
             </option>
             {jobs.map((j) => (
               <option key={j.id} value={j.id}>

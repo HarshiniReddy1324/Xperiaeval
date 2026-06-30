@@ -1,8 +1,8 @@
 export const MAIN_NAV_ITEMS = [
   { path: '/', label: 'Dashboard', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
-  { path: '/jobs', label: 'Jobs', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter'] },
+  { path: '/jobs', label: 'Positions', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter'] },
   { path: '/candidates', label: 'Candidates', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter', 'Compliance Auditor'] },
-  { path: '/rubrics', label: 'Rubrics', roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
+  { path: '/rubrics', label: 'Screening', roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
   { path: '/audit', label: 'Audit', roles: ['Admin', 'Compliance Auditor', 'Recruiter'] },
   { path: '/reports', label: 'Reports', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
   { path: '/integrations', label: 'Integrations', roles: ['Admin', 'Recruiter'] },

@@ -57,8 +57,9 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const { token, user: u } = await auth.register(data);
     setToken(token);
-    setUser(u);
-    return u;
+    const full = await auth.me().catch(() => u);
+    setUser(full);
+    return full;
   };
 
   const logout = () => {
@@ -66,8 +67,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    const full = await auth.me();
+    setUser(full);
+    return full;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, authError, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, authError, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

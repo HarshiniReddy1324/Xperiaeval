@@ -2,6 +2,7 @@ import { parseKeywords, keywordMatchScore } from './screening.js';
 import { evaluateAnswerTiming } from './responseTiming.js';
 import { mergeAnswerTextForScoring } from './audioTranscription.js';
 import { analyzeAnswerQuality, zeroScoreReason } from './answerQuality.js';
+import { rubricScoreCaps, weightedQuestionPoints } from './rubricWeights.js';
 
 function wordCount(text) {
   return (text || '').trim().split(/\s+/).filter(Boolean).length;
@@ -103,50 +104,69 @@ export function scoreApplication({ answers, categories, greenThreshold = 80, amb
   const perQuestion = [];
   let mandatoryPoints = 0;
   let optionalPoints = 0;
+  const caps = rubricScoreCaps(categories);
 
   for (const cat of categories) {
     const answer = answers.find((a) => a.category_id === cat.id);
     const scored = scoreQuestionAnswer({ answer, category: cat });
     const isOptional = cat.priority === 'optional';
+    const weight = Number(cat.weight) || 0;
+    const points = weightedQuestionPoints(scored.points, scored.max, weight);
     perQuestion.push({
       category_id: cat.id,
       name: cat.name,
       priority: cat.priority || 'mandatory',
       question: cat.question,
+      weight,
       ...scored,
+      points,
+      max: weight,
     });
-    if (isOptional) optionalPoints += scored.points;
-    else mandatoryPoints += scored.points;
+    if (isOptional) optionalPoints += points;
+    else mandatoryPoints += points;
   }
 
-  const overall = mandatoryPoints + optionalPoints;
+  const overall = Math.round((mandatoryPoints + optionalPoints) * 10) / 10;
   const bucket =
     overall >= greenThreshold ? 'Green' : overall >= amberThreshold ? 'Amber' : 'Red';
 
   let explanation = '';
   if (bucket === 'Green') {
-    explanation = `Strong application score (${mandatoryPoints}/70 mandatory, ${optionalPoints}/30 optional). Answers show specific evidence aligned with role expectations.`;
+    explanation = `Strong application score (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Answers show specific evidence aligned with role expectations.`;
   } else if (bucket === 'Amber') {
-    explanation = `Mixed fit (${mandatoryPoints}/70 mandatory, ${optionalPoints}/30 optional). Human review recommended before advancing.`;
+    explanation = `Mixed fit (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Human review recommended before advancing.`;
   } else {
-    explanation = `Below threshold (${mandatoryPoints}/70 mandatory, ${optionalPoints}/30 optional). Still visible for human review — scores are advisory.`;
+    explanation = `Below threshold (${mandatoryPoints}/${caps.mandatory_max} required, ${optionalPoints}/${caps.optional_max} optional). Still visible for human review — scores are advisory.`;
   }
+
+  const mandatoryCount = categories.filter((c) => (c.priority || 'mandatory') !== 'optional').length;
+  const optionalCount = categories.filter((c) => c.priority === 'optional').length;
 
   return {
     overall,
     bucket,
     tier: bucket === 'Green' ? 'Top Tier' : bucket === 'Amber' ? 'Second Tier' : 'Low Match',
-    mandatory_points: mandatoryPoints,
-    optional_points: optionalPoints,
-    mandatory_max: 70,
-    optional_max: 30,
+    mandatory_points: Math.round(mandatoryPoints * 10) / 10,
+    optional_points: Math.round(optionalPoints * 10) / 10,
+    mandatory_max: caps.mandatory_max,
+    optional_max: caps.optional_max,
     per_question: perQuestion,
     explanation,
     risk: overall >= 80 ? 'Low' : overall >= 60 ? 'Medium' : 'High',
     status: bucket === 'Green' ? 'Ready for hiring team' : bucket === 'Amber' ? 'Needs reviewer note' : 'Do not auto-reject',
     breakdown: [
-      { dimension: 'Mandatory questions', score: mandatoryPoints, weight: '70 pts', formula: '7 × 10 pts each' },
-      { dimension: 'Optional questions', score: optionalPoints, weight: '30 pts', formula: '3 × 10 pts each' },
+      {
+        dimension: 'Required questions',
+        score: Math.round(mandatoryPoints * 10) / 10,
+        weight: `${caps.mandatory_max} pts`,
+        formula: `${mandatoryCount} question${mandatoryCount === 1 ? '' : 's'}`,
+      },
+      {
+        dimension: 'Optional questions',
+        score: Math.round(optionalPoints * 10) / 10,
+        weight: `${caps.optional_max} pts`,
+        formula: `${optionalCount} question${optionalCount === 1 ? '' : 's'}`,
+      },
     ],
     thresholds: { green: greenThreshold, amber: amberThreshold },
   };
@@ -158,7 +178,7 @@ export function getMethodology() {
     scale: '0–100',
     formula:
       'Weighted dimensions: Technical 30%, Problem Solving 20%, Communication 10%, Ownership 10%, Authenticity 10%, Resume Consistency 10%, Behavioral Confidence 10%',
-    legacy_formula: '70 mandatory + 30 optional question points (retained for audit)',
+    legacy_formula: 'Required + optional question points totaling 100 (weight split across configured questions)',
     scoring_note:
       'Multi-dimensional evaluation per answer (not correct/incorrect). Groq AI refines scores when GROQ_API_KEY is set. Tab switches are context-only.',
     buckets: {

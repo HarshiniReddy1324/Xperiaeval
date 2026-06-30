@@ -23,35 +23,15 @@ const KPI_ICONS = {
   red: ShieldAlert,
 };
 
-function buildApplicantBuckets(analytics = {}) {
-  if (analytics.applicantBuckets?.length) {
-    return analytics.applicantBuckets;
-  }
-  const scored = analytics.pipeline?.scored ?? 0;
-  if (!scored) return [];
-  const health = analytics.hiringHealth || {};
-  const green = Math.round(((health.healthy_pct ?? 0) / 100) * scored);
-  const amber = Math.round(((health.at_risk_pct ?? 0) / 100) * scored);
-  const red = Math.max(0, scored - green - amber);
-  const pct = (n) => Math.round((n / scored) * 100);
+function buildExperienceIntelBuckets(data = {}) {
+  const total = data.scored_count ?? 0;
+  const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
   return [
-    { label: 'Green', value: green, pct: pct(green), color: '#22c55e', bucket: 'Green' },
-    { label: 'Amber', value: amber, pct: pct(amber), color: '#f59e0b', bucket: 'Amber' },
-    { label: 'Red', value: red, pct: pct(red), color: '#ef4444', bucket: 'Red' },
+    { label: 'Elite', value: data.elite_candidates ?? 0, pct: pct(data.elite_candidates ?? 0), color: '#14532d', to: '/candidates?bucket=Green' },
+    { label: 'Strong match', value: data.strong_match ?? 0, pct: pct(data.strong_match ?? 0), color: '#22c55e', to: '/candidates?bucket=Green' },
+    { label: 'Needs review', value: data.needs_review ?? 0, pct: pct(data.needs_review ?? 0), color: '#f59e0b', to: '/candidates?bucket=Amber' },
+    { label: 'Elevated risk', value: data.high_risk ?? 0, pct: pct(data.high_risk ?? 0), color: '#ef4444', to: '/candidates?bucket=Red' },
   ];
-}
-
-function buildBucketMeta(analytics = {}) {
-  if (analytics.applicantBucketsMeta) {
-    return analytics.applicantBucketsMeta;
-  }
-  const scored = analytics.pipeline?.scored ?? 0;
-  const total = analytics.pipeline?.applied ?? 0;
-  return {
-    scored,
-    total_applicants: total,
-    unscored: Math.max(0, total - scored),
-  };
 }
 
 function normalizeFunnel(raw = {}) {
@@ -95,8 +75,8 @@ export function Dashboard() {
   const perf = analytics.recruiterPerformance || {};
   const hiddenGemCount = analytics.hiddenGems ?? 0;
   const visibleJobs = jobTable.slice(0, 5);
-  const applicantBuckets = buildApplicantBuckets(analytics);
-  const bucketMeta = buildBucketMeta(analytics);
+  const experienceIntel = analytics.experienceIntelligence || {};
+  const experienceBuckets = buildExperienceIntelBuckets(experienceIntel);
 
   const funnelStages = [
     { label: 'Applied', value: pipeline.applied ?? 0, to: '/candidates' },
@@ -124,7 +104,7 @@ export function Dashboard() {
     },
     {
       id: 'browser',
-      color: '#3b82f6',
+      color: '#60a5fa',
       value: alerts.browser_switches ?? 0,
       to: '/candidates?integrity=flagged',
       labels: ['Browser switches'],
@@ -178,49 +158,47 @@ export function Dashboard() {
       </section>
 
       <section className="dashRow3">
-        <div className="dashWidget dashWidget--quality">
+        <div className="dashWidget dashWidget--quality dashWidget--expIntel">
           <div className="widgetHead">
-            <h2>Applicant quality</h2>
-            <Link to="/candidates" state={FROM_DASHBOARD}>View all</Link>
+            <h2>Experience Intelligence</h2>
+            <Link to="/reports" state={FROM_DASHBOARD}>Analytics</Link>
           </div>
-          {bucketMeta.scored > 0 ? (
+          {(experienceIntel.scored_count ?? 0) > 0 ? (
             <DonutChart
-              segments={applicantBuckets}
+              segments={experienceBuckets}
               size={180}
               stroke={36}
-              centerSub="scored"
+              centerSub="evaluated"
               showLegendPct={false}
               hideTrack
               legendClassName="chartDonut--quality"
-              onSegmentClick={(seg) =>
-                seg.bucket && navigate(`/candidates?bucket=${seg.bucket}`, { state: FROM_DASHBOARD })
-              }
+              onSegmentClick={(seg) => seg.to && navigate(seg.to, { state: FROM_DASHBOARD })}
             />
           ) : (
             <p className="muted dashEmptyChart">
-              No scored applicants in this period yet. Share apply links to start screening.
+              No evaluated candidates in this period. Publish apply links to begin screening.
             </p>
           )}
         </div>
 
         <div className="dashWidget">
           <div className="widgetHead">
-            <h2>Hiring Pipeline</h2>
+            <h2>Pipeline</h2>
             <Link to="/candidates" state={FROM_DASHBOARD}>View all</Link>
           </div>
           <FunnelChart stages={funnelStages} onStageClick={(to) => navigate(to, { state: FROM_DASHBOARD })} />
           <p className="funnelMeta">
-            Conversion Rate: <strong>{analytics.conversionRate ?? 0}%</strong>
+            Hire rate: <strong>{analytics.conversionRate ?? 0}%</strong>
           </p>
         </div>
 
         <div className="dashWidget dashWidget--health">
           <div className="widgetHead">
-            <h2>Hiring Health</h2>
+            <h2>Hiring health</h2>
           </div>
           <GaugeChart
             score={health.score ?? 0}
-            label={`${health.label ?? '—'} · Overall Health`}
+            label={`${health.label ?? '—'} · Overall health`}
             healthy={health.healthy_pct ?? 0}
             atRisk={health.at_risk_pct ?? 0}
             critical={health.critical_pct ?? 0}
@@ -232,7 +210,7 @@ export function Dashboard() {
       <section className="dashRowBottom">
         <div className="dashWidget dashWidgetWide dashWidgetTable">
           <div className="widgetHead widgetHead--tight">
-            <h2>Positions At A Glance</h2>
+            <h2>Open positions</h2>
             <Link to="/jobs" state={FROM_DASHBOARD}>View all</Link>
           </div>
           <div className="posTableWrap">
@@ -244,7 +222,7 @@ export function Dashboard() {
                     Status
                     <span
                       className="tableHint"
-                      title="Status reflects job workflow stage: Draft → Delayed, Open → About to Start, Screening/Review/Interviewing → In Progress. Filled only when a hire is recorded."
+                      title="Status reflects position workflow stage: Draft → Delayed, Open → About to Start, Screening/Review/Interviewing → In Progress. Filled only when a hire is recorded."
                     >
                       ⓘ
                     </span>
@@ -285,7 +263,7 @@ export function Dashboard() {
                 {!visibleJobs.length && (
                   <tr>
                     <td colSpan={7} className="posTableEmpty">
-                      No positions yet — create a job posting to get started.
+                      No positions yet — create your first position to get started.
                     </td>
                   </tr>
                 )}
@@ -303,15 +281,15 @@ export function Dashboard() {
               disabled={hiddenGemCount === 0}
               title={
                 hiddenGemCount > 0
-                  ? `View ${hiddenGemCount} hidden gem candidate${hiddenGemCount === 1 ? '' : 's'}`
-                  : 'No hidden gem candidates in this period'
+                  ? `View ${hiddenGemCount} standout candidate${hiddenGemCount === 1 ? '' : 's'}`
+                  : 'No standout candidates in this period'
               }
             >
               <div>
-                <span className="kpiLabel">Hidden gems</span>
+                <span className="kpiLabel">Standout candidates</span>
                 <strong>{hiddenGemCount}</strong>
                 <small>
-                  {hiddenGemCount > 0 ? 'Strong fit beyond resume' : 'None in this period'}
+                  {hiddenGemCount > 0 ? 'Strong fit beyond the resume' : 'None in this period'}
                 </small>
               </div>
               <div className="kpiTileIcon amber">

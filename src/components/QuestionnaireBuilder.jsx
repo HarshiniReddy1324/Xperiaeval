@@ -1,15 +1,37 @@
 import React from 'react';
-import { CATEGORY_TYPES, PRIORITIES, RESPONSE_TYPES } from '../lib/rubricConstants';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from './ui';
+import {
+  CATEGORY_TYPES,
+  PRIORITIES,
+  RESPONSE_TYPES,
+  createEmptyQuestion,
+  distributeWeights,
+  MAX_RUBRIC_QUESTIONS,
+  MIN_RUBRIC_QUESTIONS,
+} from '../lib/rubricConstants';
 
 export function QuestionnaireBuilder({ questions, onChange, compact = false }) {
+  const weights = distributeWeights(questions.length);
+
   const update = (index, field, value) => {
     const next = [...questions];
     next[index] = {
       ...next[index],
       [field]:
-        field === 'weight' || field === 'max_response_seconds' ? Number(value) : value,
+        field === 'max_response_seconds' ? Number(value) : value,
     };
     onChange(next);
+  };
+
+  const addQuestion = () => {
+    if (questions.length >= MAX_RUBRIC_QUESTIONS) return;
+    onChange([...questions, createEmptyQuestion('mandatory')]);
+  };
+
+  const removeQuestion = (index) => {
+    if (questions.length <= MIN_RUBRIC_QUESTIONS) return;
+    onChange(questions.filter((_, i) => i !== index));
   };
 
   return (
@@ -18,8 +40,18 @@ export function QuestionnaireBuilder({ questions, onChange, compact = false }) {
         <div className={`rubricEdit screeningEdit${compact ? ' screeningEdit--compact' : ''}`} key={q.id || i}>
           <div className="questionSlotHead">
             <span className={`questionSlotBadge ${q.priority === 'optional' ? 'optional' : 'mandatory'}`}>
-              {i + 1} · {q.priority === 'optional' ? 'Optional' : 'Required'}
+              Question {i + 1} · {weights[i]} pts
             </span>
+            {questions.length > MIN_RUBRIC_QUESTIONS && (
+              <button
+                type="button"
+                className="questionSlotRemove"
+                onClick={() => removeQuestion(i)}
+                aria-label={`Remove question ${i + 1}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </div>
           <input
             value={q.name}
@@ -84,6 +116,17 @@ export function QuestionnaireBuilder({ questions, onChange, compact = false }) {
           />
         </div>
       ))}
+      {questions.length < MAX_RUBRIC_QUESTIONS && (
+        <div className="questionnaireBuilderActions">
+          <Button type="button" variant="outline" onClick={addQuestion}>
+            <Plus size={16} /> Add question
+          </Button>
+          <p className="muted questionnaireBuilderHint">
+            {questions.length} question{questions.length === 1 ? '' : 's'} · {weights.reduce((s, w) => s + w, 0)}/100
+            points total (split evenly)
+          </p>
+        </div>
+      )}
     </div>
   );
 }

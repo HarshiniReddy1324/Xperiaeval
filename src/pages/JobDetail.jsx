@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Pencil, ExternalLink } from 'lucide-react';
+import { Pencil, ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { api } from '../api/client';
 import { Button, Card } from '../components/ui';
 import { QuestionPoolPicker } from '../components/QuestionPoolPicker';
 import { RubricTemplatePanel } from '../components/RubricTemplatePanel';
-
+import { JobExperienceIntelligence } from '../components/jobs/JobExperienceIntelligence';
 import { returnState } from '../lib/navigation';
+import {
+  distributeWeights,
+  MAX_RUBRIC_QUESTIONS,
+  MIN_RUBRIC_QUESTIONS,
+  validateQuestionnaire,
+} from '../lib/rubricConstants';
 
 const RESPONSE_TYPES = [
   { value: 'text', label: 'Text' },
@@ -15,8 +21,8 @@ const RESPONSE_TYPES = [
 ];
 
 const PRIORITIES = [
-  { value: 'mandatory', label: 'Mandatory (10 pts each)' },
-  { value: 'optional', label: 'Optional (10 pts each)' },
+  { value: 'mandatory', label: 'Required' },
+  { value: 'optional', label: 'Optional' },
 ];
 
 const CATEGORY_TYPES = [
@@ -67,17 +73,41 @@ export function JobDetail() {
     next[index] = {
       ...next[index],
       [field]:
-        field === 'weight' || field === 'max_response_seconds'
+        field === 'max_response_seconds'
           ? Number(value)
           : value,
     };
     setCategories(next);
   };
 
+  const addCategory = () => {
+    if (categories.length >= MAX_RUBRIC_QUESTIONS) return;
+    setCategories([
+      ...categories,
+      {
+        name: '',
+        question: '',
+        ideal_answer: '',
+        keywords: '',
+        category_type: 'General',
+        response_type: 'text',
+        priority: 'mandatory',
+        weight: 0,
+        min_response_seconds: 0,
+        max_response_seconds: 300,
+      },
+    ]);
+  };
+
+  const removeCategory = (index) => {
+    if (categories.length <= MIN_RUBRIC_QUESTIONS) return;
+    setCategories(categories.filter((_, i) => i !== index));
+  };
+
   const saveRubric = async () => {
     if (rubric?.status === 'approved') {
       const ok = window.confirm(
-        `Rubric v${rubric.version} is approved and live. Saving creates draft v${(rubric.version || 0) + 1}. Continue?`
+        `Screening v${rubric.version} is approved and live. Saving creates draft v${(rubric.version || 0) + 1}. Continue?`
       );
       if (!ok) return;
     }
@@ -125,7 +155,7 @@ export function JobDetail() {
     if (
       rubric?.status === 'approved' &&
       !window.confirm(
-        `Create draft v${(rubric.version || 0) + 1} from approved v${rubric.version}? Candidates keep seeing the approved rubric until you approve the new version.`
+        `Create draft v${(rubric.version || 0) + 1} from approved v${rubric.version}? Candidates keep seeing the approved screening until you approve the new version.`
       )
     ) {
       return;
@@ -142,9 +172,20 @@ export function JobDetail() {
 
   if (!job) return <p>Loading…</p>;
 
+  const weights = distributeWeights(categories.length);
+  const rubricValid = !validateQuestionnaire(
+    categories.map((c) => ({
+      name: c.name,
+      question: c.question,
+      priority: c.priority,
+    }))
+  );
   const mandatoryCount = categories.filter((c) => c.priority !== 'optional').length;
   const optionalCount = categories.filter((c) => c.priority === 'optional').length;
-  const rubricValid = mandatoryCount === 7 && optionalCount === 3 && categories.every((c) => c.weight === 10);
+  const mandatoryPts = categories.reduce(
+    (sum, c, i) => sum + (c.priority !== 'optional' ? weights[i] : 0),
+    0
+  );
 
   return (
     <>
@@ -168,21 +209,26 @@ export function JobDetail() {
           </a>
         </div>
       </div>
+      <JobExperienceIntelligence
+        data={job.experienceIntelligence}
+        jobId={id}
+        locationState={returnState(location)}
+      />
       <div className="pageHead sub">
         {rubric?.status === 'approved' ? (
           <div className="rubricStatusRow">
             <p className="success">
-              Screening rubric v{rubric.version} approved ·{' '}
+              Screening v{rubric.version} approved ·{' '}
               <Link to={`/apply/${job.slug}`} target="_blank">
                 Open apply + screening
               </Link>
             </p>
             <Button variant="outline" className="small" onClick={reviseRubric}>
-              Revise rubric (new draft)
+              Revise screening (new draft)
             </Button>
           </div>
         ) : (
-          <p className="warning">Approve rubric before candidates can complete screening.</p>
+          <p className="warning">Approve screening before candidates can complete the questionnaire.</p>
         )}
       </div>
       <QuestionPoolPicker
@@ -225,22 +271,32 @@ export function JobDetail() {
         <Card>
           <h2>Screening question builder</h2>
           <p className="muted">
-            7 mandatory + 3 optional questions (10 points each = 100 total). Candidates see questions only — no timers.
-            Recruiters set an <strong>internal time guideline</strong> per question (not shown to applicants); we flag
-            and lightly penalize scores only when time exceeds the guideline by more than ~2 minutes.
+            Configure any number of questions — points split evenly to 100 total. Candidates see questions only — no
+            timers. Recruiters set an <strong>internal time guideline</strong> per question (not shown to applicants);
+            we flag and lightly penalize scores only when time exceeds the guideline by more than ~2 minutes.
           </p>
           {categories.map((c, i) => (
             <div className="rubricEdit screeningEdit" key={c.id || i}>
+              <div className="questionSlotHead">
+                <span className={`questionSlotBadge ${c.priority === 'optional' ? 'optional' : 'mandatory'}`}>
+                  Question {i + 1} · {weights[i]} pts
+                </span>
+                {categories.length > MIN_RUBRIC_QUESTIONS && (
+                  <button
+                    type="button"
+                    className="questionSlotRemove"
+                    onClick={() => removeCategory(i)}
+                    aria-label={`Remove question ${i + 1}`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
               <input value={c.name} onChange={(e) => updateCategory(i, 'name', e.target.value)} placeholder="Category name" />
               <div className="rubricRow">
-                <input
-                  type="number"
-                  value={c.weight}
-                  onChange={(e) => updateCategory(i, 'weight', e.target.value)}
-                  min={0}
-                  max={100}
-                  title="Weight %"
-                />
+                <span className="rubricPtsBadge" title="Auto-calculated from question count">
+                  {weights[i]} pts
+                </span>
                 <select value={c.response_type} onChange={(e) => updateCategory(i, 'response_type', e.target.value)}>
                   {RESPONSE_TYPES.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -294,26 +350,32 @@ export function JobDetail() {
               <p className="rubricFieldHint muted">The AI matches these terms and concepts in applicant answers when scoring.</p>
             </div>
           ))}
+          {categories.length < MAX_RUBRIC_QUESTIONS && (
+            <Button type="button" variant="outline" onClick={addCategory}>
+              <Plus size={16} /> Add question
+            </Button>
+          )}
           <div className="row">
             <Button onClick={saveRubric} disabled={saving}>
               Save draft
             </Button>
             <Button variant="outline" onClick={approveRubric} disabled={!rubricValid || rubric?.status === 'approved'}>
-              Approve rubric
+              Approve screening
             </Button>
           </div>
           {rubric?.status === 'approved' && (
             <p className="muted">
-              Rubric v{rubric.version} is approved. Use <strong>Revise rubric</strong>, edit below and save, or apply
+              Screening v{rubric.version} is approved. Use <strong>Revise screening</strong>, edit below and save, or apply
               library questions — each creates a new draft you must approve before candidates see changes.
             </p>
           )}
           <p className="muted">
-            Need 7 mandatory + 3 optional (10 pts each). Current: {mandatoryCount} mandatory, {optionalCount} optional.
+            {categories.length} question{categories.length === 1 ? '' : 's'} · {mandatoryCount} required (
+            {mandatoryPts} pts) · {optionalCount} optional ({100 - mandatoryPts} pts) · 100 total
           </p>
         </Card>
         <Card>
-          <h2>Job stats</h2>
+          <h2>Pipeline stats</h2>
           <div className="miniStats inline">
             <span>
               {job.applicants} <small>Applicants</small>

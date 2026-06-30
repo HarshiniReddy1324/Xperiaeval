@@ -5,8 +5,8 @@ export const RESPONSE_TYPES = [
 ];
 
 export const PRIORITIES = [
-  { value: 'mandatory', label: 'Mandatory (10 pts)' },
-  { value: 'optional', label: 'Optional (10 pts)' },
+  { value: 'mandatory', label: 'Required' },
+  { value: 'optional', label: 'Optional' },
 ];
 
 export const CATEGORY_TYPES = [
@@ -20,64 +20,82 @@ export const CATEGORY_TYPES = [
   'General',
 ];
 
+export const MIN_RUBRIC_QUESTIONS = 1;
+export const MAX_RUBRIC_QUESTIONS = 40;
+
 export const SCREENING_HUB_TILES = [
   {
     key: 'new',
     to: '/rubrics/new',
     label: 'Create questionnaire',
-    description: 'Build a full 10-question screening set (7 required + 3 optional)',
+    description: 'Build a custom screening questionnaire for a position.',
     tone: 'blue',
   },
   {
     key: 'templates',
     to: '/rubrics/templates',
     label: 'Saved templates',
-    description: 'Browse, preview, and apply reusable questionnaires',
+    description: 'Browse, preview, and apply reusable questionnaires.',
     tone: 'purple',
   },
   {
     key: 'library',
     to: '/rubrics/library',
     label: 'Question library',
-    description: 'Questions by department — pick, edit, or build a template',
+    description: 'Manage questions by department and role level.',
     tone: 'green',
   },
   {
     key: 'jobs',
     to: '/rubrics/jobs',
-    label: 'Manage by job',
-    description: 'Edit screening rubrics tied to open positions',
+    label: 'Manage by position',
+    description: 'Assign or update screening questionnaires for open positions.',
     tone: 'amber',
   },
 ];
 
-export function emptyQuestionnaireSlots() {
-  return Array.from({ length: 10 }, (_, i) => ({
+export function distributeWeights(count) {
+  if (count < 1) return [];
+  const base = Math.floor(100 / count);
+  const remainder = 100 - base * count;
+  return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+export function createEmptyQuestion(priority = 'mandatory') {
+  return {
     name: '',
-    weight: 10,
+    weight: 0,
     question: '',
     ideal_answer: '',
     expected_evidence: '',
     category_type: 'General',
     response_type: 'text',
-    priority: i < 7 ? 'mandatory' : 'optional',
+    priority,
     max_response_seconds: 300,
     keywords: '',
-    sort_order: i,
-  }));
+    sort_order: 0,
+  };
+}
+
+export function emptyQuestionnaireSlots() {
+  return [createEmptyQuestion('mandatory')];
+}
+
+export function normalizeQuestionnaire(questions) {
+  const weights = distributeWeights(questions.length);
+  return questions.map((q, i) => ({ ...q, weight: weights[i], sort_order: i }));
 }
 
 export function validateQuestionnaire(questions) {
-  const mandatory = questions.filter((q) => q.priority !== 'optional');
-  const optional = questions.filter((q) => q.priority === 'optional');
-  if (mandatory.length !== 7 || optional.length !== 3) {
-    return `Need 7 mandatory + 3 optional (currently ${mandatory.length} + ${optional.length})`;
+  const n = questions.length;
+  if (n < MIN_RUBRIC_QUESTIONS) {
+    return `Add at least ${MIN_RUBRIC_QUESTIONS} question.`;
+  }
+  if (n > MAX_RUBRIC_QUESTIONS) {
+    return `Maximum ${MAX_RUBRIC_QUESTIONS} questions per questionnaire.`;
   }
   if (!questions.every((q) => q.question?.trim() && q.name?.trim())) {
     return 'Every question needs a name and question text';
-  }
-  if (!questions.every((q) => Number(q.weight) === 10)) {
-    return 'Each question must be worth 10 points';
   }
   return null;
 }
@@ -85,5 +103,18 @@ export function validateQuestionnaire(questions) {
 export function questionnaireCounts(questions) {
   const mandatory = questions.filter((q) => q.priority !== 'optional').length;
   const optional = questions.filter((q) => q.priority === 'optional').length;
-  return { mandatory, optional, valid: mandatory === 7 && optional === 3 };
+  const weights = distributeWeights(questions.length);
+  const mandatoryPts = questions.reduce(
+    (sum, q, i) => sum + (q.priority !== 'optional' ? weights[i] : 0),
+    0
+  );
+  const optionalPts = 100 - mandatoryPts;
+  return {
+    mandatory,
+    optional,
+    total: questions.length,
+    mandatoryPts,
+    optionalPts,
+    valid: !validateQuestionnaire(questions),
+  };
 }

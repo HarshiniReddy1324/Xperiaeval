@@ -8,10 +8,12 @@ import { fileURLToPath } from 'url';
 import { db, slugify } from './db.js';
 import { buildCorsMiddleware } from './corsConfig.js';
 import { uploadsDir } from './paths.js';
-import { authMiddleware, signToken, hashPassword, comparePassword, requireRole } from './auth.js';
+import { authMiddleware, signToken, hashPassword, comparePassword, requireRole, createApiKeyMiddleware } from './auth.js';
 import { logAudit } from './audit.js';
 import { scoreApplication, extractResumeText, getMethodology } from './scoring.js';
 import { DEFAULT_RUBRIC_QUESTIONS, validateRubricCategories, rubricRowFromQuestion } from './defaultRubric.js';
+import { normalizeRubricCategories, validateRubricQuestions, MIN_RUBRIC_QUESTIONS } from './rubricWeights.js';
+import { resolveApplicationSource } from './applicationSource.js';
 import {
   parsePostingJson,
   serializePosting,
@@ -32,6 +34,16 @@ import {
   analyzePerAnswerIntegrity,
 } from './screening.js';
 import { buildDashboardAnalytics, buildJobTableRows, buildPositionKpis, sinceFromRange, daysFromRange } from './dashboardAnalytics.js';
+import {
+  summarizeExperienceScores,
+  buildQualityTrend,
+  buildJobExperienceIntelligence,
+  buildReportsExperienceAnalytics,
+} from './experienceAnalytics.js';
+import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
+import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from './apiKeys.js';
+import { runIntelligenceEvaluation, listRecentEvaluations } from './intelligenceApi.js';
+import { resolveJobForAts, upsertApplicationFromAts } from './atsIngest.js';
 import { buildApplicantInsights } from './applicantInsights.js';
 import { buildScreeningAnalytics } from './screeningAnalytics.js';
 import { buildResumeValidation } from './resumeValidation.js';
@@ -130,6 +142,9 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+const apiKeyAuth = createApiKeyMiddleware(db, resolveApiKey);
+const requireHiring = requireOrgProductFeature(db, 'hiring');
+const requireIntelligence = requireOrgProductFeature(db, 'intelligence');
 const PORT = process.env.PORT || 3001;
 
 app.set('trust proxy', 1);
@@ -473,7 +488,7 @@ async function runScoring(applicationId, actorName = 'System') {
 
 // ——— Auth ———
 app.post('/api/auth/register', (req, res) => {
-  const { email, password, name, orgName } = req.body;
+  const { email, password, name, orgName, product_mode } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Email, password, and name are required' });
   }
@@ -482,7 +497,12 @@ app.post('/api/auth/register', (req, res) => {
 
   const orgId = uuid();
   const userId = uuid();
-  db.prepare('INSERT INTO organizations (id, name) VALUES (?, ?)').run(orgId, orgName || `${name}'s Organization`);
+  const mode = normalizeProductMode(product_mode || 'both');
+  db.prepare('INSERT INTO organizations (id, name, product_mode) VALUES (?, ?, ?)').run(
+    orgId,
+    orgName || `${name}'s Organization`,
+    mode
+  );
   db.prepare(
     `INSERT INTO users (id, org_id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?, 'Admin')`
   ).run(userId, orgId, email.toLowerCase(), hashPassword(password), name);
@@ -490,7 +510,19 @@ app.post('/api/auth/register', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   const token = signToken(user);
   logAudit({ orgId, actorId: userId, actorName: name, eventType: 'Organization created', description: `New workspace: ${orgName || name}` });
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, orgId: user.org_id } });
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      orgId: user.org_id,
+      productMode: mode,
+      hasHiring: hasHiringFeatures(mode),
+      hasIntelligence: hasIntelligenceFeatures(mode),
+    },
+  });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -500,18 +532,43 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   const token = signToken(user);
-  res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role, orgId: user.org_id } });
+  const org = db.prepare('SELECT product_mode FROM organizations WHERE id = ?').get(user.org_id);
+  const productMode = normalizeProductMode(org?.product_mode);
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      orgId: user.org_id,
+      productMode,
+      hasHiring: hasHiringFeatures(productMode),
+      hasIntelligence: hasIntelligenceFeatures(productMode),
+    },
+  });
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
   const user = db.prepare('SELECT id, email, name, role, org_id FROM users WHERE id = ?').get(req.user.sub);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  const org = db.prepare('SELECT name FROM organizations WHERE id = ?').get(user.org_id);
-  res.json({ ...user, orgId: user.org_id, orgName: org?.name });
+  const org = db
+    .prepare('SELECT name, product_mode, embed_allowed_origins FROM organizations WHERE id = ?')
+    .get(user.org_id);
+  const productMode = normalizeProductMode(org?.product_mode);
+  res.json({
+    ...user,
+    orgId: user.org_id,
+    orgName: org?.name,
+    productMode,
+    hasHiring: hasHiringFeatures(productMode),
+    hasIntelligence: hasIntelligenceFeatures(productMode),
+    embedAllowedOrigins: org?.embed_allowed_origins || '*',
+  });
 });
 
 // ——— Dashboard ———
-app.get('/api/dashboard', authMiddleware, (req, res) => {
+app.get('/api/dashboard', authMiddleware, requireHiring, (req, res) => {
   const range = req.query.range || '30d';
   const since = sinceFromRange(range);
   const days = daysFromRange(range);
@@ -603,7 +660,11 @@ app.get('/api/dashboard', authMiddleware, (req, res) => {
     jobs: enriched,
     totals,
     screening,
-    analytics,
+    analytics: {
+      ...analytics,
+      experienceIntelligence: summarizeExperienceScores(appsInRange),
+      qualityTrend: buildQualityTrend(db, req.user.orgId, 6),
+    },
     kpiCards,
     jobTable,
     recommendations,
@@ -623,7 +684,7 @@ app.post('/api/jobs/:id/restore', authMiddleware, (req, res) => {
   const job = db
     .prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND deleted_at IS NOT NULL`)
     .get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not in trash' });
+  if (!job) return res.status(404).json({ error: 'Position not in trash' });
   restoreJob(db, job.id);
   logAudit({
     orgId: req.user.orgId,
@@ -633,7 +694,7 @@ app.post('/api/jobs/:id/restore', authMiddleware, (req, res) => {
     eventType: 'Job restored',
     description: `Restored job ${job.id} — ${job.title}`,
   });
-  res.json({ ok: true, message: 'Job and its applications restored' });
+  res.json({ ok: true, message: 'Position and its applications restored' });
 });
 
 app.post('/api/applications/:id/restore', authMiddleware, (req, res) => {
@@ -646,7 +707,7 @@ app.post('/api/applications/:id/restore', authMiddleware, (req, res) => {
     .get(req.params.id, req.user.orgId);
   if (!appRow) return res.status(404).json({ error: 'Application not in trash' });
   if (appRow.job_deleted) {
-    return res.status(400).json({ error: 'Restore the job first — this application was removed with the job posting.' });
+    return res.status(400).json({ error: 'Restore the position first — this application was removed with the position posting.' });
   }
   restoreApplication(db, appRow.id);
   logAudit({
@@ -665,7 +726,7 @@ app.delete('/api/jobs/:id/permanent', authMiddleware, requireRole('Admin', 'Recr
   const job = db
     .prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND deleted_at IS NOT NULL`)
     .get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not in trash' });
+  if (!job) return res.status(404).json({ error: 'Position not in trash' });
   permanentDeleteJob(db, job.id);
   logAudit({
     orgId: req.user.orgId,
@@ -675,7 +736,7 @@ app.delete('/api/jobs/:id/permanent', authMiddleware, requireRole('Admin', 'Recr
     eventType: 'Job permanently deleted',
     description: `Purged job ${job.id} — ${job.title}`,
   });
-  res.json({ ok: true, message: 'Job permanently deleted' });
+  res.json({ ok: true, message: 'Position permanently deleted' });
 });
 
 app.delete('/api/applications/:id/permanent', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
@@ -725,7 +786,7 @@ function attachPosting(job, org) {
   };
 }
 
-app.post('/api/jobs', authMiddleware, (req, res) => {
+app.post('/api/jobs', authMiddleware, requireHiring, (req, res) => {
   const { title, team, location, description, stage, position_level, posting, green_threshold, amber_threshold } = req.body;
   if (!title) return res.status(400).json({ error: 'Title is required' });
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
@@ -795,7 +856,7 @@ app.post('/api/jobs', authMiddleware, (req, res) => {
 
 app.get('/api/jobs/:id', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   const owner = job.owner_id ? db.prepare('SELECT name FROM users WHERE id = ?').get(job.owner_id) : null;
   const draftRubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? AND status = ?').get(job.id, 'draft');
@@ -804,12 +865,12 @@ app.get('/api/jobs/:id', authMiddleware, (req, res) => {
     getApprovedRubric(job.id) ||
     db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
   const categories = rubric ? getRubricCategories(rubric.id) : [];
-  res.json({ ...attachPosting(job, org), owner: owner?.name, rubric, categories, ...jobStats(job.id) });
+  res.json({ ...attachPosting(job, org), owner: owner?.name, rubric, categories, ...jobStats(job.id), experienceIntelligence: buildJobExperienceIntelligence(db, job.id) });
 });
 
-app.patch('/api/jobs/:id', authMiddleware, (req, res) => {
+app.patch('/api/jobs/:id', authMiddleware, requireHiring, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const { title, team, location, stage, position_level, description, green_threshold, amber_threshold, posting } = req.body;
   let postingJson = job.posting_json;
   if (posting !== undefined) {
@@ -836,11 +897,11 @@ app.patch('/api/jobs/:id', authMiddleware, (req, res) => {
   res.json(attachPosting(db.prepare('SELECT * FROM jobs WHERE id = ?').get(job.id), org));
 });
 
-app.delete('/api/jobs/:id', authMiddleware, (req, res) => {
+app.delete('/api/jobs/:id', authMiddleware, requireHiring, (req, res) => {
   const job = db
     .prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`)
     .get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   softDeleteJob(db, job.id);
   logAudit({
     orgId: req.user.orgId,
@@ -850,13 +911,13 @@ app.delete('/api/jobs/:id', authMiddleware, (req, res) => {
     eventType: 'Job moved to trash',
     description: `Moved job ${job.id} — ${job.title} to trash`,
   });
-  res.json({ ok: true, message: 'Job moved to trash. Recover it from Trash within your retention period.' });
+  res.json({ ok: true, message: 'Position moved to trash. Recover it from Trash within your retention period.' });
 });
 
 // ——— Rubric ———
 app.get('/api/jobs/:id/rubric', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
   const categories = rubric ? getRubricCategories(rubric.id) : [];
   res.json({ rubric, categories });
@@ -864,7 +925,7 @@ app.get('/api/jobs/:id/rubric', authMiddleware, (req, res) => {
 
 app.put('/api/jobs/:id/rubric', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   let rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? AND status = ?').get(job.id, 'draft');
   if (!rubric) {
     const latest = db.prepare('SELECT MAX(version) as v FROM rubric_versions WHERE job_id = ?').get(job.id);
@@ -882,12 +943,17 @@ app.put('/api/jobs/:id/rubric', authMiddleware, (req, res) => {
   }
   db.prepare('DELETE FROM rubric_categories WHERE rubric_version_id = ?').run(rubric.id);
   const { categories } = req.body;
+  const normalized = normalizeRubricCategories(categories || []);
+  const validation = validateRubricQuestions(normalized);
+  if (!validation.ok) {
+    return res.status(400).json({ error: validation.error });
+  }
   const insertCat = db.prepare(
     `INSERT INTO rubric_categories (id, rubric_version_id, name, weight, question, expected_evidence, sort_order,
      response_type, priority, min_response_seconds, max_response_seconds, keywords, category_type, ideal_answer)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  (categories || []).forEach((c, i) => {
+  normalized.forEach((c, i) => {
     const keywords =
       typeof c.keywords === 'string' ? c.keywords : c.keywords ? JSON.stringify(c.keywords) : '';
     insertCat.run(
@@ -1011,9 +1077,9 @@ app.post('/api/rubric-templates', authMiddleware, (req, res) => {
   let result;
   if (job_id) {
     const job = db.prepare(`SELECT id, title FROM jobs WHERE id = ? AND org_id = ?`).get(job_id, req.user.orgId);
-    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (!job) return res.status(404).json({ error: 'Position not found' });
     const rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
-    if (!rubric) return res.status(400).json({ error: 'No rubric on this job' });
+    if (!rubric) return res.status(400).json({ error: 'No screening configured for this position' });
     const categories = getRubricCategories(rubric.id);
     result = saveTemplateFromCategories(db, {
       orgId: req.user.orgId,
@@ -1060,14 +1126,14 @@ app.post('/api/rubric-templates/from-pool', authMiddleware, (req, res) => {
   ensureRubricTemplatesTable(db);
   const { name, description, department, experience_level, pool_ids: poolIds } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Template name is required' });
-  if (!Array.isArray(poolIds) || poolIds.length < 10) {
-    return res.status(400).json({ error: 'Select at least 10 questions from the library' });
+  if (!Array.isArray(poolIds) || poolIds.length < MIN_RUBRIC_QUESTIONS) {
+    return res.status(400).json({ error: `Select at least ${MIN_RUBRIC_QUESTIONS} question from the library` });
   }
   const placeholders = poolIds.map(() => '?').join(',');
   const items = db
     .prepare(`SELECT * FROM question_pool WHERE id IN (${placeholders}) AND (org_id IS NULL OR org_id = ?) AND (archived IS NULL OR archived = 0)`)
     .all(...poolIds, req.user.orgId);
-  if (items.length < 10) return res.status(400).json({ error: 'Some selected questions were not found' });
+  if (items.length < MIN_RUBRIC_QUESTIONS) return res.status(400).json({ error: 'Some selected questions were not found' });
 
   const result = saveTemplateFromPoolIds(db, {
     orgId: req.user.orgId,
@@ -1115,7 +1181,7 @@ app.delete('/api/rubric-templates/:id', authMiddleware, (req, res) => {
 
 app.post('/api/jobs/:id/rubric/from-template/:templateId', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const tpl = getTemplate(db, req.params.templateId, req.user.orgId);
   if (!tpl) return res.status(404).json({ error: 'Template not found' });
 
@@ -1135,22 +1201,28 @@ app.post('/api/jobs/:id/rubric/from-template/:templateId', authMiddleware, (req,
   }
 
   db.prepare('DELETE FROM rubric_categories WHERE rubric_version_id = ?').run(rubric.id);
+  const normalized = normalizeRubricCategories(
+    tpl.questions.map((c) => ({
+      ...c,
+      priority: c.priority || 'mandatory',
+    }))
+  );
   const insertCat = db.prepare(
     `INSERT INTO rubric_categories (id, rubric_version_id, name, weight, question, expected_evidence, sort_order,
      response_type, priority, min_response_seconds, max_response_seconds, keywords, category_type, ideal_answer)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
-  tpl.questions.forEach((c, i) => {
+  normalized.forEach((c, i) => {
     insertCat.run(
       uuid(),
       rubric.id,
       c.name,
-      c.weight || 10,
+      c.weight,
       c.question,
       c.expected_evidence || '',
       i,
       c.response_type || 'text',
-      c.priority || (i < 7 ? 'mandatory' : 'optional'),
+      c.priority || 'mandatory',
       c.min_response_seconds || 90,
       c.max_response_seconds || 300,
       c.keywords || '',
@@ -1174,10 +1246,10 @@ app.post('/api/jobs/:id/rubric/from-template/:templateId', authMiddleware, (req,
 
 app.post('/api/jobs/:id/rubric/from-pool', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const { pool_ids: poolIds } = req.body;
-  if (!Array.isArray(poolIds) || poolIds.length < 10) {
-    return res.status(400).json({ error: 'Select at least 10 questions from the pool (7 will be mandatory, 3 optional)' });
+  if (!Array.isArray(poolIds) || poolIds.length < MIN_RUBRIC_QUESTIONS) {
+    return res.status(400).json({ error: `Select at least ${MIN_RUBRIC_QUESTIONS} question from the pool` });
   }
   const placeholders = poolIds.map(() => '?').join(',');
   const items = db
@@ -1185,7 +1257,7 @@ app.post('/api/jobs/:id/rubric/from-pool', authMiddleware, (req, res) => {
       `SELECT * FROM question_pool WHERE id IN (${placeholders}) AND (org_id IS NULL OR org_id = ?)`
     )
     .all(...poolIds, req.user.orgId);
-  if (items.length < 10) return res.status(400).json({ error: 'Some selected questions were not found' });
+  if (items.length < MIN_RUBRIC_QUESTIONS) return res.status(400).json({ error: 'Some selected questions were not found' });
 
   let rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? AND status = ?').get(job.id, 'draft');
   if (!rubric) {
@@ -1203,13 +1275,6 @@ app.post('/api/jobs/:id/rubric/from-pool', authMiddleware, (req, res) => {
   }
 
   const categories = poolItemsToRubricCategories(items);
-  const mandatory = categories.filter((c) => c.priority !== 'optional');
-  const optional = categories.filter((c) => c.priority === 'optional');
-  if (mandatory.length < 7 || optional.length < 3) {
-    return res.status(400).json({
-      error: `Need at least 7 mandatory-style and 3 optional-style questions in selection. Got ${mandatory.length} mandatory, ${optional.length} optional.`,
-    });
-  }
 
   db.prepare('DELETE FROM rubric_categories WHERE rubric_version_id = ?').run(rubric.id);
   const insertCat = db.prepare(
@@ -1222,7 +1287,7 @@ app.post('/api/jobs/:id/rubric/from-pool', authMiddleware, (req, res) => {
       uuid(),
       rubric.id,
       c.name,
-      10,
+      c.weight,
       c.question,
       c.expected_evidence,
       i,
@@ -1250,7 +1315,7 @@ app.post('/api/jobs/:id/rubric/from-pool', authMiddleware, (req, res) => {
 
 app.post('/api/jobs/:id/rubric/revise', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
 
   let draft = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? AND status = ?').get(job.id, 'draft');
   if (draft) {
@@ -1264,7 +1329,7 @@ app.post('/api/jobs/:id/rubric/revise', authMiddleware, (req, res) => {
   const source = db
     .prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1')
     .get(job.id);
-  if (!source) return res.status(400).json({ error: 'No rubric found for this job' });
+  if (!source) return res.status(400).json({ error: 'No screening found for this position' });
 
   const latest = db.prepare('SELECT MAX(version) as v FROM rubric_versions WHERE job_id = ?').get(job.id);
   const rubricId = uuid();
@@ -1318,7 +1383,7 @@ app.post('/api/jobs/:id/rubric/revise', authMiddleware, (req, res) => {
 
 app.post('/api/jobs/:id/rubric/approve', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const rubric = db.prepare('SELECT * FROM rubric_versions WHERE job_id = ? ORDER BY version DESC LIMIT 1').get(job.id);
   if (!rubric) return res.status(400).json({ error: 'No rubric found' });
   const cats = getRubricCategories(rubric.id);
@@ -1346,7 +1411,7 @@ app.post('/api/jobs/:id/rubric/approve', authMiddleware, (req, res) => {
 // ——— Public careers posting ———
 app.get('/api/public/careers/:slug', (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE slug = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.slug);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(job.org_id);
   const base = process.env.PUBLIC_APP_URL || `${req.protocol}://${req.get('host')?.replace(':3001', ':5173') || 'http://localhost:5173'}`;
   res.json(buildPublicJobPayload(job, org, base));
@@ -1359,9 +1424,9 @@ app.get('/api/public/jobs/:slug', (req, res) => {
       `SELECT id, title, team, location, description, slug, org_id, candidate_notice_override FROM jobs WHERE slug = ? AND ${SQL_JOB_ACTIVE}`
     )
     .get(req.params.slug);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const rubric = getApprovedRubric(job.id);
-  if (!rubric) return res.status(400).json({ error: 'This job is not accepting applications yet' });
+  if (!rubric) return res.status(400).json({ error: 'This position is not accepting applications yet' });
   const categories = getRubricCategories(rubric.id);
   const org = db
     .prepare(
@@ -1389,11 +1454,28 @@ app.get('/api/public/jobs/:slug', (req, res) => {
   });
 });
 
+app.get('/api/public/embed-config/:slug', (req, res) => {
+  const job = db
+    .prepare(`SELECT id, title, slug, org_id FROM jobs WHERE slug = ? AND ${SQL_JOB_ACTIVE}`)
+    .get(req.params.slug);
+  if (!job) return res.status(404).json({ error: 'Position not found' });
+  const org = db
+    .prepare('SELECT name, embed_allowed_origins, product_mode FROM organizations WHERE id = ?')
+    .get(job.org_id);
+  res.json({
+    orgName: org?.name,
+    productMode: normalizeProductMode(org?.product_mode),
+    allowedOrigins: org?.embed_allowed_origins || '*',
+    job: { id: job.id, title: job.title, slug: job.slug },
+    applyPath: `/embed/apply/${job.slug}`,
+  });
+});
+
 app.post('/api/public/jobs/:slug/fit-preview', upload.single('resume'), async (req, res) => {
   const job = db.prepare(`SELECT * FROM jobs WHERE slug = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.slug);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const rubric = getApprovedRubric(job.id);
-  if (!rubric) return res.status(400).json({ error: 'Job not open' });
+  if (!rubric) return res.status(400).json({ error: 'Position not open' });
 
   let resumeText = req.body?.resumeText || '';
   if (req.file?.path) {
@@ -1430,12 +1512,20 @@ app.post('/api/public/jobs/:slug/fit-preview', upload.single('resume'), async (r
 app.post('/api/public/jobs/:slug/apply', upload.any(), async (req, res) => {
   try {
   const job = db.prepare(`SELECT * FROM jobs WHERE slug = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.slug);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   const rubric = getApprovedRubric(job.id);
-  if (!rubric) return res.status(400).json({ error: 'Job not open for applications' });
+  if (!rubric) return res.status(400).json({ error: 'Position not open for applications' });
 
-  const { name, email, phone, source } = req.body;
+  const { name, email, phone, utm_source: utmSource, utm_medium: utmMedium, ref, channel } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+
+  const source = resolveApplicationSource({
+    utmSource,
+    utmMedium,
+    ref,
+    referrer: req.headers.referer || req.headers.referrer,
+    channel: channel === 'embed' ? 'embed' : 'careers',
+  });
 
   const files = req.files || [];
   const resumeFile = files.find((f) => f.fieldname === 'resume') || files.find((f) => f.fieldname === 'file');
@@ -1553,7 +1643,7 @@ app.post('/api/public/jobs/:slug/apply', upload.any(), async (req, res) => {
     name,
     email,
     phone || '',
-    source || 'Direct Apply',
+    source,
     resumePath ? `/uploads/${resumeFile.filename}` : null,
     resumeText,
     integrityData
@@ -1819,7 +1909,7 @@ app.get('/api/applications/compare', authMiddleware, (req, res) => {
     candidates.map((c) => db.prepare('SELECT job_id FROM applications WHERE id = ?').get(c.id)?.job_id).filter(Boolean)
   );
   if (jobIds.size > 1) {
-    return res.status(400).json({ error: 'Compare candidates from the same job only.' });
+    return res.status(400).json({ error: 'Compare candidates from the same position only.' });
   }
   const jobId = [...jobIds][0];
   res.json({ candidates, job_id: jobId, org_dei_mode: isDeiBlindMode(orgRow) });
@@ -2306,7 +2396,7 @@ app.post('/api/applications/:id/background-check', authMiddleware, (req, res) =>
 
 app.get('/api/jobs/:id/interview-rubric', authMiddleware, (req, res) => {
   const job = db.prepare(`SELECT id FROM jobs WHERE id = ? AND org_id = ? AND ${SQL_JOB_ACTIVE}`).get(req.params.id, req.user.orgId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job) return res.status(404).json({ error: 'Position not found' });
   res.json({ questions: getInterviewRubric(job.id) });
 });
 
@@ -2629,10 +2719,10 @@ app.post('/api/applications/:id/voice-verify', authMiddleware, upload.single('au
   res.json({ comparison: result.comparison, stored_sample: result.stored, current_sample: result.current });
 });
 
-app.get('/api/integrations/ats', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+app.get('/api/integrations/ats', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
   const integrations = db
     .prepare(
-      'SELECT id, provider, api_key_hint, enabled, created_at, writeback_url FROM ats_integrations WHERE org_id = ?'
+      'SELECT id, provider, api_key_hint, enabled, created_at, writeback_url, webhook_secret FROM ats_integrations WHERE org_id = ?'
     )
     .all(req.user.orgId);
   const events = db
@@ -2661,6 +2751,8 @@ app.get('/api/integrations/ats', authMiddleware, requireRole('Admin', 'Recruiter
     integrations: integrations.map((i) => ({
       ...i,
       writeback_url: i.writeback_url || null,
+      webhook_secret:
+        req.user.role === 'Admin' || req.user.role === 'Recruiter' ? i.webhook_secret : undefined,
     })),
     recent_events: events,
     writeback_queue: writeback,
@@ -2673,20 +2765,47 @@ app.post('/api/integrations/ats/webhook', (req, res) => {
   const integration = db
     .prepare('SELECT * FROM ats_integrations WHERE webhook_secret = ? AND enabled = 1')
     .get(secret);
-  if (!integration && secret !== 'demo-webhook-secret') {
-    return res.status(401).json({ error: 'Invalid webhook secret' });
+  if (!integration) {
+    return res.status(401).json({ error: 'Invalid webhook secret — configure ATS integration in Xperieval' });
   }
-  const orgId = integration?.org_id || 'org-demo';
+  const orgId = integration.org_id;
   const normalized = normalizeAtsPayload(provider, req.body);
   const eventId = uuid();
   db.prepare(
     `INSERT INTO ats_events (id, org_id, provider, event_type, payload_json, status)
      VALUES (?, ?, ?, ?, ?, 'received')`
   ).run(eventId, orgId, normalized.provider, normalized.stage || 'candidate.updated', JSON.stringify(normalized));
-  res.status(202).json({ received: true, event_id: eventId, normalized });
+
+  let ingest = null;
+  try {
+    const job = resolveJobForAts(db, orgId, {
+      job_external_id: normalized.job_external_id,
+      job_title: req.body?.job_title || req.body?.job?.title,
+      provider: normalized.provider,
+    });
+    const baseUrl = process.env.PUBLIC_APP_URL || process.env.VITE_APP_URL || 'http://localhost:5173';
+    ingest = upsertApplicationFromAts(db, orgId, job, normalized, baseUrl);
+    db.prepare(`UPDATE ats_events SET status = 'ingested' WHERE id = ?`).run(eventId);
+  } catch (err) {
+    console.warn('ATS ingest:', err.message);
+  }
+
+  res.status(202).json({
+    received: true,
+    event_id: eventId,
+    normalized,
+    ingest: ingest
+      ? {
+          application_id: ingest.application.id,
+          job_id: ingest.job.id,
+          created: ingest.created,
+          screening_url: ingest.screening_url,
+        }
+      : null,
+  });
 });
 
-app.post('/api/integrations/ats/writeback/:applicationId', authMiddleware, requireRole('Admin', 'Recruiter'), async (req, res) => {
+app.post('/api/integrations/ats/writeback/:applicationId', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
   const appRow = db
     .prepare(
       `SELECT a.id FROM applications a JOIN jobs j ON j.id = a.job_id
@@ -2710,7 +2829,7 @@ app.post('/api/integrations/ats/writeback/:applicationId', authMiddleware, requi
   res.json({ queued: false });
 });
 
-app.post('/api/integrations/ats/process-queue', authMiddleware, requireRole('Admin', 'Recruiter'), async (req, res) => {
+app.post('/api/integrations/ats/process-queue', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), async (req, res) => {
   const results = await processWritebackQueue(db, { orgId: req.user.orgId, limit: 25 });
   res.json({ processed: results.length, results });
 });
@@ -2725,7 +2844,7 @@ app.post('/api/integrations/ats/writeback-receiver', (req, res) => {
   res.status(200).json({ received: true, event_id: eventId });
 });
 
-app.patch('/api/integrations/ats/:integrationId', authMiddleware, requireRole('Admin'), (req, res) => {
+app.patch('/api/integrations/ats/:integrationId', authMiddleware, requireIntelligence, requireRole('Admin'), (req, res) => {
   const row = db
     .prepare('SELECT * FROM ats_integrations WHERE id = ? AND org_id = ?')
     .get(req.params.integrationId, req.user.orgId);
@@ -2747,6 +2866,105 @@ app.get('/api/methodology', authMiddleware, (_req, res) => {
   res.json(getMethodology());
 });
 
+// ——— Xperieval Intelligence API ———
+app.get('/api/intelligence/dashboard', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
+  const orgId = req.user.orgId;
+  const org = db.prepare('SELECT product_mode, name FROM organizations WHERE id = ?').get(orgId);
+  const recentEvaluations = listRecentEvaluations(db, orgId, 12);
+  const apiKeys = listApiKeys(db, orgId).filter((k) => k.active);
+  const atsEvents = db
+    .prepare(
+      `SELECT id, provider, event_type, status, created_at FROM ats_events WHERE org_id = ? ORDER BY datetime(created_at) DESC LIMIT 8`
+    )
+    .all(orgId);
+  const atsCandidatesSynced = db
+    .prepare(
+      `SELECT COUNT(*) as c FROM applications a
+       JOIN jobs j ON j.id = a.job_id
+       WHERE j.org_id = ? AND a.deleted_at IS NULL AND a.external_id IS NOT NULL`
+    )
+    .get(orgId).c;
+  const evaluationsTotal = db
+    .prepare(`SELECT COUNT(*) as c FROM intelligence_evaluations WHERE org_id = ?`)
+    .get(orgId).c;
+  const evalRows = db
+    .prepare(
+      `SELECT result_json FROM intelligence_evaluations WHERE org_id = ? ORDER BY datetime(created_at) DESC LIMIT 200`
+    )
+    .all(orgId);
+  const apiScored = evalRows
+    .map((row) => {
+      try {
+        const r = JSON.parse(row.result_json);
+        return r?.overall != null ? { overall: r.overall, bucket: r.bucket } : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+  const apiSummary = summarizeExperienceScores(apiScored);
+  res.json({
+    product_mode: normalizeProductMode(org?.product_mode),
+    org_name: org?.name,
+    api_keys_active: apiKeys.length,
+    ats_candidates_synced: atsCandidatesSynced,
+    evaluations_total: evaluationsTotal,
+    recent_evaluations: recentEvaluations,
+    api_summary: apiSummary,
+    ats_events: atsEvents,
+    endpoints: {
+      evaluate: '/api/v1/evaluate',
+      webhook: '/api/integrations/ats/webhook',
+    },
+  });
+});
+
+app.get('/api/intelligence/api-keys', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter', 'Hiring Manager', 'Compliance Auditor'), (req, res) => {
+  res.json(listApiKeys(db, req.user.orgId));
+});
+
+app.post('/api/intelligence/api-keys', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const { name, scopes } = req.body;
+  const created = createApiKey(db, req.user.orgId, { name: name || 'Production', scopes });
+  logAudit({
+    orgId: req.user.orgId,
+    actorId: req.user.sub,
+    actorName: req.user.name,
+    eventType: 'API key created',
+    description: `Intelligence API key "${created.name}" (${created.key_prefix}…)`,
+  });
+  res.status(201).json(created);
+});
+
+app.delete('/api/intelligence/api-keys/:id', authMiddleware, requireIntelligence, requireRole('Admin', 'Recruiter'), (req, res) => {
+  const ok = revokeApiKey(db, req.user.orgId, req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Key not found' });
+  logAudit({
+    orgId: req.user.orgId,
+    actorId: req.user.sub,
+    actorName: req.user.name,
+    eventType: 'API key revoked',
+    description: `Revoked Intelligence API key ${req.params.id}`,
+  });
+  res.json({ revoked: true });
+});
+
+app.post('/api/v1/evaluate', apiKeyAuth, requireIntelligence, async (req, res) => {
+  try {
+    const result = await runIntelligenceEvaluation(db, req.user.orgId, req.body);
+    logAudit({
+      orgId: req.user.orgId,
+      actorId: null,
+      actorName: 'API Key',
+      eventType: 'Intelligence evaluation',
+      description: `API evaluate ${result.experience_score ?? '—'} for ${req.body.candidate_name || 'candidate'}`,
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Evaluation failed' });
+  }
+});
+
 // ——— Settings ———
 app.get('/api/settings', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
@@ -2764,6 +2982,9 @@ app.patch('/api/settings', authMiddleware, requireRole('Admin', 'Recruiter'), (r
     if (b?.amber != null) req.body.default_amber_threshold = b.amber;
     delete req.body.intelligence_thresholds;
   }
+  if (req.body.product_mode !== undefined) {
+    req.body.product_mode = normalizeProductMode(req.body.product_mode);
+  }
   const fields = [
     'name',
     'candidate_notice',
@@ -2779,6 +3000,8 @@ app.patch('/api/settings', authMiddleware, requireRole('Admin', 'Recruiter'), (r
     'dei_blind_until_shortlist',
     'anonymize_screening',
     'proctoring_policy_json',
+    'product_mode',
+    'embed_allowed_origins',
   ];
   const updates = [];
   const values = [];
@@ -2896,8 +3119,9 @@ app.get('/api/reports', authMiddleware, requireRole('Admin', 'Hiring Manager', '
 
   const stageCounts = db
     .prepare(
-      `SELECT a.stage, COUNT(*) as count FROM applications a
-       JOIN jobs j ON j.id = a.job_id WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL GROUP BY a.stage`
+      `SELECT COALESCE(a.pipeline_stage, a.stage, 'unknown') as stage, COUNT(*) as count FROM applications a
+       JOIN jobs j ON j.id = a.job_id WHERE j.org_id = ? AND j.deleted_at IS NULL AND a.deleted_at IS NULL
+       GROUP BY COALESCE(a.pipeline_stage, a.stage, 'unknown')`
     )
     .all(orgId);
 
@@ -2905,6 +3129,8 @@ app.get('/api/reports', authMiddleware, requireRole('Admin', 'Hiring Manager', '
     typeof req.query.insightsJobId === 'string' ? req.query.insightsJobId : undefined;
   const applicantInsights = buildApplicantInsights(db, orgId, insightsJobId);
   const screeningAnalytics = buildScreeningAnalytics(db, orgId);
+
+  const experienceAnalytics = buildReportsExperienceAnalytics(db, orgId);
 
   res.json({
     bucketDist,
@@ -2914,6 +3140,7 @@ app.get('/api/reports', authMiddleware, requireRole('Admin', 'Hiring Manager', '
     stageCounts,
     applicantInsights,
     screeningAnalytics,
+    experienceAnalytics,
   });
 });
 
@@ -2929,18 +3156,36 @@ app.get(
 
 // ——— Audit ———
 app.get('/api/audit', authMiddleware, (req, res) => {
-  const events = db
-    .prepare(
-      `SELECT * FROM audit_events WHERE org_id = ? ORDER BY created_at DESC LIMIT 100`
-    )
-    .all(req.user.orgId);
+  const limit = Math.min(500, Math.max(50, parseInt(req.query.limit, 10) || 200));
+  const eventType = typeof req.query.eventType === 'string' ? req.query.eventType.trim() : '';
+  const jobId = typeof req.query.jobId === 'string' ? req.query.jobId.trim() : '';
+  const applicationId = typeof req.query.applicationId === 'string' ? req.query.applicationId.trim() : '';
+
+  let sql = `SELECT * FROM audit_events WHERE org_id = ?`;
+  const params = [req.user.orgId];
+  if (eventType) {
+    sql += ` AND event_type LIKE ?`;
+    params.push(`%${eventType}%`);
+  }
+  if (jobId) {
+    sql += ` AND job_id = ?`;
+    params.push(jobId);
+  }
+  if (applicationId) {
+    sql += ` AND application_id = ?`;
+    params.push(applicationId);
+  }
+  sql += ` ORDER BY created_at DESC LIMIT ?`;
+  params.push(limit);
+
+  const events = db.prepare(sql).all(...params);
   res.json(events);
 });
 
 app.get('/api/roles', (_req, res) => {
   res.json([
     { role: 'Hiring Manager', description: 'View scorecards, explanations, reviewer notes, and decision recommendations.' },
-    { role: 'Recruiter', description: 'Manage jobs, applications, communication, stages, and candidate data.' },
+    { role: 'Recruiter', description: 'Manage positions, applications, communication, stages, and candidate data.' },
     { role: 'External Recruiter', description: 'Submit candidates and view only submitted applicants.' },
     { role: 'Compliance Auditor', description: 'View scoring versions, logs, overrides, reports, and exports.' },
     { role: 'Admin', description: 'Configure users, permissions, integrations, retention, and scoring policies.' },

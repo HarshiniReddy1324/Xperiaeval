@@ -9,6 +9,7 @@ import {
   Menu,
   Moon,
   Settings,
+  Shield,
   ShieldCheck,
   Sun,
   Trash2,
@@ -20,11 +21,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { canAccess } from '../lib/roles';
+import { filterNavByProductMode, PRODUCT_LABELS, PRODUCT_SUBTITLES, normalizeProductMode, homeNavLabel, hasHiringFeatures, hasIntelligenceFeatures } from '../lib/productMode';
+import { isCandidateHubPath, isCandidateSectionPath } from '../lib/navigation';
 import { NotificationBell } from './NotificationBell';
 import { DashboardDatePicker } from './DashboardDatePicker';
 import { PageBack } from './PageBack';
 
-const PORTAL_NAV = [
+const PORTAL_NAV_BASE = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/' || p === '' },
   { path: '/jobs', label: 'Positions', icon: Briefcase, match: (p) => p.startsWith('/jobs') },
   {
@@ -35,7 +38,7 @@ const PORTAL_NAV = [
   },
   {
     path: '/candidates?integrity=flagged',
-    label: 'Verification',
+    label: 'Experience Verification',
     icon: UserCheck,
     match: (p) => p.includes('integrity=flagged'),
   },
@@ -52,11 +55,28 @@ const PORTAL_NAV = [
   },
   { path: '/rubrics', label: 'Screening', icon: ClipboardList, match: (p) => p.startsWith('/rubrics') },
   { path: '/reports', label: 'Analytics', icon: BarChart3, match: (p) => p.startsWith('/reports') },
+  { path: '/audit', label: 'Audit log', icon: Shield, match: (p) => p.startsWith('/audit') },
   { path: '/integrations', label: 'Integrations', icon: ShieldCheck, match: (p) => p.startsWith('/integrations') },
   { path: '/trash', label: 'Trash', icon: Trash2, match: (p) => p.startsWith('/trash') },
   { path: '/help', label: 'Help', icon: HelpCircle, match: (p) => p.startsWith('/help') },
   { path: '/settings', label: 'Settings', icon: Settings, match: (p) => p.startsWith('/settings') },
 ];
+
+function buildPortalNav(productMode, role) {
+  const homeLabel = homeNavLabel(productMode);
+  const items = PORTAL_NAV_BASE.map((item) =>
+    item.path === '/' ? { ...item, label: homeLabel } : item,
+  );
+  if (role === 'Admin' || role === 'Compliance Auditor') {
+    items.splice(items.length - 2, 0, {
+      path: '/access',
+      label: 'Team access',
+      icon: Users,
+      match: (p) => p.startsWith('/access'),
+    });
+  }
+  return items;
+}
 
 function resolveActiveNav(pathname, search, items) {
   const full = pathname + search;
@@ -86,25 +106,69 @@ export function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const role = user?.role || 'Hiring Manager';
+  const productMode = normalizeProductMode(user?.productMode);
   const [navOpen, setNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('xperieval_sidebar_collapsed') === '1',
+  );
   const [dashDateRange, setDashDateRange] = useState('30d');
   const isDashboard = location.pathname === '/';
+  const hideGlobalPageBack =
+    isCandidateHubPath(location.pathname) || isCandidateSectionPath(location.pathname);
+  const brandSubtitle = PRODUCT_SUBTITLES[productMode] || PRODUCT_SUBTITLES.both;
+  const dashboardTitle = productMode === 'intelligence' ? 'Intelligence' : 'Dashboard';
+  const dashboardSubtitle =
+    productMode === 'intelligence'
+      ? 'ATS connectivity, candidate evaluation, and score writeback.'
+      : productMode === 'hiring'
+        ? 'Open roles, pipeline progress, and candidate activity.'
+        : 'Hiring operations and experience intelligence in one workspace.';
 
   const outletContext = useMemo(
     () => ({ dashDateRange, setDashDateRange }),
     [dashDateRange],
   );
 
-  const filterNav = (items) => items.filter((item) => canAccess(role, item.path.split('?')[0]));
-  const visibleNav = filterNav(PORTAL_NAV);
+  const filterNav = (items) =>
+    filterNavByProductMode(
+      items.filter((item) => canAccess(role, item.path.split('?')[0])),
+      productMode,
+    );
+  const portalNav = useMemo(() => buildPortalNav(productMode, role), [productMode, role]);
+  const visibleNav = filterNav(portalNav);
   const activeNavPath = resolveActiveNav(location.pathname, location.search, visibleNav);
 
   useEffect(() => {
     setNavOpen(false);
   }, [location.pathname, location.search]);
 
+  const toggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 700) {
+      setNavOpen((v) => !v);
+      return;
+    }
+    setSidebarCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem('xperieval_sidebar_collapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const p = location.pathname;
+    if (
+      !hasHiringFeatures(productMode) &&
+      (p.startsWith('/jobs') || p.startsWith('/rubrics') || p === '/trash' || p.startsWith('/recruiter-performance'))
+    ) {
+      navigate('/', { replace: true });
+    }
+    if (!hasIntelligenceFeatures(productMode) && p.startsWith('/integrations')) {
+      navigate('/', { replace: true });
+    }
+  }, [productMode, location.pathname, navigate]);
+
   return (
-    <div className="portalApp">
+    <div className={`portalApp${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <a href="#main-content" className="skipLink">
         Skip to main content
       </a>
@@ -116,14 +180,17 @@ export function Layout() {
           onClick={() => setNavOpen(false)}
         />
       )}
-      <aside className={`portalSidebar${navOpen ? ' open' : ''}`} aria-label="Sidebar">
+      <aside
+        className={`portalSidebar${navOpen ? ' open' : ''}${sidebarCollapsed ? ' collapsed' : ''}`}
+        aria-label="Sidebar"
+      >
         <div className="portalBrand">
           <div className="portalBrandLogo">
             <X size={18} />
           </div>
-          <div>
+          <div className="portalBrandText">
             <b>XPERIEVAL</b>
-            <span>Experience Evaluation</span>
+            <span>{brandSubtitle}</span>
           </div>
           <button
             type="button"
@@ -147,9 +214,10 @@ export function Layout() {
                   className={() => (active ? 'active' : '')}
                   activeClassName=""
                   aria-current={active ? 'page' : undefined}
+                  title={label}
                 >
                   <Icon size={17} />
-                  {label}
+                  <span className="navLabel">{label}</span>
                 </NavLink>
               );
             })}
@@ -158,12 +226,20 @@ export function Layout() {
 
         <div className="portalSidebarBottom">
           <div className="portalPlan">
-            <label>Plan</label>
-            <strong>Enterprise</strong>
-            <small>Full platform access</small>
+            <label>Product</label>
+            <strong>{PRODUCT_LABELS[productMode]}</strong>
+            <small>
+              {productMode === 'both'
+                ? 'Full platform access'
+                : role === 'Admin' || role === 'Recruiter'
+                  ? 'Configured in Settings'
+                  : 'Ask your admin to change product'}
+            </small>
+            {(role === 'Admin' || role === 'Recruiter') && (
             <NavLink to="/settings" className="portalPlanLink">
               Account settings
             </NavLink>
+            )}
           </div>
 
           <div className="portalUser">
@@ -174,9 +250,9 @@ export function Layout() {
             </div>
           </div>
 
-          <button type="button" className="portalThemeBtn" onClick={toggleTheme} aria-label="Toggle color theme">
+          <button type="button" className="portalThemeBtn" onClick={toggleTheme} aria-label="Toggle color theme" title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            <span className="navLabel">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
           </button>
         </div>
       </aside>
@@ -186,20 +262,20 @@ export function Layout() {
           <button
             type="button"
             className="portalMenuBtn"
-            aria-label="Open navigation menu"
-            aria-expanded={navOpen}
-            onClick={() => setNavOpen((v) => !v)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!sidebarCollapsed || navOpen}
+            onClick={toggleSidebar}
           >
             <Menu size={20} />
           </button>
           {isDashboard && (
             <div className="portalTopBarTitle">
-              <h1>Dashboard</h1>
-              <p>Overview of your hiring activities and insights.</p>
+              <h1>{dashboardTitle}</h1>
+              <p>{dashboardSubtitle}</p>
             </div>
           )}
           <div className="portalTopBarActions">
-            {isDashboard && (
+            {isDashboard && productMode !== 'intelligence' && (
               <DashboardDatePicker value={dashDateRange} onChange={setDashDateRange} />
             )}
             <NotificationBell />
@@ -214,7 +290,7 @@ export function Layout() {
           </div>
         </div>
         <main id="main-content">
-          {!isDashboard && (
+          {!isDashboard && !hideGlobalPageBack && (
             <div className="pageBackBar">
               <PageBack />
             </div>

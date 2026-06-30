@@ -58,7 +58,7 @@ export function buildPositionKpis(jobs, options = {}) {
   const pct = (n) => (totalJobs ? Math.round((n / totalJobs) * 100) : 0);
 
   return [
-    { id: 'total', label: 'Total Positions', value: positions.total, sub: 'All positions', to: '/jobs', tone: 'blue' },
+    { id: 'total', label: 'Total positions', value: positions.total, sub: 'All positions', to: '/jobs', tone: 'blue' },
     { id: 'filled', label: 'Filled', value: positions.filled, sub: `${pct(positions.filled)}% of total`, to: '/jobs?filter=filled', tone: 'green' },
     { id: 'in_progress', label: 'In Progress', value: positions.in_progress, sub: `${pct(positions.in_progress)}% of total`, to: '/jobs?filter=in_progress', tone: 'blue' },
     { id: 'about_to_start', label: 'About to Start', value: positions.about_to_start, sub: `${pct(positions.about_to_start)}% of total`, to: '/jobs?filter=about_to_start', tone: 'amber' },
@@ -257,7 +257,7 @@ export function buildJobTableRows(jobs, apps) {
       : 0;
 
     const statusMap = {
-      Draft: { label: 'Delayed', tone: 'purple', hint: 'Job posting is still in draft — not yet accepting applicants.' },
+      Draft: { label: 'Delayed', tone: 'purple', hint: 'Position posting is still in draft — not yet accepting applicants.' },
       Open: { label: 'About to Start', tone: 'amber', hint: 'Posting is live; screening has not started in earnest.' },
       Screening: { label: 'In Progress', tone: 'blue', hint: 'Active applicants are being screened for this role.' },
       'Hiring Team Review': { label: 'In Progress', tone: 'blue', hint: 'Hiring team is reviewing scored candidates.' },
@@ -265,7 +265,7 @@ export function buildJobTableRows(jobs, apps) {
       Filled: { label: 'Filled', tone: 'green', hint: 'Position has been filled or closed.' },
       Closed: { label: 'Filled', tone: 'green', hint: 'Position has been closed.' },
     };
-    const status = statusMap[job.stage] || { label: job.stage, tone: 'blue', hint: 'Derived from job workflow stage.' };
+    const status = statusMap[job.stage] || { label: job.stage, tone: 'blue', hint: 'Derived from position workflow stage.' };
 
     return {
       id: job.id,

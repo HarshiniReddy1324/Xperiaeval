@@ -58,7 +58,7 @@ export function RubricTemplates() {
       <div className="pageHead row">
         <div>
           <h1>Saved templates</h1>
-          <p>Reusable 10-question questionnaires. Apply to any position or edit and re-save.</p>
+          <p>Reusable screening questionnaires. Apply to any position or edit and re-save.</p>
         </div>
         <div className="row">
           <Link to="/rubrics/new">
@@ -89,7 +89,7 @@ export function RubricTemplates() {
             <Card key={t.id} className="templateCard">
               <div className="templateCardHead">
                 <h3>{t.name}</h3>
-                <span className="templateUsageBadge">Used on {t.usage_count || 0} jobs</span>
+                <span className="templateUsageBadge">Used on {t.usage_count || 0} positions</span>
               </div>
               <p className="muted">
                 {t.question_count} questions

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { Button, Card } from '../components/ui';
 import { ScoringThresholdsEditor, mergeThresholds } from '../components/ScoringThresholdsEditor';
 import { ProctoringSettingsEditor, mergeProctoringPolicy } from '../components/ProctoringSettingsEditor';
+import { PRODUCT_LABELS, PRODUCT_MODES, normalizeProductMode, hasHiringFeatures } from '../lib/productMode';
 
 export function Settings() {
+  const { refreshUser, user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const section = searchParams.get('section') || 'general';
   const [settings, setSettings] = useState(null);
@@ -17,7 +21,7 @@ export function Settings() {
   useEffect(() => {
     api('/settings')
       .then((d) => {
-        setSettings(d);
+        setSettings({ ...d, product_mode: d.product_mode || 'both', embed_allowed_origins: d.embed_allowed_origins || '*' });
         setThresholds(mergeThresholds(d.intelligence_thresholds));
         setProctoring(mergeProctoringPolicy(d.proctoring_policy_json));
       })
@@ -42,11 +46,22 @@ export function Settings() {
           proctoring_policy_json: JSON.stringify(proctoring),
           dei_blind_until_shortlist: settings.dei_blind_until_shortlist ? 1 : 0,
           anonymize_screening: settings.anonymize_screening ? 1 : 0,
+          product_mode: settings.product_mode,
+          embed_allowed_origins: settings.embed_allowed_origins,
         }),
       });
       setSettings(updated);
       setThresholds(mergeThresholds(updated.intelligence_thresholds));
       setProctoring(mergeProctoringPolicy(updated.proctoring_policy_json));
+      if (refreshUser) await refreshUser();
+      const nextMode = normalizeProductMode(updated.product_mode);
+      const p = window.location.pathname;
+      if (nextMode === 'intelligence' && (p.startsWith('/jobs') || p.startsWith('/rubrics') || p === '/trash')) {
+        navigate('/', { replace: true });
+      }
+      if (nextMode === 'hiring' && p.startsWith('/integrations')) {
+        navigate('/', { replace: true });
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -54,25 +69,46 @@ export function Settings() {
     }
   };
 
-  if (error && !settings) return <p className="error">{error}</p>;
+  if (error && !settings) {
+    return (
+      <div className="settingsPage">
+        <Card>
+          <h1>Settings</h1>
+          <p className="error">{error}</p>
+          {user?.role && user.role !== 'Admin' && user.role !== 'Recruiter' && (
+            <p className="muted">Organization settings can only be changed by an Admin or Recruiter.</p>
+          )}
+        </Card>
+      </div>
+    );
+  }
   if (!settings) return <div className="loadingPage"><div className="spinner" /><p>Loading settings…</p></div>;
 
-  const sections = [
-    { id: 'general', label: 'General' },
-    { id: 'thresholds', label: 'Scoring thresholds' },
-    { id: 'notice', label: 'Candidate notice' },
-    { id: 'retention', label: 'Retention' },
-    { id: 'scheduling', label: 'Scheduling' },
-    { id: 'proctoring', label: 'Proctoring' },
-    { id: 'integrity', label: 'Apply integrity (legacy)' },
-    { id: 'dei', label: 'DEI & blind review' },
+  const mode = normalizeProductMode(settings.product_mode);
+  const hiringOnly = hasHiringFeatures(mode);
+
+  const allSections = [
+    { id: 'general', label: 'General', modes: ['hiring', 'intelligence', 'both'] },
+    { id: 'product', label: 'Product mode', modes: ['hiring', 'intelligence', 'both'] },
+    { id: 'thresholds', label: 'Scoring thresholds', modes: ['hiring', 'intelligence', 'both'] },
+    { id: 'notice', label: 'Candidate notice', modes: ['hiring', 'both'] },
+    { id: 'retention', label: 'Retention', modes: ['hiring', 'intelligence', 'both'] },
+    { id: 'scheduling', label: 'Scheduling', modes: ['hiring', 'both'] },
+    { id: 'proctoring', label: 'Proctoring', modes: ['hiring', 'both'] },
+    { id: 'integrity', label: 'Apply integrity (legacy)', modes: ['hiring', 'both'] },
+    { id: 'dei', label: 'DEI & blind review', modes: ['hiring', 'both'] },
   ];
+  const sections = allSections.filter((s) => s.modes.includes(mode));
 
   return (
     <div className="settingsPage">
       <div className="pageHead">
         <h1>Settings</h1>
-        <p>Configure how your organization scores and routes candidates. Recruiters can adjust scoring thresholds; Admins control all sections.</p>
+        <p>
+          {mode === 'intelligence'
+            ? 'Configure scoring thresholds, API embed origins, and organization defaults for Xperieval Intelligence.'
+            : 'Configure how your organization scores and routes candidates.'}
+        </p>
       </div>
       <div className="settingsLayout">
         <Card className="settingsNav">
@@ -90,12 +126,52 @@ export function Settings() {
               <input className="formInput" value={settings.name || ''} onChange={(e) => setSettings({ ...settings, name: e.target.value })} />
             </>
           )}
+          {section === 'product' && (
+            <>
+              <h2>Product mode</h2>
+              <p className="lead">
+                Choose which Xperieval products this organization uses. <strong>Xperieval Hiring</strong> is the full
+                portal (positions, screening, pipeline). <strong>Xperieval Intelligence</strong> is the API and ATS plugin
+                for experience scoring without running the full hiring workflow.
+              </p>
+              <div className="productModePicker">
+                {PRODUCT_MODES.map((mode) => (
+                  <label key={mode} className={`productModeOption${settings.product_mode === mode ? ' active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="product_mode"
+                      checked={settings.product_mode === mode}
+                      onChange={() => setSettings({ ...settings, product_mode: mode })}
+                    />
+                    <strong>{PRODUCT_LABELS[mode]}</strong>
+                    <span>
+                      {mode === 'hiring' && 'Positions, screening, interviews, pipeline'}
+                      {mode === 'intelligence' && 'API evaluate, ATS webhooks, analytics'}
+                      {mode === 'both' && 'Full hiring portal plus Intelligence API'}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <h3 style={{ marginTop: 24 }}>Embed apply origins</h3>
+              <p className="muted">
+                {hiringOnly
+                  ? 'Comma-separated origins allowed to iframe embed apply flows (use * for demo).'
+                  : 'Only relevant when using embedded apply widgets with Xperieval Hiring.'}
+              </p>
+              <input
+                className="formInput"
+                value={settings.embed_allowed_origins || '*'}
+                onChange={(e) => setSettings({ ...settings, embed_allowed_origins: e.target.value })}
+                placeholder="https://boards.greenhouse.io, https://jobs.lever.co"
+              />
+            </>
+          )}
           {section === 'thresholds' && (
             <>
               <h2>Scoring thresholds</h2>
               <p className="lead">
                 Not every company uses 80/100 as “strong.” Set what <strong>Green</strong>, tiers, and recommendations mean for your hiring bar.
-                New jobs inherit these defaults; you can override per job on the job screen.
+                New positions inherit these defaults; you can override per position on the position screen.
               </p>
               <ScoringThresholdsEditor thresholds={thresholds} onChange={setThresholds} />
             </>

@@ -1,13 +1,17 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { pageLabel, parentRoute } from '../lib/navigation';
+import { useAuth } from '../context/AuthContext';
+import { homeNavLabel } from '../lib/productMode';
+import { pageLabel, parentRoute, candidatesListReturnPath, isCandidateSectionPath, isCandidateHubPath } from '../lib/navigation';
 import { positionFilterLabel } from '../lib/jobStages';
 import { hasNonBucketFilters } from '../lib/candidateFilters';
 
-export function PageBack({ fallback = '/', fallbackLabel = 'Dashboard', className = '' }) {
+export function PageBack({ fallback = '/', fallbackLabel, className = '' }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const homeLabel = fallbackLabel ?? homeNavLabel(user?.productMode);
 
   const parent = parentRoute(location.pathname);
   const isNestedPage = parent && parent !== '/';
@@ -18,13 +22,30 @@ export function PageBack({ fallback = '/', fallbackLabel = 'Dashboard', classNam
   const candidatesBucket = location.pathname === '/candidates' ? search.get('bucket') : null;
   const rubricsSub = location.pathname.startsWith('/rubrics/');
 
-  let label = isNestedPage ? pageLabel(parent) : fallbackLabel;
-  if (jobsLevel) label = 'All levels';
-  else if (jobsFilter) label = fallbackLabel;
+  const returnLabel = location.state?.fromLabel;
+
+  let label = isNestedPage ? pageLabel(parent) : homeLabel;
+  if (returnLabel) label = returnLabel;
+  else if (jobsLevel) label = 'All levels';
+  else if (jobsFilter) label = homeLabel;
   else if (candidatesBucket) label = 'All buckets';
   else if (rubricsSub) label = 'Screening';
 
   const handleBack = () => {
+    if (isCandidateSectionPath(location.pathname)) {
+      const id = location.pathname.match(/^\/candidates\/([^/]+)\//)[1];
+      navigate(`/candidates/${id}`, { state: location.state, replace: true });
+      return;
+    }
+    const scorecardMatch = location.pathname.match(/^\/candidates\/([^/]+)\/scorecard$/);
+    if (scorecardMatch) {
+      navigate(`/candidates/${scorecardMatch[1]}`, { state: location.state, replace: true });
+      return;
+    }
+    if (isCandidateHubPath(location.pathname) || location.pathname === '/candidates/compare') {
+      navigate(candidatesListReturnPath(location.state), { replace: true });
+      return;
+    }
     if (location.pathname === '/candidates') {
       const candidatesBucket = search.get('bucket');
       if (candidatesBucket) {

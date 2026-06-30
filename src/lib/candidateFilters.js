@@ -98,7 +98,7 @@ export function activeFilterTags(filters, jobs = []) {
     const label = SCREENING_CHIPS.find((c) => c.key === filters.screening)?.label || filters.screening;
     tags.push({ key: 'screening', label: `Screening: ${label}` });
   }
-  if (filters.integrity === 'flagged') tags.push({ key: 'integrity', label: 'Integrity flagged' });
+  if (filters.integrity === 'flagged') tags.push({ key: 'integrity', label: 'Experience verification' });
   if (filters.hiddenGem === '1') tags.push({ key: 'hiddenGem', label: 'Hidden gems' });
   return tags;
 }

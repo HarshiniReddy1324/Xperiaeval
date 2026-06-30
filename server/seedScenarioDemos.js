@@ -96,7 +96,7 @@ const SCENARIO_CANDIDATES = [
     name: 'Jordan Rivera',
     email: 'jordan.rivera@example.com',
     phone: '312-555-0142',
-    source: 'University Career Fair',
+    source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
       'Jordan Rivera — Associate Product Manager candidate. B.S. Business Analytics, University of Illinois (2024). Product analyst internship at PayFlow (fintech startup, 10 weeks): user research, Amplitude dashboards, sprint support. Campus product club president. Skills: Figma, Jira, SQL basics, Google Sheets, user interviews.',
@@ -144,7 +144,7 @@ const SCENARIO_CANDIDATES = [
     name: 'Priya Sharma',
     email: 'priya.sharma@example.com',
     phone: '415-555-0198',
-    source: 'LinkedIn',
+    source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
       'Priya Sharma — Associate Product Manager, 2 years at BloomDesk (seed-stage workflow SaaS). Prior: Business Analyst at regional bank (1 year). MBA coursework (evenings, incomplete). Skills listed: Jira, Google Sheets, user interviews. No people management title; no Senior PM or platform architecture experience on resume.',
@@ -181,7 +181,7 @@ const SCENARIO_CANDIDATES = [
     name: 'Marcus Chen',
     email: 'marcus.chen@example.com',
     phone: '206-555-0177',
-    source: 'Employee Referral',
+    source: 'Sample data',
     pipeline_stage: 'application_review',
     resume:
       'Marcus Chen — Senior Product Manager, 9 years B2B SaaS. Currently Senior PM at CloudLedger (fintech). Led platform analytics SKU from beta to $6M ARR. Managed squads of 14 across eng, design, and data. Expertise: roadmap, pricing, Amplitude, SQL, stakeholder management, enterprise retention. MBA, Northwestern Kellogg.',
@@ -240,7 +240,7 @@ const SCENARIO_CANDIDATES = [
     name: 'Elena Vasquez',
     email: 'elena.vasquez@example.com',
     phone: '773-555-0284',
-    source: 'Direct Apply',
+    source: 'Sample data',
     pipeline_stage: 'shortlisted_interview',
     resume: ELENA_VASQUEZ_RESUME,
     integrity: {

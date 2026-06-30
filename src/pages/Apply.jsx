@@ -9,13 +9,25 @@ import { useCameraPresence } from '../hooks/useCameraPresence';
 import { mergeProctoringPolicy } from '../components/ProctoringSettingsEditor';
 import { apiUrl } from '../api/base.js';
 
+function readApplyTracking() {
+  const params = new URLSearchParams(window.location.search);
+  const path = window.location.pathname || '';
+  return {
+    utm_source: params.get('utm_source') || '',
+    utm_medium: params.get('utm_medium') || '',
+    ref: params.get('ref') || params.get('source') || '',
+    channel: path.startsWith('/embed/') ? 'embed' : 'careers',
+  };
+}
+
 export function Apply() {
   const { slug } = useParams();
   const [jobData, setJobData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [step, setStep] = useState('profile');
   const [qIndex, setQIndex] = useState(0);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', source: 'Direct Apply' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [applyTracking] = useState(readApplyTracking);
   const [answers, setAnswers] = useState({});
   const [mediaBlobs, setMediaBlobs] = useState({});
   const [resume, setResume] = useState(null);
@@ -175,7 +187,10 @@ export function Apply() {
     fd.append('name', form.name);
     fd.append('email', form.email);
     fd.append('phone', form.phone);
-    fd.append('source', form.source);
+    fd.append('utm_source', applyTracking.utm_source);
+    fd.append('utm_medium', applyTracking.utm_medium);
+    fd.append('ref', applyTracking.ref);
+    fd.append('channel', applyTracking.channel);
     if (resume) fd.append('resume', resume);
 
     const answersPayload = categories.map((c) => {
@@ -271,7 +286,7 @@ export function Apply() {
               {submitted.message || 'Thank you. The hiring team will review your responses.'}
             </p>
             <Link to={`/careers/${slug}`} className="applyBack">
-              ← Back to job details
+              ← Back to position details
             </Link>
           </div>
         </div>
@@ -303,7 +318,7 @@ export function Apply() {
             {orgName}
           </div>
           <Link to={`/careers/${slug}`} className="applyBack">
-            ← Job details
+            ← Position details
           </Link>
         </div>
 

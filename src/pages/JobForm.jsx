@@ -99,7 +99,7 @@ export function JobForm() {
 
   const save = async (e) => {
     e?.preventDefault();
-    if (!form.title.trim()) return alert('Job title is required');
+    if (!form.title.trim()) return alert('Position title is required');
     setSaving(true);
     try {
       const payload = buildPayload();
@@ -134,7 +134,7 @@ export function JobForm() {
     return (
       <div className="loadingPage">
         <Loader2 className="spinIcon" size={36} />
-        <p>Loading job…</p>
+        <p>Loading position…</p>
       </div>
     );
   }
@@ -177,7 +177,7 @@ export function JobForm() {
             icon={Briefcase}
           >
             <FormGrid cols={2}>
-              <FormField label="Job title" required className="span2">
+              <FormField label="Position title" required className="span2">
                 <input
                   className={inputClass}
                   required
@@ -242,7 +242,7 @@ export function JobForm() {
                   onChange={(e) => setPosting('visaSponsorship', e.target.value)}
                 />
               </FormField>
-              <FormField label="Position level" required hint="Used to sort and filter on the Positions page.">
+              <FormField label="Career level" required hint="Used to sort and filter on the Positions page.">
                 <select
                   className={inputClass}
                   required
@@ -258,7 +258,7 @@ export function JobForm() {
               </FormField>
               <FormField
                 label="Workflow stage"
-                hint="Starts as Draft. Change to Open when ready to publish (edit position later)."
+                hint="Starts as Draft. Change to Open when ready to publish (edit the position later)."
                 className="span2"
               >
                 <select className={inputClass} value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })}>
@@ -273,7 +273,7 @@ export function JobForm() {
               </FormField>
               {isEdit && (
                 <>
-                  <FormField label="Green bucket threshold (≥)" hint="Overrides org default for this job">
+                  <FormField label="Green bucket threshold (≥)" hint="Overrides org default for this position">
                     <input
                       type="number"
                       className={inputClass}
@@ -310,7 +310,7 @@ export function JobForm() {
                 onChange={(e) => setPosting('aboutCompany', e.target.value)}
               />
             </FormField>
-            <FormField label="Job summary">
+            <FormField label="Position summary">
               <textarea
                 rows={3}
                 className={textareaClass}
@@ -364,7 +364,7 @@ export function JobForm() {
 
           <div className="formPageFooter">
             <Button type="submit" disabled={saving}>
-              <Save size={16} /> {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create job'}
+              <Save size={16} /> {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create position'}
             </Button>
             <Link to="/jobs">
               <Button type="button" variant="outline">
@@ -380,7 +380,7 @@ export function JobForm() {
             <ol className="journeySteps">
               <li>
                 <strong>Careers page</strong>
-                <span>Job details, benefits, Apply button</span>
+                <span>Position details, benefits, Apply button</span>
               </li>
               <li>
                 <strong>Application form</strong>

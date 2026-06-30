@@ -70,13 +70,13 @@ export function RubricTemplateDetail() {
 
   const applyToJob = async () => {
     if (!applyJobId) {
-      setError('Select a job');
+      setError('Select a position');
       return;
     }
     setError('');
     try {
       await api(`/jobs/${applyJobId}/rubric/from-template/${id}`, { method: 'POST' });
-      setMsg('Template applied — open the job to review and approve the rubric.');
+      setMsg('Template applied — open the position to review and approve screening.');
       navigate(`/jobs/${applyJobId}`);
     } catch (e) {
       setError(e.message);
@@ -94,7 +94,7 @@ export function RubricTemplateDetail() {
           <h1>{template.name}</h1>
           <p>
             {template.department || 'General'} · {template.experience_level || 'All'} · v{template.version || 1} · Used
-            on {template.usage_count || 0} jobs
+            on {template.usage_count || 0} positions
           </p>
         </div>
         <div className="row">
@@ -137,9 +137,9 @@ export function RubricTemplateDetail() {
         <div className="stack">
           <Card>
             <h2>Apply to position</h2>
-            <p className="muted">Creates a draft rubric on the selected job.</p>
-            <select value={applyJobId} onChange={(e) => setApplyJobId(e.target.value)} aria-label="Select job">
-              <option value="">Choose job…</option>
+            <p className="muted">Creates a draft screening questionnaire on the selected position.</p>
+            <select value={applyJobId} onChange={(e) => setApplyJobId(e.target.value)} aria-label="Select position">
+              <option value="">Choose position…</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title}

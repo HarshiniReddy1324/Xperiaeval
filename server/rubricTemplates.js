@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
-import { upsertQuestionsFromCategories } from './questionPool.js';
+import { upsertQuestionsFromCategories, poolItemsToRubricCategories } from './questionPool.js';
+import { normalizeRubricCategories, validateRubricQuestions } from './rubricWeights.js';
 
 export function ensureRubricTemplatesTable(db) {
   db.exec(`
@@ -30,35 +31,25 @@ export function ensureRubricTemplatesTable(db) {
 }
 
 function normalizeQuestions(categories) {
-  return categories.map((c, i) => ({
+  const mapped = categories.map((c, i) => ({
     name: c.name,
-    weight: c.weight || 10,
     question: c.question,
     expected_evidence: (c.expected_evidence || c.ideal_answer || '').slice(0, 280),
     ideal_answer: c.ideal_answer || c.expected_evidence || '',
     category_type: c.category_type || 'General',
     response_type: c.response_type || 'text',
-    priority: c.priority || (i < 7 ? 'mandatory' : 'optional'),
+    priority: c.priority || 'mandatory',
     max_response_seconds: c.max_response_seconds || 300,
     keywords: c.keywords || '',
     pool_id: c.pool_id || null,
     sort_order: i,
   }));
+  return normalizeRubricCategories(mapped);
 }
 
-function validateTenQuestions(questions) {
-  const mandatory = questions.filter((c) => (c.priority || 'mandatory') !== 'optional');
-  const optional = questions.filter((c) => c.priority === 'optional');
-  if (mandatory.length !== 7 || optional.length !== 3) {
-    return 'Template requires exactly 7 mandatory and 3 optional questions';
-  }
-  if (!questions.every((q) => q.question?.trim() && q.name?.trim())) {
-    return 'Every question needs a name and question text';
-  }
-  if (!questions.every((q) => (q.weight || 10) === 10)) {
-    return 'Each question must be worth 10 points';
-  }
-  return null;
+function validateTemplateQuestions(questions) {
+  const result = validateRubricQuestions(questions);
+  return result.ok ? null : result.error;
 }
 
 export function listTemplates(db, orgId) {
@@ -138,7 +129,7 @@ export function saveTemplateFromQuestions(
   }
 ) {
   const normalized = normalizeQuestions(questions || categories || []);
-  const err = validateTenQuestions(normalized);
+  const err = validateTemplateQuestions(normalized);
   if (err) return { error: err };
 
   const version = parentTemplateId
@@ -189,7 +180,7 @@ export function updateTemplate(db, id, orgId, { name, description, department, e
   if (!existing) return { error: 'Template not found' };
 
   const normalized = normalizeQuestions(questions || existing.questions);
-  const err = validateTenQuestions(normalized);
+  const err = validateTemplateQuestions(normalized);
   if (err) return { error: err };
 
   const now = new Date().toISOString();
@@ -299,34 +290,7 @@ export function importTemplates(db, orgId, templates, createdBy) {
 }
 
 export function saveTemplateFromPoolIds(db, { orgId, name, description, department, experience_level, poolItems, createdBy }) {
-  const mandatory = [];
-  const optional = [];
-  for (const item of poolItems) {
-    if (mandatory.length < 7 && item.default_priority !== 'optional') mandatory.push(item);
-  }
-  for (const item of poolItems) {
-    if (mandatory.length < 7 && !mandatory.includes(item)) mandatory.push(item);
-  }
-  for (const item of poolItems) {
-    if (optional.length < 3 && item.default_priority === 'optional' && !mandatory.includes(item)) optional.push(item);
-  }
-  for (const item of poolItems) {
-    if (optional.length < 3 && !mandatory.includes(item) && !optional.includes(item)) optional.push(item);
-  }
-  const ordered = [...mandatory.slice(0, 7), ...optional.slice(0, 3)];
-  const questions = ordered.map((q, i) => ({
-    name: q.name,
-    weight: 10,
-    question: q.question,
-    expected_evidence: (q.ideal_answer || q.expected_evidence || '').slice(0, 280),
-    ideal_answer: q.ideal_answer || q.expected_evidence || '',
-    category_type: q.category_type || 'General',
-    response_type: 'text',
-    priority: i < 7 ? 'mandatory' : 'optional',
-    max_response_seconds: 300,
-    keywords: q.keywords || '',
-    pool_id: q.id,
-  }));
+  const questions = poolItemsToRubricCategories(poolItems);
 
   return saveTemplateFromQuestions(db, {
     orgId,

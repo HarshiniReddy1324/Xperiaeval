@@ -19,8 +19,8 @@ export function RubricJobs() {
   return (
     <>
       <div className="pageHead">
-        <h1>Screening by job</h1>
-        <p>Open a position to edit its rubric, apply a template, or pull questions from the library.</p>
+        <h1>Screening by position</h1>
+        <p>Open a position to edit its screening, apply a template, or pull questions from the library.</p>
       </div>
 
       {loadError && <p className="error">{loadError}</p>}
@@ -54,7 +54,7 @@ export function RubricJobs() {
               </div>
               <Link to={`/jobs/${j.id}`} state={returnState(location)}>
                 <Button variant="outline" className="small">
-                  <Download size={14} /> Edit screening rubric
+                  <Download size={14} /> Edit screening
                 </Button>
               </Link>
             </Card>

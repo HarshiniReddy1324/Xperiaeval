@@ -393,6 +393,90 @@ export function generateInsights({ dimensions, perQuestion, behavioral, resumeTe
   };
 }
 
+const EXPLAIN_DIM_LABELS = {
+  technical_competency: 'Technical',
+  problem_solving: 'Problem solving',
+  communication: 'Communication',
+  project_ownership: 'Leadership / ownership',
+  authenticity: 'Authenticity',
+  resume_consistency: 'Resume match',
+  behavioral_confidence: 'Integrity',
+};
+
+/** Structured “why this score?” payload for UI and audit. */
+export function buildExplainability({
+  overall,
+  dimensions = {},
+  dimensionWeights = DIMENSION_WEIGHTS,
+  insights = {},
+  experienceFit = null,
+  integrity = null,
+  behavioral = {},
+  confidence_level,
+}) {
+  const because = Object.entries(dimensionWeights)
+    .map(([key, weight]) => ({
+      key,
+      label: EXPLAIN_DIM_LABELS[key] || key,
+      score: dimensions[key] ?? null,
+      weight_pct: Math.round(weight * 100),
+    }))
+    .filter((d) => d.score != null);
+
+  const positives = (insights.top_strengths || []).map((text) => ({ text, tone: 'positive' }));
+  const gaps = (insights.potential_concerns || []).map((text) => ({ text, tone: 'gap' }));
+
+  const risk = [];
+  if (experienceFit?.employment_mismatch) {
+    risk.push({
+      label: 'Employment mismatch',
+      status: 'flagged',
+      detail: `Resume ~${experienceFit.candidate_years ?? '?'} yrs vs role ~${experienceFit.required_min_years ?? '?'}+ yrs`,
+    });
+  } else {
+    risk.push({ label: 'No employment mismatch', status: 'clear', detail: 'Resume years align with role requirement' });
+  }
+
+  const aiPhrases = behavioral.ai_phrase_hits || integrity?.ai_phrase_hits;
+  if (aiPhrases > 0) {
+    risk.push({ label: 'AI-assisted content detected', status: 'flagged', detail: `${aiPhrases} AI-phrase signal(s) in answers` });
+  } else {
+    risk.push({ label: 'No AI-generated content flagged', status: 'clear', detail: 'No strong AI-phrase patterns in responses' });
+  }
+
+  if (integrity?.voice_verified === true) {
+    risk.push({ label: 'Voice verified', status: 'clear', detail: 'Reference voice sample on file' });
+  } else if (integrity?.voice_verified === false) {
+    risk.push({ label: 'Voice not verified', status: 'review', detail: 'No matching voice reference yet' });
+  }
+
+  const paste = integrity?.paste_attempts ?? behavioral.paste_events;
+  if (paste > 0) {
+    risk.push({ label: 'Paste events during screening', status: 'review', detail: `${paste} paste event(s) logged` });
+  }
+
+  let confidencePct = null;
+  if (confidence_level === 'High') confidencePct = 94;
+  else if (confidence_level === 'Medium') confidencePct = 78;
+  else if (confidence_level === 'Low') confidencePct = 62;
+
+  return {
+    overall,
+    because,
+    positives,
+    gaps,
+    risk,
+    confidence_pct: confidencePct,
+    ai_summary:
+      insights.ai_summary ||
+      insights.strength_summary ||
+      (positives.length
+        ? `Candidate demonstrates ${positives[0]?.text?.toLowerCase() || 'relevant experience signals'}.`
+        : 'Review dimension scores and evidence below for hiring decision support.'),
+    note: 'Scores combine rubric alignment, depth, ownership language, resume cross-check, experience fit, and session context. Tab switches are context-only.',
+  };
+}
+
 /**
  * Build full Candidate Intelligence Report (sync heuristics + optional async LLM refine).
  */
@@ -538,11 +622,30 @@ export async function buildCandidateIntelligenceReport({
     experience_fit: experienceFit,
     follow_up: followUpScored,
     insights,
-    explainability: {
-      note: 'Scores combine rubric alignment, depth, ownership language, resume cross-check, experience fit, and session context. Tab switches are context-only.',
-      mandatory_max: 70,
-      optional_max: 30,
-    },
+    explainability: buildExplainability({
+      overall,
+      dimensions: {
+        technical_competency: dimensions.technical_competency,
+        problem_solving: dimensions.problem_solving,
+        communication: dimensions.communication,
+        project_ownership: dimensions.project_ownership,
+        authenticity: dimensions.authenticity,
+        resume_consistency: dimensions.resume_consistency,
+        behavioral_confidence: behavioral.behavioral_confidence,
+      },
+      dimensionWeights: DIMENSION_WEIGHTS,
+      insights,
+      experienceFit,
+      integrity: integrity
+        ? {
+            paste_attempts: integrity.paste_attempts,
+            ai_phrase_hits: integrity.ai_phrase_hits,
+            voice_verified: integrity.voice_verified,
+          }
+        : null,
+      behavioral,
+      confidence_level: confidence,
+    }),
   };
 }
 

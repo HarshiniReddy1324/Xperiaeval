@@ -59,3 +59,17 @@ export function requireRole(...allowed) {
     next();
   };
 }
+
+/** API key auth for Xperieval Intelligence public API (xpi_… keys). */
+export function createApiKeyMiddleware(db, resolveApiKey) {
+  return (req, res, next) => {
+    const header = req.headers.authorization || '';
+    const raw = header.startsWith('Bearer ') ? header.slice(7) : req.headers['x-api-key'];
+    if (!raw) return res.status(401).json({ error: 'API key required' });
+    const row = resolveApiKey(db, raw);
+    if (!row) return res.status(401).json({ error: 'Invalid or revoked API key' });
+    req.apiKey = row;
+    req.user = { sub: null, orgId: row.org_id, role: 'API', name: 'API Key', email: '' };
+    next();
+  };
+}

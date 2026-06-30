@@ -1,4 +1,5 @@
 import { v4 as uuid } from 'uuid';
+import { normalizeRubricCategories } from './rubricWeights.js';
 
 /**
  * Curated screening question library by department & experience level.
@@ -136,40 +137,24 @@ export function listQuestionPool(db, { orgId, department, level, search }) {
   return db.prepare(sql).all(...params);
 }
 
-/** Build 7 mandatory + 3 optional rubric rows from pool selections (≥10 items). */
+/** Build rubric rows from pool selections — uses all selected questions. */
 export function poolItemsToRubricCategories(items) {
-  const mandatory = [];
-  const optional = [];
-  for (const i of items) {
-    if (mandatory.length < 7 && i.default_priority !== 'optional') mandatory.push(i);
-  }
-  for (const i of items) {
-    if (mandatory.length < 7 && !mandatory.includes(i)) mandatory.push(i);
-  }
-  for (const i of items) {
-    if (optional.length < 3 && i.default_priority === 'optional' && !mandatory.includes(i)) optional.push(i);
-  }
-  for (const i of items) {
-    if (optional.length < 3 && !mandatory.includes(i) && !optional.includes(i)) optional.push(i);
-  }
-  const ordered = [...mandatory.slice(0, 7), ...optional.slice(0, 3)];
-
-  return ordered.map((q, i) => {
+  const questions = items.map((q) => {
     const sample = q.ideal_answer || q.expected_evidence || '';
     return {
       name: q.name,
-      weight: 10,
       question: q.question,
       expected_evidence: sample.slice(0, 280),
       ideal_answer: sample,
       category_type: q.category_type || 'General',
       response_type: 'text',
-      priority: i < 7 ? 'mandatory' : 'optional',
+      priority: q.default_priority === 'optional' ? 'optional' : 'mandatory',
       max_response_seconds: 300,
       keywords: q.keywords || '',
       pool_id: q.id,
     };
   });
+  return normalizeRubricCategories(questions);
 }
 
 export function normalizeQuestionText(text) {

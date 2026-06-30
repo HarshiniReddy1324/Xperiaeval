@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { normalizeProductMode } from '../lib/productMode';
 import { Button, Card } from '../components/ui';
 import { ApplicantInsights } from '../components/analytics/ApplicantInsights';
 import { ScreeningInsights } from '../components/analytics/ScreeningInsights';
+import { ExperienceAnalytics } from '../components/analytics/ExperienceAnalytics';
 import { PlatformPillars } from '../components/PlatformPillars';
 
 export function Reports() {
+  const { user } = useAuth();
+  const isIntelOnly = normalizeProductMode(user?.productMode) === 'intelligence';
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -18,7 +23,7 @@ export function Reports() {
 
   const exportCsv = () => {
     if (!data) return;
-    const rows = [['Job', 'Applicants', 'Green', 'Amber', 'Red', 'Avg Score']];
+    const rows = [['Position', 'Applicants', 'Green', 'Amber', 'Red', 'Avg Score']];
     data.byJob.forEach((j) => rows.push([j.title, j.applicants, j.green, j.amber, j.red, j.avg_score || '']));
     const csv = rows.map((r) => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -31,7 +36,7 @@ export function Reports() {
   if (error) return <p className="error">{error}</p>;
   if (!data) return <p>Loading…</p>;
 
-  const { bucketDist, byJob, integritySummary, recentApps, stageCounts, applicantInsights, screeningAnalytics } =
+  const { bucketDist, byJob, integritySummary, recentApps, stageCounts, applicantInsights, screeningAnalytics, experienceAnalytics } =
     data;
 
   return (
@@ -39,7 +44,11 @@ export function Reports() {
       <div className="pageHead row">
         <div>
           <h1>Analytics</h1>
-          <p>Hiring funnel, bucket distribution, answer authenticity trends, and applicant pool insights.</p>
+          <p>
+            {isIntelOnly
+              ? 'Experience score trends from ATS-synced and API-evaluated candidates.'
+              : 'Experience intelligence, hiring funnel, source quality, and authenticity trends.'}
+          </p>
         </div>
         <Button onClick={exportCsv}>
           <Download size={16} /> Export CSV
@@ -73,6 +82,10 @@ export function Reports() {
         )}
       </section>
 
+      <ExperienceAnalytics data={experienceAnalytics} />
+
+      {!isIntelOnly && (
+        <>
       <ApplicantInsights initialData={applicantInsights} />
 
       <ScreeningInsights data={screeningAnalytics} />
@@ -81,11 +94,11 @@ export function Reports() {
 
       <section className="grid two">
         <Card>
-          <h2>By job</h2>
+          <h2>By position</h2>
           <table>
             <thead>
               <tr>
-                <th>Job</th>
+                <th>Position</th>
                 <th>Apps</th>
                 <th>G</th>
                 <th>A</th>
@@ -133,6 +146,8 @@ export function Reports() {
           )}
         </Card>
       </section>
+        </>
+      )}
     </>
   );
 }

@@ -1,4 +1,6 @@
-/** Standard 10-question rubric: 7 mandatory + 3 optional. Each has a full internal sample answer + AI keywords. */
+/** Default starter rubric — companies can add or remove questions; weights always total 100. */
+
+import { normalizeRubricCategories, validateRubricQuestions } from './rubricWeights.js';
 
 export const DEFAULT_RUBRIC_QUESTIONS = [
   {
@@ -111,23 +113,7 @@ export function rubricRowFromQuestion(q) {
   };
 }
 
-/** Validate rubric before approval: 7 mandatory + 3 optional, 10 points each. */
 export function validateRubricCategories(categories = []) {
-  const mandatory = categories.filter((c) => (c.priority || 'mandatory') !== 'optional');
-  const optional = categories.filter((c) => c.priority === 'optional');
-  if (mandatory.length !== 7) {
-    return { ok: false, error: `Need exactly 7 mandatory questions (have ${mandatory.length}).` };
-  }
-  if (optional.length !== 3) {
-    return { ok: false, error: `Need exactly 3 optional questions (have ${optional.length}).` };
-  }
-  const badWeight = categories.find((c) => Number(c.weight) !== 10);
-  if (badWeight) {
-    return { ok: false, error: 'Each question must be worth 10 points.' };
-  }
-  const missingQuestion = categories.find((c) => !(c.question || '').trim());
-  if (missingQuestion) {
-    return { ok: false, error: 'Every rubric row needs question text.' };
-  }
-  return { ok: true };
+  const normalized = normalizeRubricCategories(categories);
+  return validateRubricQuestions(normalized);
 }

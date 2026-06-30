@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bookmark, Download, Upload } from 'lucide-react';
 import { api } from '../api/client';
+import { validateQuestionnaire } from '../lib/rubricConstants';
 import { Button, Card } from './ui';
 
 export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, canSave, rubricApproved }) {
@@ -22,10 +23,15 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
       setError('Enter a template name (e.g. Senior Backend v2)');
       return;
     }
-    const mandatory = categories.filter((c) => c.priority !== 'optional').length;
-    const optional = categories.filter((c) => c.priority === 'optional').length;
-    if (mandatory !== 7 || optional !== 3) {
-      setError('Save requires 7 mandatory + 3 optional questions on this job first.');
+    const validationError = validateQuestionnaire(
+      categories.map((c) => ({
+        name: c.name,
+        question: c.question,
+        priority: c.priority,
+      }))
+    );
+    if (validationError) {
+      setError(`Save requires a valid questionnaire first: ${validationError}`);
       return;
     }
     setSaving(true);
@@ -52,7 +58,7 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
   const applyTemplate = async (templateId) => {
     if (rubricApproved) {
       const ok = window.confirm(
-        'The current rubric is approved and live. Applying a template creates a new draft version. Continue?'
+        'The current screening is approved and live. Applying a template creates a new draft version. Continue?'
       );
       if (!ok) return;
     }
@@ -72,10 +78,10 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
   return (
     <Card className="templatePanel">
       <h2>
-        <Bookmark size={20} /> Rubric templates
+        <Bookmark size={20} /> Screening templates
       </h2>
       <p className="muted">
-        Save this job&apos;s 10 questions as a reusable template — new questions sync to the{' '}
+        Save this position&apos;s screening questions as a reusable template — new questions sync to the{' '}
         <a href="/rubrics/library">question library</a> automatically.
       </p>
 
@@ -111,13 +117,13 @@ export function RubricTemplatePanel({ jobId, jobTitle, categories, onApplied, ca
                 disabled={applying === t.id}
                 onClick={() => applyTemplate(t.id)}
               >
-                <Download size={14} /> {applying === t.id ? 'Applying…' : 'Apply to job'}
+                <Download size={14} /> {applying === t.id ? 'Applying…' : 'Apply to position'}
               </Button>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="muted">No templates yet. Configure 10 questions on a job, then save as template.</p>
+        <p className="muted">No templates yet. Configure questions on a position, then save as template.</p>
       )}
 
       {error && <p className="error">{error}</p>}

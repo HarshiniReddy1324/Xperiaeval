@@ -3,7 +3,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
+import { HiringRoute, IntelligenceRoute } from './components/ProductModeRoute';
+import { HomeRouter } from './pages/HomeRouter';
+import { EmbedApply } from './pages/EmbedApply';
 import { Jobs } from './pages/Jobs';
 import { JobDetail } from './pages/JobDetail';
 import { JobForm } from './pages/JobForm';
@@ -46,6 +48,14 @@ function PrivateRoute({ children }) {
   return children;
 }
 
+function H({ children }) {
+  return <HiringRoute>{children}</HiringRoute>;
+}
+
+function I({ children }) {
+  return <IntelligenceRoute>{children}</IntelligenceRoute>;
+}
+
 export function App() {
   return (
     <ThemeProvider>
@@ -55,6 +65,7 @@ export function App() {
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
           <Route path="/apply/:slug" element={<Apply />} />
+          <Route path="/embed/apply/:slug" element={<EmbedApply />} />
           <Route path="/careers/:slug" element={<JobPostingPublic />} />
           <Route path="/schedule/:token" element={<CandidateSchedule />} />
           <Route
@@ -65,26 +76,27 @@ export function App() {
               </PrivateRoute>
             }
           >
-            <Route index element={<Dashboard />} />
-            <Route path="jobs" element={<Jobs />} />
-            <Route path="jobs/new" element={<JobForm />} />
-            <Route path="jobs/:id/edit" element={<JobForm />} />
-            <Route path="jobs/:id" element={<JobDetail />} />
+            <Route index element={<HomeRouter />} />
+            <Route path="jobs" element={<H><Jobs /></H>} />
+            <Route path="jobs/new" element={<H><JobForm /></H>} />
+            <Route path="jobs/:id/edit" element={<H><JobForm /></H>} />
+            <Route path="jobs/:id" element={<H><JobDetail /></H>} />
             <Route path="candidates" element={<Candidates />} />
             <Route path="candidates/compare" element={<CandidateCompare />} />
             <Route path="candidates/:id/scorecard" element={<CandidateScorecard />} />
+            <Route path="candidates/:id/:section" element={<CandidateDetail />} />
             <Route path="candidates/:id" element={<CandidateDetail />} />
-            <Route path="trash" element={<Trash />} />
-            <Route path="rubrics" element={<Rubrics />} />
-            <Route path="rubrics/new" element={<RubricBuilder />} />
-            <Route path="rubrics/templates" element={<RubricTemplates />} />
-            <Route path="rubrics/templates/:id" element={<RubricTemplateDetail />} />
-            <Route path="rubrics/library" element={<RubricLibrary />} />
-            <Route path="rubrics/jobs" element={<RubricJobs />} />
+            <Route path="trash" element={<H><Trash /></H>} />
+            <Route path="rubrics" element={<H><Rubrics /></H>} />
+            <Route path="rubrics/new" element={<H><RubricBuilder /></H>} />
+            <Route path="rubrics/templates" element={<H><RubricTemplates /></H>} />
+            <Route path="rubrics/templates/:id" element={<H><RubricTemplateDetail /></H>} />
+            <Route path="rubrics/library" element={<H><RubricLibrary /></H>} />
+            <Route path="rubrics/jobs" element={<H><RubricJobs /></H>} />
             <Route path="audit" element={<Audit />} />
             <Route path="reports" element={<Reports />} />
-            <Route path="recruiter-performance" element={<RecruiterPerformance />} />
-            <Route path="integrations" element={<Integrations />} />
+            <Route path="recruiter-performance" element={<H><RecruiterPerformance /></H>} />
+            <Route path="integrations" element={<I><Integrations /></I>} />
             <Route path="access" element={<Access />} />
             <Route path="help" element={<Help />} />
             <Route path="settings" element={<Settings />} />

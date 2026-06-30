@@ -9,7 +9,7 @@
 }
 
 [data-theme='dark'] body {
-  background: #0f172a;
+  background: var(--portal-bg);
   color: #f1f5f9;
 }
 

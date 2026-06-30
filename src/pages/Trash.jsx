@@ -94,7 +94,7 @@ export function Trash() {
         <p className="eyebrow">Recovery</p>
         <h1>Trash</h1>
         <p className="lead">
-          Deleted jobs and applications are kept here so you can recover mistakes. Restore brings
+          Deleted positions and applications are kept here so you can recover mistakes. Restore brings
           everything back; permanent delete removes data for good (Admin / Recruiter only).
         </p>
       </div>
@@ -102,7 +102,7 @@ export function Trash() {
       <div className="trashNotice">
         <AlertCircle size={18} />
         <span>
-          Moving something to trash hides it from the dashboard, jobs list, and careers page. Use{' '}
+          Moving something to trash hides it from the dashboard, positions list, and careers page. Use{' '}
           <strong>Recover</strong> to undo.
         </span>
       </div>
@@ -116,9 +116,9 @@ export function Trash() {
         <Card className="emptyTrash">
           <ArchiveRestore size={40} strokeWidth={1.5} />
           <h2>Trash is empty</h2>
-          <p className="muted">When you delete a job or application, it will appear here for recovery.</p>
+          <p className="muted">When you delete a position or application, it will appear here for recovery.</p>
           <Link to="/jobs">
-            <Button variant="outline">Back to jobs</Button>
+            <Button variant="outline">Back to positions</Button>
           </Link>
         </Card>
       ) : (
@@ -126,9 +126,9 @@ export function Trash() {
           {data.jobs?.length > 0 && (
             <Card className="trashSection">
               <h2>
-                <Briefcase size={20} /> Deleted jobs ({data.jobs.length})
+                <Briefcase size={20} /> Deleted positions ({data.jobs.length})
               </h2>
-              <p className="muted">Restoring a job also restores its applications.</p>
+              <p className="muted">Restoring a position also restores its applications.</p>
               <ul className="trashList">
                 {data.jobs.map((job) => (
                   <li key={job.id} className="trashItem">
@@ -167,7 +167,7 @@ export function Trash() {
               <h2>
                 <User size={20} /> Deleted applications ({data.applications.length})
               </h2>
-              <p className="muted">Individual applications removed from an active job.</p>
+              <p className="muted">Individual applications removed from an active position.</p>
               <ul className="trashList">
                 {data.applications.map((app) => (
                   <li key={app.id} className="trashItem">
