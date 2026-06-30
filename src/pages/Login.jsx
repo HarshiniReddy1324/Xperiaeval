@@ -52,6 +52,8 @@ export function Login() {
     <AuthLayout
       title="Sign in"
       lead="Use the email and password assigned to your role."
+      backTo="/"
+      backLabel="Back to website"
       footer={
         <>
           New workspace? <Link to="/register">Create account</Link>
