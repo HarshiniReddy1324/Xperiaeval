@@ -4,13 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
 import { AuthLayout } from '../components/AuthLayout';
 
-const DEMO_ACCOUNTS = [
-  { email: 'demo@xperieval.com', role: 'Admin' },
-  { email: 'hiring@xperieval.com', role: 'Hiring Manager' },
-  { email: 'recruiter@xperieval.com', role: 'Recruiter' },
-  { email: 'auditor@xperieval.com', role: 'Compliance Auditor' },
-];
-
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -25,21 +18,6 @@ export function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const quickLogin = async (accountEmail) => {
-    setEmail(accountEmail);
-    setPassword('demo1234');
-    setError('');
-    setLoading(true);
-    try {
-      await login(accountEmail, 'demo1234');
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -92,27 +70,6 @@ export function Login() {
           {loading ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
-
-      <details className="authDemo">
-        <summary>Try a demo account</summary>
-        {import.meta.env.DEV && (
-          <p className="authDemoHint">Demo accounts use the local seed password configured for this environment.</p>
-        )}
-        <div className="authDemoGrid">
-          {DEMO_ACCOUNTS.map((a) => (
-            <button
-              key={a.email}
-              type="button"
-              className="authDemoTile"
-              onClick={() => quickLogin(a.email)}
-              disabled={loading}
-            >
-              <strong>{a.role}</strong>
-              <small>{a.email}</small>
-            </button>
-          ))}
-        </div>
-      </details>
     </AuthLayout>
   );
 }

@@ -45,8 +45,10 @@ export function DashboardDatePicker({ value, onChange }) {
 
   return (
     <div className="headActionWrap portalDatePicker" ref={wrapRef}>
-      <button type="button" className="headPill headPillBtn" onClick={() => setOpen((s) => !s)}>
-        <CalendarClock size={14} /> {dateLabel} <ChevronDown size={14} />
+      <button type="button" className="headPill headPillBtn" onClick={() => setOpen((s) => !s)} aria-label={dateLabel}>
+        <CalendarClock size={14} aria-hidden />
+        <span className="portalDatePickerLabel">{dateLabel}</span>
+        <ChevronDown size={14} aria-hidden />
       </button>
       {open && (
         <div className="headDropdown">

@@ -1,4 +1,4 @@
-/** Simulated employment & identity verification (MVP, no paid Equifax/Checkr API) */
+/** Simulated employment & identity verification (MVP demo — no third-party screening API) */
 
 function extractYears(text) {
   const years = [...(text || '').matchAll(/\b(19|20)\d{2}\b/g)].map((m) => parseInt(m[0], 10));
@@ -105,7 +105,7 @@ export function runBackgroundCheck({ application, answers, job }) {
     summary,
     checks,
     disclaimer:
-      'This is a simulated pre-employment screening report for demo purposes. It does not replace official background checks (e.g. criminal, credit, or third-party employment verification via providers like Equifax Workforce Solutions).',
+      'This is a simulated pre-employment verification report for demo purposes. It does not replace official criminal, credit, or third-party background screening.',
     verified_at: new Date().toISOString(),
   };
 }

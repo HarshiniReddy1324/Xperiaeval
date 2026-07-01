@@ -55,6 +55,8 @@ export function runSchemaMigrations() {
   addColumn('organizations', 'pilot_started_at', 'TEXT');
   addColumn('organizations', 'pilot_ends_at', 'TEXT');
   addColumn('organizations', 'pilot_limits_json', 'TEXT');
+  addColumn('organizations', 'workspace_status', "TEXT DEFAULT 'active'");
+  db.prepare(`UPDATE organizations SET workspace_status = 'active' WHERE workspace_status IS NULL`).run();
   db.prepare(`UPDATE organizations SET plan_tier = 'enterprise' WHERE id = 'org-demo' AND plan_tier = 'pilot'`).run();
   addColumn('applications', 'submitter_ip', 'TEXT');
   addColumn('applications', 'proctoring_failed', 'INTEGER DEFAULT 0');
@@ -331,6 +333,19 @@ export function runSchemaMigrations() {
   `);
 
   db.exec(`
+    CREATE TABLE IF NOT EXISTS contact_inquiries (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      company TEXT,
+      interest TEXT NOT NULL,
+      message TEXT,
+      source TEXT DEFAULT 'landing',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
     CREATE TABLE IF NOT EXISTS ats_writeback_queue (
       id TEXT PRIMARY KEY,
       org_id TEXT NOT NULL,
@@ -426,6 +441,11 @@ export function runDataMigrations() {
     `UPDATE organizations SET intelligence_thresholds_json = COALESCE(intelligence_thresholds_json, ?)`
   ).run(JSON.stringify(DEFAULT_INTELLIGENCE_THRESHOLDS));
   db.prepare(`UPDATE rubric_categories SET min_response_seconds = 0 WHERE min_response_seconds IS NULL OR min_response_seconds = 90`).run();
+
+  const inboundOrg = db.prepare('SELECT id FROM organizations WHERE id = ?').get('org-inbound');
+  if (!inboundOrg) {
+    db.prepare('INSERT INTO organizations (id, name) VALUES (?, ?)').run('org-inbound', 'Inbound leads');
+  }
 
   import('./resumeBackfill.js')
     .then((m) => m.backfillResumeTexts(db))

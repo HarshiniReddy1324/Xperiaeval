@@ -108,7 +108,7 @@ function buildFallbackExplainability(report) {
   };
 }
 
-export function CandidateIntelligenceReport({ report, applicationScore }) {
+export function CandidateIntelligenceReport({ report, applicationScore, showInternals = true }) {
   const [showQuestions, setShowQuestions] = useState(false);
   const [showDimensions, setShowDimensions] = useState(false);
   if (!report) {
@@ -154,12 +154,14 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
       </header>
 
       <div className="intelPrimaryGrid">
+        {showInternals && (
         <section className="intelSection intelEvidencePanel">
           <h3>Evidence</h3>
           {EVIDENCE_CATEGORIES.map(({ key, label }) => (
             <StarRow key={key} label={label} value={dims[key]} />
           ))}
         </section>
+        )}
 
         <section className="intelSection intelSummaryPanel">
           <h3>AI summary</h3>
@@ -168,7 +170,11 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
           </p>
           <div className="intelConfidenceRow">
             <span>Confidence</span>
-            <strong>{explain.confidence_pct != null ? `${explain.confidence_pct}%` : report.confidence_level || 'N/A'}</strong>
+            <strong>
+              {showInternals && explain.confidence_pct != null
+                ? `${explain.confidence_pct}%`
+                : report.confidence_level || 'N/A'}
+            </strong>
           </div>
           <div className="intelRecInline">
             <span>Recommendation</span>
@@ -212,6 +218,7 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
         </section>
       </div>
 
+      {showInternals && (
       <section className="intelSection intelWhyPanel">
         <h3>Why this score?</h3>
         <p className="intelWhyLead">
@@ -255,7 +262,43 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
         </div>
         {explain.note && <p className="intelAudit muted"><small>{explain.note}</small></p>}
       </section>
+      )}
 
+      {!showInternals && (
+      <section className="intelSection intelWhyPanel">
+        <h3>Summary for review</h3>
+        <div className="intelWhyCols">
+          <div>
+            <h4>Strengths</h4>
+            <ul className="intelBullets">
+              {(explain.positives || []).map((p) => (
+                <li key={p.text}>+ {p.text}</li>
+              ))}
+              {!explain.positives?.length &&
+                (insights.top_strengths || []).map((s) => <li key={s}>+ {s}</li>)}
+              {!explain.positives?.length && !insights.top_strengths?.length && (
+                <li className="muted">No major strengths highlighted</li>
+              )}
+            </ul>
+          </div>
+          <div>
+            <h4>Areas to probe</h4>
+            <ul className="intelBullets concerns">
+              {(explain.gaps || []).map((g) => (
+                <li key={g.text}>− {g.text}</li>
+              ))}
+              {!explain.gaps?.length &&
+                (insights.potential_concerns || []).map((s) => <li key={s}>− {s}</li>)}
+              {!explain.gaps?.length && !insights.potential_concerns?.length && (
+                <li className="muted">No significant gaps flagged</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {showInternals && (
       <div className="intelRecGrid">
         <div className="intelRecCard">
           <label>Interview readiness</label>
@@ -274,7 +317,9 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
           <strong>{dims.behavioral_confidence ?? behavioral.behavioral_confidence ?? 'N/A'}</strong>
         </div>
       </div>
+      )}
 
+      {showInternals && (
       <section className="intelSection">
         <button type="button" className="intelToggle" onClick={() => setShowDimensions((v) => !v)}>
           Full dimension breakdown ({Object.keys(DIMENSION_LABELS).length})
@@ -288,32 +333,37 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
           </div>
         )}
       </section>
+      )}
 
-      <div className="intelTwoCol">
-        <section className="intelSection">
-          <h3>
-            <Target size={18} /> Recommended interview focus
-          </h3>
-          <ul className="intelBullets">
-            {(insights.interview_focus_areas || []).map((s) => (
-              <li key={s}>{s}</li>
-            ))}
-          </ul>
-        </section>
-        <section className="intelSection">
-          <h3>
-            <Clock size={18} /> Behavioral observations
-          </h3>
-          <p className="muted intelBehaviorNote">
-            Tab switches and paste events are context signals only; they do not auto-reject candidates.
-          </p>
-          <div className="intelBehaviorStats">
-            <span>Assessment time: {behavioral.total_assessment_seconds || 0}s</span>
-            <span>Tab switches: {behavioral.tab_switches ?? 0}</span>
-            <span>Paste events: {behavioral.paste_events ?? 0}</span>
-          </div>
-        </section>
-      </div>
+      <section className="intelSection">
+        <h3>
+          <Target size={18} /> Recommended interview focus
+        </h3>
+        <ul className="intelBullets">
+          {(insights.interview_focus_areas || []).map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+          {!insights.interview_focus_areas?.length && (
+            <li className="muted">No specific focus areas suggested</li>
+          )}
+        </ul>
+      </section>
+
+      {showInternals && (
+      <>
+      <section className="intelSection">
+        <h3>
+          <Clock size={18} /> Behavioral observations
+        </h3>
+        <p className="muted intelBehaviorNote">
+          Tab switches and paste events are context signals only; they do not auto-reject candidates.
+        </p>
+        <div className="intelBehaviorStats">
+          <span>Assessment time: {behavioral.total_assessment_seconds || 0}s</span>
+          <span>Tab switches: {behavioral.tab_switches ?? 0}</span>
+          <span>Paste events: {behavioral.paste_events ?? 0}</span>
+        </div>
+      </section>
 
       <section className="intelSection">
         <button type="button" className="intelToggle" onClick={() => setShowQuestions((v) => !v)}>
@@ -348,6 +398,8 @@ export function CandidateIntelligenceReport({ report, applicationScore }) {
           </div>
         )}
       </section>
+      </>
+      )}
     </div>
   );
 }

@@ -22,14 +22,15 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { canAccess } from '../lib/roles';
+import { canAccessRoute } from '../lib/roleAccess';
 import { filterNavByProductMode, PRODUCT_LABELS, PRODUCT_SUBTITLES, normalizeProductMode, homeNavLabel, hasHiringFeatures, hasIntelligenceFeatures } from '../lib/productMode';
 import { isCandidateHubPath, isCandidateSectionPath } from '../lib/navigation';
 import { isAnalyticsHubPath } from '../lib/analyticsSections';
 import { isSettingsHubPath } from '../lib/settingsSections';
 import { NotificationBell } from './NotificationBell';
-import { PilotBanner } from './PilotProgram';
 import { DashboardDatePicker } from './DashboardDatePicker';
 import { PageBack } from './PageBack';
+import { canManageSettings } from '../lib/roleAccess';
 
 const PORTAL_NAV_BASE = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' || p === '/dashboard/' },
@@ -151,7 +152,10 @@ export function Layout() {
 
   useEffect(() => {
     setNavOpen(false);
-  }, [location.pathname, location.search]);
+    if (!canAccessRoute(role, location.pathname)) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [role, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -186,7 +190,7 @@ export function Layout() {
 
   const signOut = () => {
     logout();
-    navigate('/login');
+    navigate('/', { replace: true });
   };
 
   return (
@@ -247,22 +251,20 @@ export function Layout() {
         </div>
 
         <div className="portalSidebarBottom">
+          {canManageSettings(user) && (
           <div className="portalPlan">
             <label>Product</label>
             <strong>{PRODUCT_LABELS[productMode]}</strong>
             <small>
               {productMode === 'both'
                 ? 'Full platform access'
-                : role === 'Admin' || role === 'Recruiter'
-                  ? 'Configured in Settings'
-                  : 'Ask your admin to change product'}
+                : 'Configured in Settings'}
             </small>
-            {(role === 'Admin' || role === 'Recruiter') && (
             <NavLink to="/settings" className="portalPlanLink">
               Account settings
             </NavLink>
-            )}
           </div>
+          )}
 
           <div className="portalUser">
             <div className="portalAvatar">{initials(user?.name)}</div>
@@ -306,6 +308,7 @@ export function Layout() {
               <DashboardDatePicker value={dashDateRange} onChange={setDashDateRange} />
             )}
             <NotificationBell />
+            {canManageSettings(user) && (
             <button
               type="button"
               className="portalAccountBtn"
@@ -314,10 +317,10 @@ export function Layout() {
             >
               {initials(user?.name)}
             </button>
+            )}
           </div>
         </div>
         <main id="main-content">
-          <PilotBanner pilot={user?.pilot} />
           {!isDashboard && !hideGlobalPageBack && (
             <div className="pageBackBar">
               <PageBack />

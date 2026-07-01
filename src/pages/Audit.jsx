@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Download, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { canViewAuditLog } from '../lib/roleAccess';
 import { Button, Card } from '../components/ui';
 
 const EVENT_TYPES = [
@@ -26,6 +28,7 @@ function formatWhen(iso) {
 }
 
 export function Audit() {
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [loadError, setLoadError] = useState('');
   const [eventType, setEventType] = useState('');
@@ -47,6 +50,10 @@ export function Audit() {
   useEffect(() => {
     load();
   }, [eventType, jobId]);
+
+  if (!canViewAuditLog(user)) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const exportCsv = () => {
     const rows = [['When', 'Event', 'Description', 'Actor', 'Position', 'Application']];

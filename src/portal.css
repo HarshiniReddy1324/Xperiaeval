@@ -5772,8 +5772,127 @@
     margin-left: 0;
     width: 100%;
   }
-  .portalMain { margin-left: 0; width: 100%; padding: 14px; }
+  .portalMain { margin-left: 0; width: 100%; padding: 12px 12px 16px; }
+  .portalTopBar {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .portalTopBar--withTitle {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .portalTopBar--withTitle .portalMenuBtn {
+    order: 1;
+    margin: 0;
+    width: 36px;
+    height: 36px;
+  }
+  .portalTopBar--withTitle .portalTopBarActions {
+    order: 2;
+    margin-left: auto;
+    gap: 6px;
+  }
+  .portalTopBar--withTitle .portalTopBarTitle {
+    order: 3;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    padding-top: 2px;
+  }
+  .portalTopBarTitle h1 {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .portalTopBarTitle p {
+    font-size: 12px;
+    line-height: 1.45;
+    margin-top: 4px;
+  }
+  .portalMain:has(.enterpriseDash) .portalTopBar--withTitle {
+    margin-bottom: 10px;
+  }
+  .portalMain:has(.enterpriseDash) .portalTopBarTitle h1 {
+    font-size: 1.35rem;
+  }
+  .portalMain:has(.enterpriseDash) .portalTopBarTitle p {
+    font-size: 12px;
+  }
+  .portalDatePickerLabel {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .portalAccountBtn {
+    height: 36px;
+    min-width: 36px;
+    font-size: 11px;
+  }
+  .portalTopBar .notifBtn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .headPill {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+  .portalMain .pageHead.row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .portalMain .pageHead.row > .btn,
+  .portalMain .pageHead.row > a {
+    width: 100%;
+    justify-content: center;
+  }
+  .portalMain .pageHead h1 {
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+  .portalMain .pageHead p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .portalMain .pilotBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .portalMain .pilotBannerLink {
+    white-space: normal;
+  }
+  .enterpriseDash .kpiTile strong {
+    font-size: 20px;
+  }
   .kpiGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .portalMain {
+    padding: 10px 10px 14px;
+  }
+  .portalDatePickerLabel {
+    display: none;
+  }
+  .portalDatePicker .headPillBtn {
+    padding: 8px 9px;
+    gap: 4px;
+  }
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .enterpriseDash .dashKpiPair {
+    grid-template-columns: 1fr;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .portalSidebar { transition: none; }
@@ -7030,10 +7149,66 @@
 
 .portalMain .pilotUpgradeBox {
   margin-top: 24px;
-  padding: 16px;
-  border-radius: 10px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-surface);
+}
+
+.portalMain .pilotUpgradeHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.portalMain .pilotUpgradeHead h3 {
+  margin: 0 0 4px;
+}
+
+.portalMain .pilotUpgradeHead .muted {
+  margin: 0;
+}
+
+.portalMain .pilotRefreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid var(--portal-border);
   background: var(--portal-surface-2);
+  color: var(--portal-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.portalMain .pilotRefreshBtn:hover {
+  color: var(--portal-text);
+  border-color: var(--portal-text-muted);
+}
+
+.portalMain .pilotUpgradeForm {
+  display: grid;
+  gap: 14px;
+}
+
+.portalMain .pilotUpgradeForm textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.portalMain .pilotUpgradeActions {
+  margin-top: 16px;
+}
+
+.portalMain .pilotUpgradeStatus {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--portal-success, #15803d);
 }
 
 .portalMain .pilotExpiredNotice {
@@ -7051,6 +7226,16 @@
 @media (max-width: 640px) {
   .portalMain .pilotProgramPanel .pilotMetaGrid {
     grid-template-columns: 1fr;
+  }
+
+  .portalMain .pilotUpgradeHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .portalMain .pilotRefreshBtn {
+    justify-content: center;
+    width: 100%;
   }
 }
 

@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { auth, getToken, setToken } from '../api/client';
 
 const AuthContext = createContext(null);
+const TOKEN_KEY = 'xperieval_token';
 
 async function restoreSession() {
   const token = getToken();
@@ -14,10 +15,20 @@ async function restoreSession() {
   }
 }
 
+export function isSessionActive(user) {
+  return Boolean(user && getToken());
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     restoreSession()
@@ -32,6 +43,17 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key === TOKEN_KEY && !event.newValue) {
+        setUser(null);
+        setLoading(false);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const login = async (email, password) => {
     const { token, user: u } = await auth.login(email, password);
     setToken(token);
@@ -41,16 +63,13 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (data) => {
-    const { token, user: u } = await auth.register(data);
+    const res = await auth.register(data);
+    if (res.pending) return res;
+    const { token, user: u } = res;
     setToken(token);
     const full = await auth.me().catch(() => u);
     setUser(full);
     return full;
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
   };
 
   const refreshUser = async () => {
@@ -59,11 +78,12 @@ export function AuthProvider({ children }) {
     return full;
   };
 
-  return (
-    <AuthContext.Provider value={{ user, loading, authError, login, register, logout, refreshUser }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ user, loading, authError, login, register, logout, refreshUser, isSessionActive: () => isSessionActive(user) }),
+    [user, loading, authError, logout]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

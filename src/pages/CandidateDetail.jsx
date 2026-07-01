@@ -255,7 +255,7 @@ export function CandidateDetail() {
           <CandidateSectionContent
             section={section}
             candidateId={id}
-            vm={{ ...vm, data, canSeeIntegrity }}
+            vm={{ ...vm, data, canSeeIntegrity, user }}
           />
         </div>
       ) : (

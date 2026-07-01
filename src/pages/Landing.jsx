@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../api/client';
 import {
   BarChart3,
   ClipboardCheck,
@@ -189,16 +190,15 @@ const INTEREST_OPTIONS = [
   { value: 'pilot', label: 'Pilot program' },
   { value: 'integrations', label: 'ATS integrations' },
   { value: 'general', label: 'General question' },
+  { value: 'other', label: 'Other' },
 ];
-
-function interestLabel(value) {
-  return INTEREST_OPTIONS.find((o) => o.value === value)?.label || 'General inquiry';
-}
 
 export function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [contactSent, setContactSent] = useState(false);
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactError, setContactError] = useState('');
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -227,14 +227,21 @@ export function Landing() {
     window.history.replaceState(null, '', `#${id}`);
   }, []);
 
-  const submitContact = (e) => {
+  const submitContact = async (e) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Xperieval inquiry: ${interestLabel(contactForm.interest)}`);
-    const body = encodeURIComponent(
-      `Name: ${contactForm.name}\nCompany: ${contactForm.company}\nEmail: ${contactForm.email}\n\n${contactForm.message}`
-    );
-    window.location.href = `mailto:hello@xperieval.com?subject=${subject}&body=${body}`;
-    setContactSent(true);
+    setContactBusy(true);
+    setContactError('');
+    try {
+      await api('/public/contact', {
+        method: 'POST',
+        body: JSON.stringify(contactForm),
+      });
+      setContactSent(true);
+    } catch (err) {
+      setContactError(err.message || 'Could not send your message. Try again in a moment.');
+    } finally {
+      setContactBusy(false);
+    }
   };
 
   return (
@@ -526,8 +533,9 @@ export function Landing() {
           <span className="landingEyebrow">Plans</span>
           <h2 className="landingH2">Start with a pilot. Scale when you are ready.</h2>
           <p className="landingLead">
-            Every new workspace begins on a 90-day pilot with real limits. Register to start, then request an upgrade
-            from Settings when your team is ready for integrations and higher volume.
+            Every new workspace begins on a 90-day pilot with real limits. Submit a pilot request, and we will approve
+            your workspace before you can sign in. Upgrade from Settings when your team needs integrations and higher
+            volume.
           </p>
           <div className="landingPricing">
             {PLANS.map((plan) => (
@@ -568,7 +576,11 @@ export function Landing() {
             <h2 className="landingH2">Talk to our team.</h2>
             <p className="landingLead">
               Book a product demo, ask about integrations, or tell us about your hiring stack. We typically respond within
-              one business day.
+              one business day. To start using Xperieval right away,{' '}
+              <Link to="/register" style={{ color: 'var(--lp-ink)', fontWeight: 600 }}>
+                request a pilot workspace
+              </Link>{' '}
+              — we approve each request before your team can sign in.
             </p>
             <p className="landingLead" style={{ marginTop: 18 }}>
               Already have access?{' '}
@@ -585,8 +597,7 @@ export function Landing() {
 
           {contactSent ? (
             <div className="landingFormSuccess">
-              Thanks for reaching out. Your email client should open with your message ready to send. If it did not,
-              write to hello@xperieval.com directly.
+              Thanks for reaching out. We received your message and will respond within one business day.
             </div>
           ) : (
             <form className="landingForm" onSubmit={submitContact}>
@@ -643,8 +654,9 @@ export function Landing() {
                   placeholder="Tell us about your hiring workflow and team size…"
                 />
               </label>
-              <button type="submit" className="landingBtn landingBtnPrimary">
-                Send message
+              {contactError ? <p className="landingFormError">{contactError}</p> : null}
+              <button type="submit" className="landingBtn landingBtnPrimary" disabled={contactBusy}>
+                {contactBusy ? 'Sending…' : 'Send message'}
               </button>
             </form>
           )}
@@ -653,7 +665,7 @@ export function Landing() {
 
       <section className="landingCta">
         <h2>Put evidence behind every hire.</h2>
-        <p>Start your 90-day pilot today, or book a demo for your hiring team.</p>
+        <p>Request a 90-day pilot or book a demo for your hiring team.</p>
         <div className="landingHeroCtas" style={{ justifyContent: 'center' }}>
           <button type="button" className="landingBtn landingBtnPrimary" onClick={() => scrollTo('contact')}>
             Book a demo

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 import { api } from '../api/client';
 import { Button } from './ui';
 
@@ -28,10 +29,10 @@ export function PilotUpgradeHint({ message, showLink }) {
   return (
     <p className="pilotLimitCallout">
       {message}
-      {isPilot ? (
+      {isPilot && showLink !== false ? (
         <>
           {' '}
-          <Link to="/settings/pilot">View pilot program</Link>
+          <Link to="/settings/pilot">Contact admin</Link>
         </>
       ) : null}
     </p>
@@ -173,33 +174,40 @@ export function PilotProgramPanel({ pilot: initialPilot }) {
       </div>
 
       <div className="pilotUpgradeBox">
-        <h3>Request upgrade</h3>
-        <p className="muted">We will follow up within one business day.</p>
-        <label className="settingsField">
-          Target plan
-          <select value={targetPlan} onChange={(e) => setTargetPlan(e.target.value)}>
-            <option value="team">Team</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-        </label>
-        <label className="settingsField">
-          Message (optional)
-          <textarea
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Tell us about your hiring volume and ATS…"
-          />
-        </label>
-        <div className="row">
+        <div className="pilotUpgradeHead">
+          <div>
+            <h3>Request upgrade</h3>
+            <p className="muted">We will follow up within one business day.</p>
+          </div>
+          <button type="button" className="pilotRefreshBtn" onClick={refresh} aria-label="Refresh usage">
+            <RefreshCw size={15} aria-hidden />
+            <span>Refresh usage</span>
+          </button>
+        </div>
+        <div className="pilotUpgradeForm">
+          <label className="settingsField">
+            Target plan
+            <select value={targetPlan} onChange={(e) => setTargetPlan(e.target.value)}>
+              <option value="team">Team</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </label>
+          <label className="settingsField">
+            Message (optional)
+            <textarea
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Tell us about your hiring volume and ATS…"
+            />
+          </label>
+        </div>
+        <div className="pilotUpgradeActions">
           <Button onClick={requestUpgrade} disabled={loading}>
             {loading ? 'Sending…' : 'Request upgrade'}
           </Button>
-          <Button variant="outline" onClick={refresh}>
-            Refresh usage
-          </Button>
         </div>
-        {status && <p className="success">{status}</p>}
+        {status && <p className="pilotUpgradeStatus">{status}</p>}
       </div>
     </div>
   );

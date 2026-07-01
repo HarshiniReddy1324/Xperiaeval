@@ -9,8 +9,8 @@ function tileMetric(sectionId, metrics = {}) {
   return v;
 }
 
-export function AnalyticsHub({ isIntelOnly, metrics = {} }) {
-  const sections = getAnalyticsHubSections({ isIntelOnly });
+export function AnalyticsHub({ isIntelOnly, metrics = {}, role = '', isAdmin = false }) {
+  const sections = getAnalyticsHubSections({ isIntelOnly, isAdmin, role });
 
   if (!sections.length) return null;
 

@@ -162,6 +162,27 @@
   border: 1px solid #fecaca;
 }
 
+.authSuccessPanel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--portal-accent, #0f3e17) 25%, transparent);
+  background: color-mix(in srgb, var(--portal-accent, #0f3e17) 6%, var(--portal-surface, #fff));
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.authInlineLink {
+  color: var(--portal-accent, #0f3e17);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.authInlineLink:hover {
+  text-decoration: underline;
+}
+
 [data-theme='dark'] .authError {
   background: rgba(127, 29, 29, 0.2);
   border-color: #7f1d1d;

@@ -29,7 +29,18 @@ export function Access() {
   const [busy, setBusy] = useState('');
   const [invite, setInvite] = useState({ name: '', email: '', role: 'Hiring Manager', password: '' });
   const isAdmin = user?.role === 'Admin';
+  const isOperator = isAdmin && user?.orgId === 'org-demo';
   const pilot = user?.pilot;
+  const [pendingWorkspaces, setPendingWorkspaces] = useState([]);
+
+  const loadPending = async () => {
+    if (!isOperator) return;
+    try {
+      setPendingWorkspaces(await api('/admin/pending-workspaces'));
+    } catch {
+      setPendingWorkspaces([]);
+    }
+  };
 
   const load = async () => {
     setLoadError('');
@@ -46,7 +57,23 @@ export function Access() {
 
   useEffect(() => {
     load();
-  }, []);
+    loadPending();
+  }, [isOperator]);
+
+  const approveWorkspace = async (orgId) => {
+    setActionError('');
+    setSuccess('');
+    setBusy(orgId);
+    try {
+      const res = await api(`/admin/pending-workspaces/${orgId}/approve`, { method: 'POST' });
+      setSuccess(res.message || 'Workspace approved.');
+      await loadPending();
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setBusy('');
+    }
+  };
 
   const roleCounts = useMemo(() => {
     const counts = {};
@@ -104,6 +131,44 @@ export function Access() {
       )}
       {actionError && <PilotUpgradeHint message={actionError} />}
       {success && <p className="success accessSuccess">{success}</p>}
+
+      {isOperator && pendingWorkspaces.length > 0 && (
+        <Card className="accessPendingCard">
+          <div className="accessCardHead">
+            <h2>Pilot workspace approvals</h2>
+            <span className="muted accessCardHint">Review self-service pilot requests before they can sign in.</span>
+          </div>
+          <div className="accessTableWrap">
+            <table className="accessTable">
+              <thead>
+                <tr>
+                  <th>Organization</th>
+                  <th>Admin</th>
+                  <th>Requested</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {pendingWorkspaces.map((row) => (
+                  <tr key={row.id}>
+                    <td><b>{row.name}</b></td>
+                    <td>
+                      {row.admin_name}
+                      <div className="accessEmail">{row.admin_email}</div>
+                    </td>
+                    <td className="muted">{formatJoined(row.created_at)}</td>
+                    <td>
+                      <Button className="small" disabled={busy === row.id} onClick={() => approveWorkspace(row.id)}>
+                        {busy === row.id ? 'Approving…' : 'Approve pilot'}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       <div className="accessSummary">
         <div className="accessStat">

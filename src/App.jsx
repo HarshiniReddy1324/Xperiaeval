@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth, isSessionActive } from './context/AuthContext';
+import { getToken } from './api/client';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { HiringRoute, IntelligenceRoute } from './components/ProductModeRoute';
@@ -36,16 +37,22 @@ import { Landing } from './pages/Landing';
 import { NotFound } from './pages/NotFound';
 
 function PrivateRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  useEffect(() => {
+    if (!getToken() && user) logout();
+  }, [user, logout]);
   if (loading) return <div className="authPage">Loading workspace…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!isSessionActive(user)) return <Navigate to="/login" replace />;
   return children;
 }
 
 function PublicAuthRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  useEffect(() => {
+    if (!getToken() && user) logout();
+  }, [user, logout]);
   if (loading) return <div className="authPage">Loading…</div>;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (isSessionActive(user)) return <Navigate to="/dashboard" replace />;
   return children;
 }
 

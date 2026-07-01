@@ -7,13 +7,16 @@ export function queueEmail({ orgId, to, subject, body, meta = {} }) {
   db.prepare(
     `INSERT INTO email_outbox (id, org_id, recipient, subject, body, meta_json, status)
      VALUES (?, ?, ?, ?, ?, ?, 'queued')`
-  ).run(id, orgId, to, subject, body, JSON.stringify(meta));
+  ).run(id, orgId || 'org-inbound', to, subject, body, JSON.stringify(meta));
 
+  const inbox = process.env.CONTACT_INBOX_EMAIL || process.env.SALES_INBOX_EMAIL || '';
   if (process.env.EMAIL_API_KEY) {
-    // Production: call provider here
     console.log(`[email] would send to ${to}: ${subject}`);
   } else {
-    console.log(`[email demo] → ${to}: ${subject}`);
+    console.log(`[email] → ${to}: ${subject}`);
+    if (meta.type === 'contact_inquiry' || meta.type === 'pilot_upgrade') {
+      console.log(`[email] inquiry body:\n${body}`);
+    }
   }
   return id;
 }

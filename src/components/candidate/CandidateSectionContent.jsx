@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { sanitizeProductCopy } from '../../lib/copy';
+import { canViewProductInternals } from '../../lib/roleAccess';
 import {
   ShieldAlert,
   Clock,
@@ -64,7 +65,10 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
     resumeFileName,
     isGreen,
     canSeeIntegrity,
+    user,
   } = vm;
+
+  const showIntelInternals = canViewProductInternals(user);
 
   const {
     answers = [],
@@ -101,6 +105,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
             key={`${appScore?.overall ?? 'x'}-${appScore?.bucket ?? 'x'}`}
             report={intelligence}
             applicationScore={appScore}
+            showInternals={showIntelInternals}
           />
         </div>
       );
@@ -585,7 +590,7 @@ export function CandidateSectionContent({ section, candidateId, vm }) {
             <ShieldCheck size={22} /> Pre-employment verification
           </h2>
           <p className="muted">
-            Simulated background check. Available only for <strong>Green-bucket</strong> application scores.
+            Simulated pre-employment verification. Available only for <strong>Green-bucket</strong> application scores.
           </p>
 
           {!isGreen ? (

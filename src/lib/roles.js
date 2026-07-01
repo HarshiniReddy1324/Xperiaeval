@@ -22,25 +22,28 @@ export const ROLES = [
     access: [
       'Positions, candidates, screening, and pipeline stages',
       'Scorecards, notes, scheduling, and compare',
-      'Integrations (Jira workflow; ATS on eligible plans)',
+      'Integrations for workflow (Jira; ATS on eligible plans)',
+      'No workspace settings, pilot program, or scoring methodology docs',
     ],
   },
   {
     role: 'Hiring Manager',
     description: 'Reviews candidates and makes hiring decisions.',
     access: [
-      'Positions, candidates, scorecards, and recommendations',
-      'Jira links on candidate profiles (when created by recruiters)',
-      'No Integrations page or team administration',
+      'Dashboard overview and candidate pipeline visibility',
+      'Simplified scorecards and interview-focused candidate views',
+      'Compare, notes, and scheduling on assigned candidates',
+      'Limited analytics (overview, applicants, by position)',
+      'No screening setup, audit log, settings, or integrations',
     ],
   },
   {
     role: 'Compliance Auditor',
     description: 'Read-only compliance and audit visibility.',
     access: [
-      'Audit log, analytics, and anonymized candidate views',
-      'Team access page (view members, cannot edit)',
-      'No candidate PII unlock or configuration changes',
+      'Audit log, compliance analytics, and anonymized candidate views',
+      'Team access page (view members only)',
+      'No positions management, screening config, or settings',
     ],
   },
   {

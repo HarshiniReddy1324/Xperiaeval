@@ -711,6 +711,12 @@
   font-size: 13px;
 }
 
+.landingFormError {
+  margin: 0;
+  font-size: 13px;
+  color: #b42318;
+}
+
 .landingCta {
   padding: 80px 21px;
   text-align: center;
@@ -861,6 +867,68 @@
     grid-template-columns: 1fr;
   }
 
+  .landingHero {
+    padding: 40px 16px 56px;
+  }
+
+  .landingHero h1 {
+    font-size: clamp(28px, 8vw, 40px);
+    line-height: 1.1;
+  }
+
+  .landingHero p {
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 22px;
+  }
+
+  .landingHeroCtas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landingHeroCtas .landingBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .landingPreview {
+    margin-top: 8px;
+  }
+
+  .landingSection {
+    padding: 56px 16px;
+  }
+
+  .landingCta {
+    padding: 56px 16px;
+  }
+
+  .landingNavInner {
+    padding: 0 12px;
+  }
+
+  .landingH2 {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+
+  .landingLead {
+    font-size: 15px;
+  }
+
+  .landingContact {
+    gap: 28px;
+  }
+
+  .landingForm {
+    padding: 18px 16px;
+  }
+
+  .landingMarqueeTrack span {
+    font-size: 12px;
+    padding: 0 20px;
+  }
+
   .landingDiffColTypical {
     border-right: 0;
     border-bottom: 1px solid var(--lp-border);
@@ -890,5 +958,35 @@
 
   .landingNavActions .landingBtnOutline {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .landingHero {
+    padding-top: 32px;
+  }
+
+  .landingBucketRow {
+    grid-template-columns: 1fr;
+  }
+
+  .landingStats {
+    gap: 10px;
+  }
+
+  .landingStat {
+    padding: 14px;
+  }
+
+  .landingStat strong {
+    font-size: 22px;
+  }
+
+  .landingMobileMenu {
+    padding: 12px 16px 16px;
+  }
+
+  .landingFooter {
+    padding: 32px 16px 24px;
   }
 }

@@ -39,8 +39,8 @@ export function Reports() {
   const [error, setError] = useState('');
 
   const visibleSections = useMemo(
-    () => getVisibleAnalyticsSections({ isIntelOnly }),
-    [isIntelOnly],
+    () => getVisibleAnalyticsSections({ isIntelOnly, isAdmin: user?.role === 'Admin', role: user?.role || '' }),
+    [isIntelOnly, user?.role],
   );
   const activeSection = sectionId ? analyticsSectionById(sectionId) : null;
   const showHub = !sectionId;
@@ -106,7 +106,12 @@ export function Reports() {
               </p>
               <AnalyticsSectionContent sectionId="overview" data={data} isIntelOnly={isIntelOnly} />
             </section>
-            <AnalyticsHub isIntelOnly={isIntelOnly} metrics={hubMetrics} />
+            <AnalyticsHub
+              isIntelOnly={isIntelOnly}
+              metrics={hubMetrics}
+              role={user?.role || ''}
+              isAdmin={user?.role === 'Admin'}
+            />
           </div>
         </div>
       ) : (

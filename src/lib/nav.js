@@ -1,18 +1,18 @@
 export const MAIN_NAV_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
+  { path: '/dashboard', label: 'Dashboard', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor', 'External Recruiter'] },
   { path: '/jobs', label: 'Positions', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter'] },
   { path: '/candidates', label: 'Candidates', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'External Recruiter', 'Compliance Auditor'] },
-  { path: '/rubrics', label: 'Screening', roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
-  { path: '/audit', label: 'Audit', roles: ['Admin', 'Compliance Auditor', 'Recruiter'] },
+  { path: '/rubrics', label: 'Screening', roles: ['Admin', 'Recruiter'] },
+  { path: '/audit', label: 'Audit', roles: ['Admin', 'Compliance Auditor'] },
   { path: '/reports', label: 'Reports', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
   { path: '/integrations', label: 'Integrations', roles: ['Admin', 'Recruiter'] },
   { path: '/access', label: 'Access', roles: ['Admin', 'Compliance Auditor'] },
-  { path: '/help', label: 'Help', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor', 'External Recruiter'] },
+  { path: '/help', label: 'Help', roles: ['Admin', 'Hiring Manager', 'Recruiter', 'Compliance Auditor'] },
 ];
 
 export const BOTTOM_NAV_ITEMS = [
-  { path: '/trash', label: 'Trash', roles: ['Admin', 'Hiring Manager', 'Recruiter'] },
-  { path: '/settings', label: 'Settings', roles: ['Admin', 'Recruiter'] },
+  { path: '/trash', label: 'Trash', roles: ['Admin', 'Recruiter'] },
+  { path: '/settings', label: 'Settings', roles: ['Admin'] },
 ];
 
 export function navForRole(role) {

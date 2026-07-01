@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { normalizeProductMode } from '../lib/productMode';
-import { canAccessIntegrations, isUpgradeIntegrationsBlocked } from '../lib/integrationAccess';
+import { canViewHelpSection, canViewProductInternals } from '../lib/roleAccess';
+import { isUpgradeIntegrationsBlocked } from '../lib/integrationAccess';
 import { Card } from '../components/ui';
 
 const DIMENSIONS = [
@@ -45,13 +46,14 @@ export function Help() {
   const { user } = useAuth();
   const role = user?.role || 'Hiring Manager';
   const isIntelOnly = normalizeProductMode(user?.productMode) === 'intelligence';
-  const showIntegrationsHelp = canAccessIntegrations(user);
   const integrationsUpgradeBlocked = isUpgradeIntegrationsBlocked(user);
   const [methodology, setMethodology] = useState(null);
+  const showHelp = (id) => canViewHelpSection(id, user);
 
   useEffect(() => {
+    if (!canViewProductInternals(user)) return;
     api('/methodology').then(setMethodology).catch(() => {});
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '');
@@ -71,8 +73,8 @@ export function Help() {
   };
 
   const visibleToc = TOC.filter((item) => {
+    if (!canViewHelpSection(item.id, user)) return false;
     if (isIntelOnly && item.id === 'screening') return false;
-    if (item.id === 'integrations' && !showIntegrationsHelp && role !== 'Hiring Manager') return false;
     return true;
   });
 
@@ -126,6 +128,7 @@ export function Help() {
         </ul>
       </Card>
 
+      {showHelp('modules') && (
       <Card id="modules" className="helpSection">
         <h2>Product modules</h2>
         <p>
@@ -156,6 +159,7 @@ export function Help() {
           </div>
         </div>
       </Card>
+      )}
 
       {isIntelOnly && (
         <Card className="helpSection helpIntelCard">
@@ -216,6 +220,7 @@ export function Help() {
         )}
       </Card>
 
+      {showHelp('scoring') && (
       <Card id="scoring" className="helpSection">
         <h2>Candidate Intelligence score</h2>
         <p>
@@ -274,6 +279,7 @@ export function Help() {
           concerns, and suggested interview focus areas.
         </p>
       </Card>
+      )}
 
       <Card id="buckets" className="helpSection">
         <h2>Green, Amber, and Red buckets</h2>
@@ -309,7 +315,7 @@ export function Help() {
         </p>
       </Card>
 
-      {!isIntelOnly && (
+      {!isIntelOnly && showHelp('screening') && (
         <Card id="screening" className="helpSection">
           <h2>Screening and questions</h2>
           <ul>
@@ -342,6 +348,7 @@ export function Help() {
         </Card>
       )}
 
+      {showHelp('experience') && (
       <Card id="experience" className="helpSection">
         <h2>Experience fit</h2>
         <p>
@@ -354,7 +361,9 @@ export function Help() {
           alongside the intelligence score; not as a standalone hire or no-hire decision.
         </p>
       </Card>
+      )}
 
+      {showHelp('identity') && (
       <Card id="identity" className="helpSection">
         <h2>Blind review and DEI</h2>
         <p>Configure under <strong>Settings → Blind review</strong>.</p>
@@ -378,7 +387,9 @@ export function Help() {
         </ul>
         <p>Intelligence scores and buckets stay visible during blind review so reviewers can compare candidates fairly.</p>
       </Card>
+      )}
 
+      {showHelp('proctoring') && (
       <Card id="proctoring" className="helpSection">
         <h2>Proctoring and integrity</h2>
         <p>
@@ -458,6 +469,7 @@ export function Help() {
           </li>
         </ul>
       </Card>
+      )}
 
       <Card id="review" className="helpSection">
         <h2>Reviewer tools</h2>
@@ -506,6 +518,7 @@ export function Help() {
         </p>
       </Card>
 
+      {showHelp('analytics') && (
       <Card id="analytics" className="helpSection">
         <h2>Analytics</h2>
         <p>
@@ -537,10 +550,12 @@ export function Help() {
           from.
         </p>
       </Card>
+      )}
 
+      {showHelp('settings') && (
       <Card id="settings" className="helpSection">
         <h2>Settings and workspace</h2>
-        <p>Settings are organized by topic. Admins and recruiters can access most sections; workspace mode is admin-only.</p>
+        <p>Settings are organized by topic. Only workspace admins can change organization policies.</p>
         <table className="docTable">
           <thead>
             <tr>
@@ -588,8 +603,9 @@ export function Help() {
           using an iframe. Leave the default for standard apply links.
         </p>
       </Card>
+      )}
 
-      {showIntegrationsHelp ? (
+      {showHelp('integrations') ? (
         <Card id="integrations" className="helpSection">
           <h2>Integrations</h2>
           <p>
@@ -696,7 +712,7 @@ export function Help() {
             </tr>
             <tr>
               <td><strong>Hiring Manager</strong></td>
-              <td>Positions, candidates, screening, scorecards, notes, scheduling, compare. Opens Jira links on candidates when present.</td>
+              <td>Positions, candidates, simplified scorecards, notes, scheduling, and compare. No screening setup, audit, or product configuration.</td>
             </tr>
             <tr>
               <td><strong>Compliance Auditor</strong></td>
@@ -706,6 +722,7 @@ export function Help() {
         </table>
       </Card>
 
+      {showHelp('audit') && (
       <Card id="audit" className="helpSection">
         <h2>Audit and compliance</h2>
         <p>
@@ -717,6 +734,7 @@ export function Help() {
           permanently delete from there.
         </p>
       </Card>
+      )}
 
       <footer className="helpFooter">
         <p className="muted">

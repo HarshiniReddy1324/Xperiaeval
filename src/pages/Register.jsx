@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui';
 import { AuthLayout } from '../components/AuthLayout';
 
 export function Register() {
   const { register } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', orgName: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(null);
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -18,8 +18,12 @@ export function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(form);
-      navigate('/dashboard');
+      const res = await register(form);
+      if (res?.pending) {
+        setSubmitted(res);
+        return;
+      }
+      window.location.assign('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -27,10 +31,37 @@ export function Register() {
     }
   };
 
+  if (submitted) {
+    return (
+      <AuthLayout
+        title="Request received"
+        lead="Your pilot workspace is pending approval."
+        backTo="/"
+        backLabel="Back to website"
+        footer={
+          <>
+            Already approved? <Link to="/login">Sign in</Link>
+          </>
+        }
+      >
+        <div className="authSuccessPanel">
+          <p>
+            We received your request for <strong>{submitted.org_name}</strong>. Our team will review it and email{' '}
+            <strong>{submitted.email}</strong> when your workspace is ready.
+          </p>
+          <p className="muted">You will not be able to sign in until approval is complete.</p>
+          <Link to="/" className="authInlineLink">
+            Return to website
+          </Link>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
-      title="Create workspace"
-      lead="Start your 90-day pilot. The first user becomes Admin. Upgrade anytime from Settings."
+      title="Request a pilot workspace"
+      lead="Submit your details for review. After we approve your request, you can sign in and start your 90-day pilot as workspace Admin."
       footer={
         <>
           Already have an account? <Link to="/login">Sign in</Link>
@@ -44,7 +75,7 @@ export function Register() {
         </div>
         <div className="authField">
           <label htmlFor="reg-org">Organization</label>
-          <input id="reg-org" value={form.orgName} onChange={update('orgName')} placeholder="Acme Inc" />
+          <input id="reg-org" value={form.orgName} onChange={update('orgName')} placeholder="Acme Inc" required />
         </div>
         <div className="authField">
           <label htmlFor="reg-email">Work email</label>
@@ -73,7 +104,7 @@ export function Register() {
         </div>
         {error ? <p className="authError">{error}</p> : null}
         <Button type="submit" className="authSubmit" disabled={loading}>
-          {loading ? 'Creating workspace…' : 'Start 90-day pilot'}
+          {loading ? 'Submitting request…' : 'Request 90-day pilot'}
         </Button>
       </form>
     </AuthLayout>

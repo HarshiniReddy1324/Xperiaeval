@@ -61,16 +61,23 @@ export const ANALYTICS_SECTIONS = [
     tone: 'slate',
     hiring: true,
     intelligence: false,
+    adminOnly: true,
   },
 ];
 
-export function getVisibleAnalyticsSections({ isIntelOnly = false } = {}) {
-  return ANALYTICS_SECTIONS.filter((s) => (isIntelOnly ? s.intelligence : s.hiring));
+export function getVisibleAnalyticsSections({ isIntelOnly = false, isAdmin = false, role = '' } = {}) {
+  const hiringManager = role === 'Hiring Manager';
+  return ANALYTICS_SECTIONS.filter((s) => {
+    if (isIntelOnly ? !s.intelligence : !s.hiring) return false;
+    if (s.adminOnly && !isAdmin) return false;
+    if (hiringManager && (s.id === 'screening' || s.id === 'experience')) return false;
+    return true;
+  });
 }
 
 /** Hub navigation tiles; overview is shown inline on /reports. */
-export function getAnalyticsHubSections({ isIntelOnly = false } = {}) {
-  return getVisibleAnalyticsSections({ isIntelOnly }).filter((s) => s.id !== 'overview');
+export function getAnalyticsHubSections({ isIntelOnly = false, isAdmin = false, role = '' } = {}) {
+  return getVisibleAnalyticsSections({ isIntelOnly, isAdmin, role }).filter((s) => s.id !== 'overview');
 }
 
 export function analyticsSectionById(id) {

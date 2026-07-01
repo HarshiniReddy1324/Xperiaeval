@@ -11,6 +11,7 @@ import {
   settingsSectionById,
   settingsSectionLabel,
 } from '../lib/settingsSections';
+import { canManageSettings } from '../lib/roleAccess';
 import { SettingsHub } from '../components/settings/SettingsHub';
 import { SettingsSectionContent } from '../components/settings/SettingsSectionContent';
 
@@ -46,6 +47,10 @@ export function Settings() {
       .then(setPilot)
       .catch(() => {});
   }, []);
+
+  if (!canManageSettings(user)) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const save = async () => {
     setError('');

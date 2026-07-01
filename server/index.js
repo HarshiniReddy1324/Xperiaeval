@@ -45,6 +45,15 @@ import {
 import { ensureDemoPortfolio } from './ensureDemoPortfolio.js';
 import { normalizeProductMode, hasHiringFeatures, hasIntelligenceFeatures, requireOrgProductFeature } from './productMode.js';
 import { assertPilotAction, getPilotSnapshot, pilotDatesForNewOrg } from './pilotProgram.js';
+import { submitPublicContact, notifyPilotUpgradeRequest } from './contactInquiries.js';
+import {
+  assertWorkspaceActive,
+  approveWorkspace,
+  canApproveWorkspaces,
+  listPendingWorkspaces,
+  notifyPendingWorkspaceRegistration,
+  WORKSPACE_PENDING,
+} from './workspaceApproval.js';
 import {
   disconnectOrgConnector,
   getOrgConnectorConfig,
@@ -546,41 +555,47 @@ function pilotBlocked(res, err) {
 // ——— Auth ———
 app.post('/api/auth/register', (req, res) => {
   const { email, password, name, orgName, product_mode } = req.body;
-  if (!email || !password || !name) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanName = String(name || '').trim();
+  const cleanOrg = String(orgName || '').trim();
+  const cleanPassword = String(password || '');
+
+  if (!cleanEmail || !cleanPassword || !cleanName) {
     return res.status(400).json({ error: 'Email, password, and name are required' });
   }
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
-  if (existing) return res.status(409).json({ error: 'Email already registered' });
+  if (cleanPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(cleanEmail);
+  if (existing) return res.status(409).json({ error: 'Email already registered. Sign in instead.' });
 
   const orgId = uuid();
   const userId = uuid();
   const mode = normalizeProductMode(product_mode || 'both');
-  const { pilot_started_at, pilot_ends_at } = pilotDatesForNewOrg();
+  const displayOrg = cleanOrg || `${cleanName}'s Organization`;
   db.prepare(
-    `INSERT INTO organizations (id, name, product_mode, plan_tier, pilot_started_at, pilot_ends_at)
-     VALUES (?, ?, ?, 'pilot', ?, ?)`
-  ).run(orgId, orgName || `${name}'s Organization`, mode, pilot_started_at, pilot_ends_at);
+    `INSERT INTO organizations (id, name, product_mode, plan_tier, workspace_status, pilot_started_at, pilot_ends_at)
+     VALUES (?, ?, ?, 'pilot', ?, NULL, NULL)`
+  ).run(orgId, displayOrg, mode, WORKSPACE_PENDING);
   db.prepare(
     `INSERT INTO users (id, org_id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?, 'Admin')`
-  ).run(userId, orgId, email.toLowerCase(), hashPassword(password), name);
+  ).run(userId, orgId, cleanEmail, hashPassword(cleanPassword), cleanName);
 
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-  const token = signToken(user);
-  logAudit({ orgId, actorId: userId, actorName: name, eventType: 'Organization created', description: `New pilot workspace: ${orgName || name}` });
-  const pilot = getPilotSnapshot(db, db.prepare('SELECT * FROM organizations WHERE id = ?').get(orgId));
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      orgId: user.org_id,
-      productMode: mode,
-      hasHiring: hasHiringFeatures(mode),
-      hasIntelligence: hasIntelligenceFeatures(mode),
-      pilot,
-    },
+  logAudit({
+    orgId,
+    actorId: userId,
+    actorName: cleanName,
+    eventType: 'Pilot workspace requested',
+    description: `Pending approval: ${displayOrg} (${cleanEmail})`,
+  });
+  notifyPendingWorkspaceRegistration({ name: cleanName, email: cleanEmail, company: displayOrg });
+
+  res.status(202).json({
+    pending: true,
+    message:
+      'Your pilot request was submitted. Our team will review it and email you when your workspace is approved.',
+    email: cleanEmail,
+    org_name: displayOrg,
   });
 });
 
@@ -590,8 +605,17 @@ app.post('/api/auth/login', (req, res) => {
   if (!user || !comparePassword(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
+  const org = db
+    .prepare(
+      'SELECT id, product_mode, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json, workspace_status FROM organizations WHERE id = ?'
+    )
+    .get(user.org_id);
+  try {
+    assertWorkspaceActive(org);
+  } catch (err) {
+    return res.status(err.status || 403).json({ error: err.message, code: err.code });
+  }
   const token = signToken(user);
-  const org = db.prepare('SELECT id, product_mode, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json FROM organizations WHERE id = ?').get(user.org_id);
   const productMode = normalizeProductMode(org?.product_mode);
   const pilot = getPilotSnapshot(db, org);
   res.json({
@@ -614,8 +638,15 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   const user = db.prepare('SELECT id, email, name, role, org_id FROM users WHERE id = ?').get(req.user.sub);
   if (!user) return res.status(404).json({ error: 'User not found' });
   const org = db
-    .prepare('SELECT id, name, product_mode, embed_allowed_origins, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json FROM organizations WHERE id = ?')
+    .prepare(
+      'SELECT id, name, product_mode, embed_allowed_origins, plan_tier, pilot_started_at, pilot_ends_at, pilot_limits_json, workspace_status FROM organizations WHERE id = ?'
+    )
     .get(user.org_id);
+  try {
+    assertWorkspaceActive(org);
+  } catch (err) {
+    return res.status(err.status || 403).json({ error: err.message, code: err.code });
+  }
   const productMode = normalizeProductMode(org?.product_mode);
   const pilot = getPilotSnapshot(db, org);
   res.json({
@@ -3250,7 +3281,7 @@ app.post('/api/connectors/slack/candidates/:applicationId', authMiddleware, requ
   }
 });
 
-app.get('/api/methodology', authMiddleware, (_req, res) => {
+app.get('/api/methodology', authMiddleware, requireRole('Admin'), (_req, res) => {
   res.json(getMethodology());
 });
 
@@ -3364,14 +3395,38 @@ app.post('/api/v1/evaluate', apiKeyAuth, requireIntelligence, async (req, res) =
 });
 
 // ——— Pilot program ———
-app.get('/api/pilot', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+app.get('/api/admin/pending-workspaces', authMiddleware, requireRole('Admin'), (req, res) => {
+  if (!canApproveWorkspaces(req.user)) {
+    return res.status(403).json({ error: 'Only the platform operator can approve pilot workspaces.' });
+  }
+  res.json(listPendingWorkspaces());
+});
+
+app.post('/api/admin/pending-workspaces/:orgId/approve', authMiddleware, requireRole('Admin'), (req, res) => {
+  if (!canApproveWorkspaces(req.user)) {
+    return res.status(403).json({ error: 'Only the platform operator can approve pilot workspaces.' });
+  }
+  try {
+    const org = approveWorkspace(req.params.orgId, req.user);
+    res.json({
+      ok: true,
+      message: 'Pilot workspace approved. The requester can now sign in.',
+      organization: { id: org.id, name: org.name },
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || 'Could not approve workspace' });
+  }
+});
+
+app.get('/api/pilot', authMiddleware, requireRole('Admin'), (req, res) => {
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   res.json(getPilotSnapshot(db, org));
 });
 
-app.post('/api/pilot/request-upgrade', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+app.post('/api/pilot/request-upgrade', authMiddleware, requireRole('Admin'), (req, res) => {
   const { target_plan, message } = req.body;
   const plan = target_plan === 'enterprise' ? 'enterprise' : 'team';
+  const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   logAudit({
     orgId: req.user.orgId,
     actorId: req.user.sub,
@@ -3379,21 +3434,40 @@ app.post('/api/pilot/request-upgrade', authMiddleware, requireRole('Admin', 'Rec
     eventType: 'Pilot upgrade requested',
     description: `Requested upgrade to ${plan}${message ? `: ${message}` : ''}`,
   });
+  notifyPilotUpgradeRequest({
+    org,
+    user: req.user,
+    targetPlan: plan,
+    message: message ? String(message).trim() : '',
+  });
   res.json({
     ok: true,
-    message: 'Upgrade request recorded. Our team will contact you within one business day.',
+    message: 'Upgrade request sent. Our team will contact you within one business day.',
     target_plan: plan,
   });
 });
 
+app.post('/api/public/contact', (req, res) => {
+  try {
+    const result = submitPublicContact(req.body || {});
+    res.status(201).json({
+      ok: true,
+      message: 'Thanks for reaching out. We received your message and will respond within one business day.',
+      inquiry_id: result.id,
+    });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message || 'Could not submit inquiry' });
+  }
+});
+
 // ——— Settings ———
-app.get('/api/settings', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+app.get('/api/settings', authMiddleware, requireRole('Admin'), (req, res) => {
   const org = db.prepare('SELECT * FROM organizations WHERE id = ?').get(req.user.orgId);
   const thresholds = thresholdsFromOrg(org);
   res.json({ ...org, intelligence_thresholds: thresholds });
 });
 
-app.patch('/api/settings', authMiddleware, requireRole('Admin', 'Recruiter'), (req, res) => {
+app.patch('/api/settings', authMiddleware, requireRole('Admin'), (req, res) => {
   if (req.body.intelligence_thresholds) {
     const v = validateThresholds(req.body.intelligence_thresholds);
     if (!v.ok) return res.status(400).json({ error: v.error });

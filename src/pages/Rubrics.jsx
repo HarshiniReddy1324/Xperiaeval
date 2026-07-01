@@ -1,6 +1,8 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ClipboardList, FilePlus2, Library, Briefcase } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { canConfigureScreening } from '../lib/roleAccess';
 import { SCREENING_HUB_TILES } from '../lib/rubricConstants';
 
 const TILE_ICONS = {
@@ -11,6 +13,11 @@ const TILE_ICONS = {
 };
 
 export function Rubrics() {
+  const { user } = useAuth();
+  if (!canConfigureScreening(user)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <>
       <div className="pageHead">

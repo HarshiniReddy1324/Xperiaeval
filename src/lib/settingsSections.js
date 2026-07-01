@@ -18,6 +18,7 @@ export const SETTINGS_SECTIONS = [
     icon: Rocket,
     tone: 'green',
     modes: ['hiring', 'intelligence', 'both'],
+    adminOnly: true,
   },
   {
     id: 'general',

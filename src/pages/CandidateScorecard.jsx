@@ -2,11 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Printer } from 'lucide-react';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { canViewProductInternals } from '../lib/roleAccess';
 import { CandidateIntelligenceReport } from '../components/CandidateIntelligenceReport';
 import { Button } from '../components/ui';
 
 export function CandidateScorecard() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -44,7 +47,11 @@ export function CandidateScorecard() {
           {app.job_title} · {app.id} · Generated {new Date().toLocaleString()}
         </p>
       </header>
-      <CandidateIntelligenceReport report={intel} applicationScore={data.applicationScore} />
+      <CandidateIntelligenceReport
+        report={intel}
+        applicationScore={data.applicationScore}
+        showInternals={canViewProductInternals(user)}
+      />
       <footer className="scorecardPrintFooter">
         <p>Advisory score: human review required before hiring decision. Confidential.</p>
       </footer>
